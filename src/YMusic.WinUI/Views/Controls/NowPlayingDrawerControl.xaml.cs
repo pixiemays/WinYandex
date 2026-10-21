@@ -12,6 +12,7 @@ namespace YMusic.WinUI.Views.Controls;
 public sealed partial class NowPlayingDrawerControl : UserControl
 {
     public PlayerBarViewModel ViewModel => App.GetService<PlayerBarViewModel>();
+    public UIElement TitleBarDragRegion => HeaderBarGrid;
 
     private bool _isProgrammaticScrolling;
     private DispatcherQueueTimer? _programmaticScrollResetTimer;
@@ -186,7 +187,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
 
     private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is LyricLine line)
+        if (e.ClickedItem is LyricLine line && line.HasTimestamp && line.Timestamp >= TimeSpan.Zero)
         {
             ViewModel.SeekToLyricCommand.Execute(line);
             ScrollLyricIntoCenter(line);

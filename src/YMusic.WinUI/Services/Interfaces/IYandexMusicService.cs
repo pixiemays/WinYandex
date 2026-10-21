@@ -48,5 +48,6 @@ public interface IYandexMusicService
     Task<IReadOnlyList<Track>> GetChartTracksAsync(CancellationToken cancellationToken = default);
     Task<Playlist?> GetPlaylistWithTracksAsync(long ownerUid, int kind, CancellationToken cancellationToken = default);
     Task<Album?> GetAlbumWithTracksAsync(long albumId, CancellationToken cancellationToken = default);
+    Task<ArtistBriefInfoResult?> GetArtistBriefInfoAsync(long artistId, CancellationToken cancellationToken = default);
 }
 

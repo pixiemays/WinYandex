@@ -52,15 +52,31 @@ public sealed partial class ShellWindow : Window
             };
         }
 
+        UpdateTitleBarButtonColors(false);
+
         ViewModel.PlayerBar.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(PlayerBarViewModel.IsNowPlayingDrawerOpen))
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    BottomPlayerBar.Visibility = ViewModel.PlayerBar.IsNowPlayingDrawerOpen
+                    bool isOpen = ViewModel.PlayerBar.IsNowPlayingDrawerOpen;
+                    BottomPlayerBar.Visibility = isOpen
                         ? Visibility.Collapsed
                         : Visibility.Visible;
+                    AppTitleBar.Visibility = isOpen
+                        ? Visibility.Collapsed
+                        : Visibility.Visible;
+
+                    if (isOpen)
+                    {
+                        SetTitleBar(NowPlayingDrawer.TitleBarDragRegion);
+                    }
+                    else
+                    {
+                        SetTitleBar(AppTitleBar);
+                    }
+                    UpdateTitleBarButtonColors(isOpen);
                 });
             }
         };
@@ -432,6 +448,34 @@ public sealed partial class ShellWindow : Window
         else
         {
             AppWindow.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen);
+        }
+    }
+
+    private void UpdateTitleBarButtonColors(bool isLyricsMode)
+    {
+        if (Microsoft.UI.Windowing.AppWindowTitleBar.IsCustomizationSupported())
+        {
+            var titleBar = AppWindow.TitleBar;
+            if (isLyricsMode)
+            {
+                titleBar.ButtonBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
+                titleBar.ButtonInactiveBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
+                titleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 235, 235, 235);
+                titleBar.ButtonHoverForegroundColor = Windows.UI.Color.FromArgb(255, 255, 255, 255);
+                titleBar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(35, 255, 255, 255);
+                titleBar.ButtonPressedBackgroundColor = Windows.UI.Color.FromArgb(55, 255, 255, 255);
+                titleBar.ButtonPressedForegroundColor = Windows.UI.Color.FromArgb(255, 255, 255, 255);
+            }
+            else
+            {
+                titleBar.ButtonBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
+                titleBar.ButtonInactiveBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
+                titleBar.ButtonForegroundColor = null;
+                titleBar.ButtonHoverForegroundColor = null;
+                titleBar.ButtonHoverBackgroundColor = null;
+                titleBar.ButtonPressedBackgroundColor = null;
+                titleBar.ButtonPressedForegroundColor = null;
+            }
         }
     }
 }

@@ -83,11 +83,11 @@ public sealed partial class LyricLine : ObservableObject
 
     public bool HasTimestamp => Timestamp >= TimeSpan.Zero;
 
-    public string FormattedTimestamp => Timestamp >= TimeSpan.Zero
+    public string FormattedTimestamp => HasTimestamp
         ? (Timestamp.Hours > 0 ? Timestamp.ToString(@"h\:mm\:ss") : Timestamp.ToString(@"m\:ss"))
         : string.Empty;
 
-    public double LineOpacity => IsActive ? 1.0 : (IsPast ? 0.35 : 0.65);
+    public double LineOpacity => !HasTimestamp ? 0.88 : (IsActive ? 1.0 : (IsPast ? 0.35 : 0.65));
 
     public double LineFontSize => IsActive ? 32.0 : 24.0;
 
@@ -103,8 +103,44 @@ public sealed partial class LyricLine : ObservableObject
             return result;
         }
 
-        // Standard LRC regex: [mm:ss.xx] or [mm:ss] or [mm:ss.xxx]
-        var tagRegex = new Regex(@"\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]", RegexOptions.Compiled);
+        // Standard LRC timestamp regex: [mm:ss.xx] or [mm:ss] or [mm:ss.xxx] (accepts both . and , as decimal separator)
+        var tagRegex = new Regex(@"\[(\d{1,3}):(\d{2})(?:[\.,](\d{1,3}))?\]", RegexOptions.Compiled);
+
+        bool hasAnyTimestampTags = tagRegex.IsMatch(rawLrc);
+
+        if (!hasAnyTimestampTags)
+        {
+            // Pure text lyrics without any LRC timestamps.
+            // DO NOT fabricate fake linear timestamps, as that causes lyrics to desynchronize by 20-30 seconds!
+            var plainLines = rawLrc.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            foreach (var line in plainLines)
+            {
+                string trimmed = line.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed)) continue;
+
+                // Ignore metadata tags like [ar:...], [ti:...] even in plain text
+                if (trimmed.StartsWith("[") && trimmed.EndsWith("]") && trimmed.Contains(":"))
+                {
+                    continue;
+                }
+
+                result.Add(new LyricLine
+                {
+                    Timestamp = TimeSpan.FromSeconds(-1),
+                    Text = trimmed
+                });
+            }
+            return result;
+        }
+
+        // Check for LRC global offset tag: [offset:+/-ms]
+        // In LRC spec: positive offset = delay (add ms), negative offset = advance (subtract ms)
+        int offsetMs = 0;
+        var offsetMatch = Regex.Match(rawLrc, @"\[offset:\s*([+-]?\d+)\s*\]", RegexOptions.IgnoreCase);
+        if (offsetMatch.Success && int.TryParse(offsetMatch.Groups[1].Value, out int parsedOffset))
+        {
+            offsetMs = parsedOffset;
+        }
 
         var lines = rawLrc.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
         foreach (var line in lines)
@@ -112,14 +148,7 @@ public sealed partial class LyricLine : ObservableObject
             var matches = tagRegex.Matches(line);
             if (matches.Count == 0)
             {
-                // Line without timestamp, add as sequential or omit metadata tags like [ar:Artist]
-                if (!line.StartsWith("[") || !line.Contains("]"))
-                {
-                    if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        result.Add(new LyricLine { Timestamp = TimeSpan.Zero, Text = line.Trim() });
-                    }
-                }
+                // In a synchronized LRC, ignore non-timestamp lines (such as metadata [ar:...] or blank comments)
                 continue;
             }
 
@@ -143,7 +172,10 @@ public sealed partial class LyricLine : ObservableObject
                     else millis = int.Parse(msStr.Substring(0, 3));
                 }
 
-                var timestamp = new TimeSpan(0, 0, minutes, seconds, millis);
+                double totalMs = (minutes * 60000.0) + (seconds * 1000.0) + millis + offsetMs;
+                if (totalMs < 0) totalMs = 0;
+
+                var timestamp = TimeSpan.FromMilliseconds(totalMs);
                 result.Add(new LyricLine
                 {
                     Timestamp = timestamp,
@@ -153,22 +185,6 @@ public sealed partial class LyricLine : ObservableObject
         }
 
         result.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
-
-        // If lyrics only have plain text without timestamps, distribute timestamps proportionally across duration
-        bool hasTimestamps = result.Any(l => l.Timestamp > TimeSpan.Zero);
-        if (!hasTimestamps && result.Count > 0 && durationSeconds > 10)
-        {
-            double introSec = Math.Min(12.0, durationSeconds * 0.08);
-            double outroSec = Math.Min(10.0, durationSeconds * 0.06);
-            double singDuration = Math.Max(durationSeconds - introSec - outroSec, durationSeconds * 0.7);
-            double step = singDuration / Math.Max(1, result.Count);
-
-            for (int i = 0; i < result.Count; i++)
-            {
-                result[i].Timestamp = TimeSpan.FromSeconds(introSec + (i * step));
-            }
-        }
-
         return result;
     }
 }

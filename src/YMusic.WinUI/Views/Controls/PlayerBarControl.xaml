@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:YMusic.WinUI.Models"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
+    xmlns:helpers="using:YMusic.WinUI.Helpers"
     Loaded="UserControl_Loaded"
     mc:Ignorable="d">
 
@@ -33,7 +34,7 @@
                 <ColumnDefinition Width="40" />
             </Grid.ColumnDefinitions>
 
-            <!-- Album Art (Clickable to open Now Playing Drawer) -->
+            <!-- Album Art (Clickable to open Now Playing Drawer with visual hover feedback) -->
             <Button Grid.Column="0"
                     Command="{x:Bind ViewModel.ToggleNowPlayingDrawerCommand}"
                     Padding="0"
@@ -42,11 +43,15 @@
                     CornerRadius="6"
                     Background="Transparent"
                     BorderBrush="Transparent"
-                    ToolTipService.ToolTip="Now Playing &amp; Lyrics">
+                    helpers:CursorHelper.UseHandCursor="True"
+                    PointerEntered="CoverButton_PointerEntered"
+                    PointerExited="CoverButton_PointerExited"
+                    ToolTipService.ToolTip="Развернуть текст и плеер">
                 <Border Width="52"
                         Height="52"
                         CornerRadius="6"
-                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                        IsHitTestVisible="False">
                     <Grid>
                         <FontIcon Glyph="&#xE8D6;"
                                   FontSize="24"
@@ -55,11 +60,27 @@
                                   VerticalAlignment="Center" />
                         <Image Source="{x:Bind ViewModel.CoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
                                Stretch="UniformToFill" />
+
+                        <!-- Hover Overlay (Yandex Music style: dark tint + expand/lyrics chevron) -->
+                        <Border x:Name="CoverHoverOverlay"
+                                Background="#90000000"
+                                CornerRadius="6"
+                                Opacity="0"
+                                IsHitTestVisible="False">
+                            <Border.OpacityTransition>
+                                <ScalarTransition Duration="0:0:0.18" />
+                            </Border.OpacityTransition>
+                            <FontIcon Glyph="&#xE70E;"
+                                      FontSize="18"
+                                      Foreground="White"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                        </Border>
                     </Grid>
                 </Border>
             </Button>
 
-            <!-- Title & Artist (Click title to open album) -->
+            <!-- Title & Artist (Click title to open album, artist to open artist card) -->
             <Grid Grid.Column="1"
                   Margin="12,0,8,0"
                   VerticalAlignment="Center">
@@ -71,20 +92,31 @@
                                  Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
                                  Padding="0"
                                  HorizontalAlignment="Left"
-                                 ToolTipService.ToolTip="View album">
+                                 HorizontalContentAlignment="Left"
+                                 helpers:CursorHelper.UseHandCursor="True"
+                                 ToolTipService.ToolTip="Перейти к альбому">
                     <TextBlock Text="{x:Bind ViewModel.TrackTitle, Mode=OneWay}"
                                FontWeight="SemiBold"
                                FontSize="14"
                                TextTrimming="CharacterEllipsis"
-                               MaxLines="1" />
+                               MaxLines="1"
+                               IsHitTestVisible="False" />
                 </HyperlinkButton>
-                <TextBlock Grid.Row="1"
-                           Text="{x:Bind ViewModel.ArtistNames, Mode=OneWay}"
-                           FontSize="12"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextTrimming="CharacterEllipsis"
-                           MaxLines="1"
-                           Margin="0,2,0,0" />
+                <HyperlinkButton Grid.Row="1"
+                                 Command="{x:Bind ViewModel.OpenCurrentArtistCommand}"
+                                 Padding="0"
+                                 Margin="0,2,0,0"
+                                 HorizontalAlignment="Left"
+                                 HorizontalContentAlignment="Left"
+                                 helpers:CursorHelper.UseHandCursor="True"
+                                 ToolTipService.ToolTip="Об исполнителе">
+                    <TextBlock Text="{x:Bind ViewModel.ArtistNames, Mode=OneWay}"
+                               FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1"
+                               IsHitTestVisible="False" />
+                </HyperlinkButton>
             </Grid>
 
             <!-- Like Button in Track Info -->
@@ -98,6 +130,7 @@
                     CornerRadius="18"
                     Background="Transparent"
                     BorderBrush="Transparent"
+                    helpers:CursorHelper.UseHandCursor="True"
                     ToolTipService.ToolTip="{x:Bind ViewModel.LikeTooltip, Mode=OneWay}">
                 <FontIcon Glyph="{x:Bind ViewModel.LikeGlyph, Mode=OneWay}"
                           FontSize="18"
@@ -126,6 +159,7 @@
                         CornerRadius="18"
                         Background="Transparent"
                         BorderBrush="Transparent"
+                        helpers:CursorHelper.UseHandCursor="True"
                         ToolTipService.ToolTip="Shuffle">
                     <FontIcon Glyph="&#xE8B1;"
                               FontSize="16"
@@ -142,6 +176,7 @@
                         CornerRadius="18"
                         Background="Transparent"
                         BorderBrush="Transparent"
+                        helpers:CursorHelper.UseHandCursor="True"
                         ToolTipService.ToolTip="Previous">
                     <FontIcon Glyph="&#xE892;" FontSize="16" />
                 </Button>
@@ -155,6 +190,7 @@
                         VerticalContentAlignment="Center"
                         CornerRadius="22"
                         Style="{ThemeResource AccentButtonStyle}"
+                        helpers:CursorHelper.UseHandCursor="True"
                         ToolTipService.ToolTip="Play / Pause">
                     <FontIcon Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}"
                               FontSize="18"
@@ -171,6 +207,7 @@
                         CornerRadius="18"
                         Background="Transparent"
                         BorderBrush="Transparent"
+                        helpers:CursorHelper.UseHandCursor="True"
                         ToolTipService.ToolTip="Next">
                     <FontIcon Glyph="&#xE893;" FontSize="16" />
                 </Button>
@@ -185,6 +222,7 @@
                         CornerRadius="18"
                         Background="Transparent"
                         BorderBrush="Transparent"
+                        helpers:CursorHelper.UseHandCursor="True"
                         ToolTipService.ToolTip="Repeat">
                     <FontIcon Glyph="{x:Bind ViewModel.RepeatGlyph, Mode=OneWay}"
                               FontSize="16"
@@ -239,6 +277,7 @@
                     CornerRadius="18"
                     Background="{x:Bind ViewModel.IsNowPlayingDrawerOpen, Mode=OneWay, Converter={StaticResource BoolToSubtleHighlightBrushConverter}}"
                     BorderBrush="Transparent"
+                    helpers:CursorHelper.UseHandCursor="True"
                     ToolTipService.ToolTip="Lyrics &amp; Now Playing (Esc to close)">
                 <FontIcon Glyph="&#xEC4F;"
                           FontSize="16"
@@ -253,6 +292,7 @@
                     HorizontalContentAlignment="Center"
                     Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    helpers:CursorHelper.UseHandCursor="True"
                     ToolTipService.ToolTip="{x:Bind ViewModel.QualityTooltip, Mode=OneWay}">
                 <TextBlock Text="{x:Bind ViewModel.QualityBadge, Mode=OneWay}"
                            FontSize="11"
@@ -280,6 +320,7 @@
                     CornerRadius="18"
                     Background="Transparent"
                     BorderBrush="Transparent"
+                    helpers:CursorHelper.UseHandCursor="True"
                     ToolTipService.ToolTip="Audio Equalizer">
                 <FontIcon Glyph="&#xE9E9;"
                           FontSize="16"
@@ -316,6 +357,7 @@
                                             Content="Reset"
                                             Height="32"
                                             Padding="14,0"
+                                            helpers:CursorHelper.UseHandCursor="True"
                                             ToolTipService.ToolTip="Reset all bands to 0 dB" />
                                 </StackPanel>
                             </Grid>
@@ -374,6 +416,7 @@
                     CornerRadius="18"
                     Background="Transparent"
                     BorderBrush="Transparent"
+                    helpers:CursorHelper.UseHandCursor="True"
                     ToolTipService.ToolTip="Mute / Unmute">
                 <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" FontSize="16" />
             </Button>

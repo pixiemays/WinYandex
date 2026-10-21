@@ -3,8 +3,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Controls;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
+using YMusic.WinUI.Views.Controls;
 
 namespace YMusic.WinUI.ViewModels;
 
@@ -69,6 +71,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     private bool _isAutoScrollEnabled = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSyncLyricsButton))]
     private bool _isUserScrolledAway;
 
     public event EventHandler<LyricLine?>? ActiveLyricChanged;
@@ -88,10 +91,24 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     private LyricLine? _activeLyricLine;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowNoLyricsPlaceholder))]
     private bool _hasLyrics;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSyncLyricsButton))]
+    [NotifyPropertyChangedFor(nameof(LyricsBadgeText))]
+    [NotifyPropertyChangedFor(nameof(LyricsBadgeGlyph))]
+    private bool _hasSyncedLyrics;
+
+    public string LyricsBadgeText => HasSyncedLyrics ? "Synced Lyrics" : "Plain Lyrics";
+    public string LyricsBadgeGlyph => HasSyncedLyrics ? "\uEC4F" : "\uE8D2";
+    public bool ShowSyncLyricsButton => HasSyncedLyrics && IsUserScrolledAway;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowNoLyricsPlaceholder))]
     private bool _isLoadingLyrics;
+
+    public bool ShowNoLyricsPlaceholder => !IsLoadingLyrics && !HasLyrics;
 
     [ObservableProperty]
     private string _lyricsStatusText = "Loading lyrics...";
@@ -276,6 +293,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             Lyrics.Clear();
             ActiveLyricLine = null;
             HasLyrics = false;
+            HasSyncedLyrics = false;
             IsUserScrolledAway = false;
             IsCurrentTrackLiked = track != null && _musicService.IsTrackLiked(track.Id);
         });
@@ -286,8 +304,16 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         }
     }
 
+    private CancellationTokenSource? _lyricsCts;
+
     private async Task LoadLyricsForTrackAsync(Track track)
     {
+        _lyricsCts?.Cancel();
+        _lyricsCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _lyricsCts = cts;
+        var token = cts.Token;
+
         RunOnUi(() =>
         {
             IsLoadingLyrics = true;
@@ -297,9 +323,12 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         try
         {
             double durationSec = track.DurationMs > 0 ? track.DurationMs / 1000.0 : DurationSeconds;
-            var lines = await _musicService.GetTrackLyricsAsync(track.Id, track.Title, track.ArtistNames, durationSec).ConfigureAwait(false);
+            var lines = await _musicService.GetTrackLyricsAsync(track.Id, track.Title, track.ArtistNames, durationSec, token).ConfigureAwait(false);
+            if (token.IsCancellationRequested) return;
+
             RunOnUi(() =>
             {
+                if (token.IsCancellationRequested) return;
                 Lyrics.Clear();
                 if (lines.Count > 0)
                 {
@@ -308,27 +337,40 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                         Lyrics.Add(line);
                     }
                     HasLyrics = true;
+                    HasSyncedLyrics = lines.Any(l => l.HasTimestamp && l.Timestamp >= TimeSpan.Zero);
                     LyricsStatusText = string.Empty;
                     UpdateActiveLyric(Position);
                 }
                 else
                 {
                     HasLyrics = false;
+                    HasSyncedLyrics = false;
                     LyricsStatusText = "No lyrics available for this track";
                 }
             });
         }
+        catch (OperationCanceledException)
+        {
+            // Ignored, track changed
+        }
         catch
         {
-            RunOnUi(() =>
+            if (!token.IsCancellationRequested)
             {
-                HasLyrics = false;
-                LyricsStatusText = "Failed to load lyrics";
-            });
+                RunOnUi(() =>
+                {
+                    HasLyrics = false;
+                    HasSyncedLyrics = false;
+                    LyricsStatusText = "Failed to load lyrics";
+                });
+            }
         }
         finally
         {
-            RunOnUi(() => IsLoadingLyrics = false);
+            if (!token.IsCancellationRequested)
+            {
+                RunOnUi(() => IsLoadingLyrics = false);
+            }
         }
     }
 
@@ -354,7 +396,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     private void UpdateActiveLyric(TimeSpan position)
     {
-        if (Lyrics.Count == 0) return;
+        if (Lyrics.Count == 0 || !HasSyncedLyrics) return;
 
         LyricLine? currentActive = null;
         int activeIndex = -1;
@@ -407,7 +449,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     [RelayCommand]
     private void SeekToLyric(LyricLine line)
     {
-        if (line != null && line.Timestamp >= TimeSpan.Zero)
+        if (line != null && line.HasTimestamp && line.Timestamp >= TimeSpan.Zero)
         {
             IsUserScrolledAway = false;
             _audioPlayer.Seek(line.Timestamp);
@@ -613,10 +655,13 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         }
     }
 
+    private static ContentDialog? _activeContentDialog;
+
     [RelayCommand]
     public async Task OpenCurrentAlbumAsync()
     {
         if (CurrentTrack == null) return;
+        IsNowPlayingDrawerOpen = false;
 
         Album? targetAlbum = CurrentTrack.Albums?.FirstOrDefault();
         if (targetAlbum != null && targetAlbum.Id > 0)
@@ -638,6 +683,62 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         if (!string.IsNullOrEmpty(CurrentTrack.AlbumTitle) && targetAlbum != null)
         {
             await _navigationService.NavigateToAlbumAsync(targetAlbum);
+        }
+    }
+
+    [RelayCommand]
+    public async Task OpenCurrentArtistAsync()
+    {
+        if (CurrentTrack == null) return;
+
+        var primaryArtist = CurrentTrack.Artists?.FirstOrDefault();
+        long artistId = primaryArtist?.Id ?? 0;
+        string artistName = !string.IsNullOrWhiteSpace(primaryArtist?.Name)
+            ? primaryArtist.Name
+            : CurrentTrack.ArtistNames;
+
+        await OpenArtistCardAsync(artistId, artistName);
+    }
+
+    public async Task OpenArtistCardAsync(long artistId, string artistName)
+    {
+        var xamlRoot = App.MainWindow?.Content?.XamlRoot;
+        if (xamlRoot == null) return;
+
+        try
+        {
+            if (_activeContentDialog != null)
+            {
+                _activeContentDialog.Hide();
+                _activeContentDialog = null;
+            }
+
+            var dialog = new ArtistCardDialog(_audioPlayer, _navigationService, _musicService)
+            {
+                XamlRoot = xamlRoot
+            };
+            dialog.SetBasicInfo(artistName);
+            dialog.SetNavigationCallback(() =>
+            {
+                IsNowPlayingDrawerOpen = false;
+            });
+
+            _activeContentDialog = dialog;
+
+            var showTask = dialog.ShowAsync();
+            if (artistId > 0)
+            {
+                _ = dialog.LoadArtistDataAsync(artistId);
+            }
+            await showTask;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[OpenArtistCard Error]: {ex.Message}");
+        }
+        finally
+        {
+            _activeContentDialog = null;
         }
     }
 

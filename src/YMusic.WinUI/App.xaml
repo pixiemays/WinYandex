@@ -4,7 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:YMusic.WinUI"
-    xmlns:converters="using:YMusic.WinUI.Converters">
+    xmlns:converters="using:YMusic.WinUI.Converters"
+    xmlns:helpers="using:YMusic.WinUI.Helpers">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -31,6 +32,16 @@
             <converters:BoolToPinForegroundBrushConverter x:Key="BoolToPinForegroundBrushConverter" />
             <converters:BoolToSubtleHighlightBrushConverter x:Key="BoolToSubtleHighlightBrushConverter" />
             <converters:ActiveLyricToForegroundConverter x:Key="ActiveLyricToForegroundConverter" />
+
+            <Style TargetType="Button">
+                <Setter Property="helpers:CursorHelper.UseHandCursor" Value="True" />
+            </Style>
+            <Style TargetType="HyperlinkButton">
+                <Setter Property="helpers:CursorHelper.UseHandCursor" Value="True" />
+            </Style>
+            <Style TargetType="ToggleButton">
+                <Setter Property="helpers:CursorHelper.UseHandCursor" Value="True" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

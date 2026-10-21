@@ -1,11 +1,13 @@
 #nullable enable
 
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 
@@ -22,6 +24,15 @@ public sealed class YandexMusicService : IYandexMusicService
     private readonly ICredentialStorageService? _credentialStorage;
     private readonly HashSet<string> _likedTrackIds = new();
     private readonly HashSet<long> _likedAlbumIds = new();
+    private readonly ConcurrentDictionary<string, List<LyricLine>> _lyricsCache = new();
+    private static readonly HttpClient _lrclibHttpClient = new HttpClient
+    {
+        Timeout = TimeSpan.FromSeconds(2.5),
+        DefaultRequestHeaders =
+        {
+            { "User-Agent", "WinYandex/1.0 (https://github.com/winyandex)" }
+        }
+    };
     private string? _cachedUserId;
     private string? _token;
 
@@ -807,7 +818,72 @@ public sealed class YandexMusicService : IYandexMusicService
 
         string cleanTrackId = trackId.Contains(':') ? trackId.Split(':')[0] : trackId;
 
-        // 1. Try tracks/{cleanTrackId}/lyrics?format=LRC with HMAC-SHA256 signature
+        // 0. Cache hit: instant return (0 ms)
+        if (_lyricsCache.TryGetValue(cleanTrackId, out var cached) && cached != null && cached.Count > 0)
+        {
+            return cached;
+        }
+
+        // 1. Fetch Yandex Signed LRC and Yandex Supplement in parallel (very fast, ~100-150ms)
+        var signedTask = FetchYandexSignedLyricsAsync(cleanTrackId, durationSeconds, cancellationToken);
+        var supplementTask = FetchYandexSupplementLyricsAsync(cleanTrackId, durationSeconds, cancellationToken);
+
+        await Task.WhenAll(signedTask, supplementTask).ConfigureAwait(false);
+
+        var signedLyrics = await signedTask.ConfigureAwait(false);
+        var supplementLyrics = await supplementTask.ConfigureAwait(false);
+
+        // Check if Yandex already gave synchronized lyrics (with timestamps)
+        if (signedLyrics != null && signedLyrics.Count > 0 && signedLyrics.Any(l => l.HasTimestamp && l.Timestamp > TimeSpan.Zero))
+        {
+            _lyricsCache[cleanTrackId] = signedLyrics;
+            return signedLyrics;
+        }
+
+        if (supplementLyrics != null && supplementLyrics.Count > 0 && supplementLyrics.Any(l => l.HasTimestamp && l.Timestamp > TimeSpan.Zero))
+        {
+            _lyricsCache[cleanTrackId] = supplementLyrics;
+            return supplementLyrics;
+        }
+
+        // Keep best plain lyrics from Yandex if available
+        var fallbackPlainLyrics = (signedLyrics != null && signedLyrics.Count > 0)
+            ? signedLyrics
+            : supplementLyrics;
+
+        // 2. If Yandex had no synchronized lyrics, query LRCLIB for synced LRC with fast 2.5s timeout
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            try
+            {
+                var lrclibLines = await FetchFromLrclibAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                if (lrclibLines != null && lrclibLines.Count > 0 && lrclibLines.Any(l => l.HasTimestamp && l.Timestamp > TimeSpan.Zero))
+                {
+                    _lyricsCache[cleanTrackId] = lrclibLines;
+                    return lrclibLines;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LRCLIB Warning] {ex.Message}");
+            }
+        }
+
+        // 3. If LRCLIB had nothing, return Yandex plain text lyrics (if any)
+        if (fallbackPlainLyrics != null && fallbackPlainLyrics.Count > 0)
+        {
+            _lyricsCache[cleanTrackId] = fallbackPlainLyrics;
+            return fallbackPlainLyrics;
+        }
+
+        return new List<LyricLine>();
+    }
+
+    private async Task<List<LyricLine>?> FetchYandexSignedLyricsAsync(
+        string cleanTrackId,
+        double durationSeconds,
+        CancellationToken cancellationToken)
+    {
         try
         {
             long ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -829,10 +905,7 @@ public sealed class YandexMusicService : IYandexMusicService
                         {
                             var lrcContent = await _httpClient.GetStringAsync(apiResult.Result.DownloadUrl, cancellationToken).ConfigureAwait(false);
                             var parsed = LyricLine.ParseLrc(lrcContent, durationSeconds);
-                            if (parsed.Count > 0 && parsed.Any(l => l.Timestamp > TimeSpan.Zero))
-                            {
-                                return parsed;
-                            }
+                            if (parsed.Count > 0) return parsed;
                         }
                         catch { }
                     }
@@ -840,46 +913,30 @@ public sealed class YandexMusicService : IYandexMusicService
                     if (!string.IsNullOrWhiteSpace(apiResult.Result.FullLyrics))
                     {
                         var parsed = LyricLine.ParseLrc(apiResult.Result.FullLyrics, durationSeconds);
-                        if (parsed.Count > 0 && parsed.Any(l => l.Timestamp > TimeSpan.Zero))
-                        {
-                            return parsed;
-                        }
+                        if (parsed.Count > 0) return parsed;
                     }
 
                     if (!string.IsNullOrWhiteSpace(apiResult.Result.Lyrics))
                     {
                         var parsed = LyricLine.ParseLrc(apiResult.Result.Lyrics, durationSeconds);
-                        if (parsed.Count > 0 && parsed.Any(l => l.Timestamp > TimeSpan.Zero))
-                        {
-                            return parsed;
-                        }
+                        if (parsed.Count > 0) return parsed;
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[Yandex Signed Lyrics API Warning] {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[Yandex Signed Lyrics Warning] {ex.Message}");
         }
 
-        // 2. Try LRCLIB for synchronized LRC lyrics (e.g. Kai Angel - TV, etc.)
-        if (!string.IsNullOrWhiteSpace(title))
-        {
-            try
-            {
-                var lrclibLines = await FetchFromLrclibAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
-                if (lrclibLines != null && lrclibLines.Count > 0 && lrclibLines.Any(l => l.Timestamp > TimeSpan.Zero))
-                {
-                    return lrclibLines;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[LRCLIB Warning] {ex.Message}");
-            }
-        }
+        return null;
+    }
 
-        // 3. Fallback to tracks/{cleanTrackId}/supplement
+    private async Task<List<LyricLine>?> FetchYandexSupplementLyricsAsync(
+        string cleanTrackId,
+        double durationSeconds,
+        CancellationToken cancellationToken)
+    {
         try
         {
             using var response = await SendRequestAsync(HttpMethod.Get, $"tracks/{Uri.EscapeDataString(cleanTrackId)}/supplement", null, cancellationToken).ConfigureAwait(false);
@@ -906,10 +963,7 @@ public sealed class YandexMusicService : IYandexMusicService
                     if (!string.IsNullOrWhiteSpace(rawLyrics))
                     {
                         var parsed = LyricLine.ParseLrc(rawLyrics, durationSeconds);
-                        if (parsed.Count > 0)
-                        {
-                            return parsed;
-                        }
+                        if (parsed.Count > 0) return parsed;
                     }
                 }
             }
@@ -919,7 +973,7 @@ public sealed class YandexMusicService : IYandexMusicService
             System.Diagnostics.Debug.WriteLine($"[Supplement API Warning] {ex.Message}");
         }
 
-        return new List<LyricLine>();
+        return null;
     }
 
     private async Task<List<LyricLine>?> FetchFromLrclibAsync(
@@ -928,83 +982,137 @@ public sealed class YandexMusicService : IYandexMusicService
         double durationSeconds,
         CancellationToken cancellationToken)
     {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("User-Agent", "WinYandex/1.0 (https://github.com/winyandex)");
-        client.Timeout = TimeSpan.FromSeconds(5);
+        string rawTitle = title.Trim();
+        string rawArtist = (artist ?? string.Empty).Trim();
 
-        string cleanTitle = title.Trim();
-        string cleanArtist = (artist ?? string.Empty).Trim();
+        string cleanTitle = CleanTitleForLyrics(rawTitle);
+        string primaryArtist = GetPrimaryArtist(rawArtist);
 
-        // 1. Exact query: /api/get
+        // 1. Exact query: /api/get?track_name=...&artist_name=...&duration=...
+        var exactLines = await TryLrclibGetAsync(rawTitle, rawArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
+        if (exactLines != null && exactLines.Count > 0) return exactLines;
+
+        // If title or artist had extra info, try /api/get with cleaned title & primary artist
+        if (!string.Equals(cleanTitle, rawTitle, StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(primaryArtist, rawArtist, StringComparison.OrdinalIgnoreCase))
+        {
+            var cleanExact = await TryLrclibGetAsync(cleanTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
+            if (cleanExact != null && cleanExact.Count > 0) return cleanExact;
+        }
+
+        // 2. Search query: /api/search?track_name=...&artist_name=...
+        // First search with clean title and primary artist
+        var searchLines = await TryLrclibSearchAsync(cleanTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
+        if (searchLines != null && searchLines.Count > 0) return searchLines;
+
+        // If clean search failed, also try raw title search
+        if (!string.Equals(cleanTitle, rawTitle, StringComparison.OrdinalIgnoreCase))
+        {
+            var rawSearchLines = await TryLrclibSearchAsync(rawTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
+            if (rawSearchLines != null && rawSearchLines.Count > 0) return rawSearchLines;
+        }
+
+        return null;
+    }
+
+    private async Task<List<LyricLine>?> TryLrclibGetAsync(
+        string trackName,
+        string artistName,
+        double durationSeconds,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(trackName)) return null;
+
         try
         {
             var queryBuilder = new StringBuilder("https://lrclib.net/api/get?");
-            queryBuilder.Append($"track_name={Uri.EscapeDataString(cleanTitle)}");
-            if (!string.IsNullOrWhiteSpace(cleanArtist))
+            queryBuilder.Append($"track_name={Uri.EscapeDataString(trackName)}");
+            if (!string.IsNullOrWhiteSpace(artistName))
             {
-                queryBuilder.Append($"&artist_name={Uri.EscapeDataString(cleanArtist)}");
+                queryBuilder.Append($"&artist_name={Uri.EscapeDataString(artistName)}");
             }
             if (durationSeconds > 0)
             {
                 queryBuilder.Append($"&duration={(int)Math.Round(durationSeconds)}");
             }
 
-            using var resp = await client.GetAsync(queryBuilder.ToString(), cancellationToken).ConfigureAwait(false);
+            using var resp = await _lrclibHttpClient.GetAsync(queryBuilder.ToString(), cancellationToken).ConfigureAwait(false);
             if (resp.IsSuccessStatusCode)
             {
                 var json = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var lrclibItem = JsonSerializer.Deserialize<LrclibResponse>(json, _jsonOptions);
                 if (lrclibItem != null && !string.IsNullOrWhiteSpace(lrclibItem.SyncedLyrics))
                 {
-                    var lines = LyricLine.ParseLrc(lrclibItem.SyncedLyrics, durationSeconds);
-                    if (lines.Count > 0) return lines;
-                }
-            }
-        }
-        catch { }
-
-        // 2. Search query: /api/search?track_name=...&artist_name=...
-        try
-        {
-            string searchUrl = $"https://lrclib.net/api/search?track_name={Uri.EscapeDataString(cleanTitle)}&artist_name={Uri.EscapeDataString(cleanArtist)}";
-            using var resp = await client.GetAsync(searchUrl, cancellationToken).ConfigureAwait(false);
-            if (resp.IsSuccessStatusCode)
-            {
-                var json = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                var items = JsonSerializer.Deserialize<List<LrclibResponse>>(json, _jsonOptions);
-                if (items != null)
-                {
-                    foreach (var item in items)
+                    // Strict duration check: if duration differs by > 4.5 seconds, reject (different cut/version)
+                    if (durationSeconds > 0 && lrclibItem.Duration > 0 && Math.Abs(lrclibItem.Duration - durationSeconds) > 4.5)
                     {
-                        if (!string.IsNullOrWhiteSpace(item.SyncedLyrics))
-                        {
-                            var lines = LyricLine.ParseLrc(item.SyncedLyrics, durationSeconds);
-                            if (lines.Count > 0) return lines;
-                        }
+                        return null;
+                    }
+
+                    var lines = LyricLine.ParseLrc(lrclibItem.SyncedLyrics, durationSeconds);
+                    if (lines.Count > 0 && lines.Any(l => l.HasTimestamp && l.Timestamp > TimeSpan.Zero))
+                    {
+                        return lines;
                     }
                 }
             }
         }
         catch { }
 
-        // 3. Fallback search: /api/search?q=...
+        return null;
+    }
+
+    private async Task<List<LyricLine>?> TryLrclibSearchAsync(
+        string trackName,
+        string artistName,
+        double durationSeconds,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(trackName)) return null;
+
         try
         {
-            string query = $"{cleanArtist} {cleanTitle}".Trim();
-            string searchUrl = $"https://lrclib.net/api/search?q={Uri.EscapeDataString(query)}";
-            using var resp = await client.GetAsync(searchUrl, cancellationToken).ConfigureAwait(false);
+            string searchUrl = $"https://lrclib.net/api/search?track_name={Uri.EscapeDataString(trackName)}&artist_name={Uri.EscapeDataString(artistName)}";
+            using var resp = await _lrclibHttpClient.GetAsync(searchUrl, cancellationToken).ConfigureAwait(false);
             if (resp.IsSuccessStatusCode)
             {
                 var json = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var items = JsonSerializer.Deserialize<List<LrclibResponse>>(json, _jsonOptions);
-                if (items != null)
+                if (items != null && items.Count > 0)
                 {
-                    foreach (var item in items)
+                    // Filter candidates that actually have SyncedLyrics
+                    var syncedCandidates = items.Where(x => !string.IsNullOrWhiteSpace(x.SyncedLyrics)).ToList();
+                    if (syncedCandidates.Count > 0)
                     {
-                        if (!string.IsNullOrWhiteSpace(item.SyncedLyrics))
+                        // Filter out candidates with duration mismatch > 4.5 seconds.
+                        // Picking a radio edit, live, or cut version causes a 20-30s desync!
+                        var compatible = syncedCandidates
+                            .Where(x => durationSeconds <= 0 || x.Duration <= 0 || Math.Abs(x.Duration - durationSeconds) <= 4.5)
+                            .OrderBy(x => durationSeconds > 0 && x.Duration > 0 ? Math.Abs(x.Duration - durationSeconds) : 0.0)
+                            .ThenBy(x =>
+                            {
+                                bool requestedLive = trackName.Contains("live", StringComparison.OrdinalIgnoreCase);
+                                bool isLive = (x.TrackName?.Contains("live", StringComparison.OrdinalIgnoreCase) == true) ||
+                                              (x.AlbumName?.Contains("live", StringComparison.OrdinalIgnoreCase) == true);
+                                return (!requestedLive && isLive) ? 1 : 0;
+                            })
+                            .ThenBy(x =>
+                            {
+                                bool requestedAcoustic = trackName.Contains("acoustic", StringComparison.OrdinalIgnoreCase);
+                                bool isAcoustic = (x.TrackName?.Contains("acoustic", StringComparison.OrdinalIgnoreCase) == true) ||
+                                                  (x.AlbumName?.Contains("acoustic", StringComparison.OrdinalIgnoreCase) == true);
+                                return (!requestedAcoustic && isAcoustic) ? 1 : 0;
+                            })
+                            .ToList();
+
+                        foreach (var best in compatible)
                         {
-                            var lines = LyricLine.ParseLrc(item.SyncedLyrics, durationSeconds);
-                            if (lines.Count > 0) return lines;
+                            if (string.IsNullOrWhiteSpace(best.SyncedLyrics)) continue;
+                            var lines = LyricLine.ParseLrc(best.SyncedLyrics, durationSeconds);
+                            if (lines.Count > 0 && lines.Any(l => l.HasTimestamp && l.Timestamp > TimeSpan.Zero))
+                            {
+                                return lines;
+                            }
                         }
                     }
                 }
@@ -1013,6 +1121,30 @@ public sealed class YandexMusicService : IYandexMusicService
         catch { }
 
         return null;
+    }
+
+    private static string CleanTitleForLyrics(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return string.Empty;
+
+        // Strip parenthetical/bracketed suffixes like "(Remastered 2021)", "[Deluxe Edition]", "(feat. Drake)", etc.
+        string cleaned = Regex.Replace(title, @"\s*[\(\[](?:remastered|remaster|deluxe|bonus|anniversary|feat\.?|featuring|version|mono|stereo)[^\)\]]*[\)\]]", "", RegexOptions.IgnoreCase);
+
+        // Strip trailing " - Remastered..." etc.
+        cleaned = Regex.Replace(cleaned, @"\s+-\s+(?:remastered|remaster|deluxe|mono|stereo|bonus track).*$", "", RegexOptions.IgnoreCase);
+
+        return cleaned.Trim();
+    }
+
+    private static string GetPrimaryArtist(string artist)
+    {
+        if (string.IsNullOrWhiteSpace(artist)) return string.Empty;
+        int commaIndex = artist.IndexOfAny(new[] { ',', '&', '/' });
+        if (commaIndex > 0)
+        {
+            return artist.Substring(0, commaIndex).Trim();
+        }
+        return artist.Trim();
     }
 
     public async Task<IReadOnlyList<Playlist>> GetPersonalPlaylistsAsync(CancellationToken cancellationToken = default)
@@ -1280,6 +1412,27 @@ public sealed class YandexMusicService : IYandexMusicService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API GetAlbumWithTracks Warning] {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<ArtistBriefInfoResult?> GetArtistBriefInfoAsync(long artistId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"artists/{artistId}/brief-info", null, cancellationToken).ConfigureAwait(false);
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var apiResult = JsonSerializer.Deserialize<YandexApiResponse<ArtistBriefInfoResult>>(json, _jsonOptions);
+            return apiResult?.Result;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetArtistBriefInfo Warning] {ex.Message}");
             return null;
         }
     }

@@ -751,6 +751,13 @@ public sealed class AudioPlayerService : IAudioPlayerService
                                 {
                                     _preloadedTrack = (nextTrack.Id, url, quality);
                                 }
+
+                                // Prefetch lyrics for next track in background
+                                _ = _yandexMusicService.GetTrackLyricsAsync(
+                                    nextTrack.Id,
+                                    nextTrack.Title,
+                                    nextTrack.ArtistNames,
+                                    nextTrack.Duration.TotalSeconds);
                             }
                             catch
                             {

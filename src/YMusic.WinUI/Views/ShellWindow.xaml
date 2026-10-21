@@ -91,9 +91,9 @@
         <controls:PlayerBarControl Grid.Row="2"
                                    x:Name="BottomPlayerBar" />
 
-        <!-- Now Playing & Karaoke Lyrics Drawer Overlay (Full Window Immersion, spans Rows 1 and 2) -->
-        <controls:NowPlayingDrawerControl Grid.Row="1"
-                                          Grid.RowSpan="2"
+        <!-- Now Playing & Karaoke Lyrics Drawer Overlay (Full Window Immersion, spans all rows 0..2) -->
+        <controls:NowPlayingDrawerControl Grid.Row="0"
+                                          Grid.RowSpan="3"
                                           x:Name="NowPlayingDrawer" />
     </Grid>
 </Window>

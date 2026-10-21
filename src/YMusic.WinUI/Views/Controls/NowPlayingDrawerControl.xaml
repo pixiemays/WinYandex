@@ -8,6 +8,7 @@
     xmlns:controls="using:YMusic.WinUI.Views.Controls"
     xmlns:models="using:YMusic.WinUI.Models"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
+    xmlns:helpers="using:YMusic.WinUI.Helpers"
     Loaded="UserControl_Loaded"
     Unloaded="UserControl_Unloaded"
     Visibility="Collapsed"
@@ -47,18 +48,19 @@
         <!-- 2. Main Layout Grid -->
         <Grid>
             <Grid.RowDefinitions>
-                <!-- Floating Glass Header Bar -->
-                <RowDefinition Height="64" />
+                <!-- Floating Glass Header Bar & Custom TitleBar Drag Region -->
+                <RowDefinition Height="54" />
                 <!-- Content Area: Left HD Cover & Full Player, Right Apple-style Lyrics -->
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Floating Glass Header Bar -->
+            <!-- Floating Glass Header Bar & Custom TitleBar Drag Region -->
             <Grid Grid.Row="0"
-                  Padding="24,10,24,10"
+                  x:Name="HeaderBarGrid"
+                  Padding="20,0,140,0"
                   BorderBrush="#18FFFFFF"
                   BorderThickness="0,0,0,1"
-                  Background="#22000000">
+                  Background="#25000000">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -68,26 +70,27 @@
                 <!-- Left: Collapse Button & Header Title -->
                 <StackPanel Grid.Column="0"
                             Orientation="Horizontal"
-                            Spacing="14"
+                            Spacing="12"
                             VerticalAlignment="Center">
                     <Button Command="{x:Bind ViewModel.CloseNowPlayingDrawerCommand}"
-                            Width="40"
-                            Height="40"
+                            Width="38"
+                            Height="38"
                             Padding="0"
-                            CornerRadius="20"
-                            Background="#25FFFFFF"
+                            CornerRadius="19"
+                            Background="#22FFFFFF"
                             BorderBrush="#25FFFFFF"
+                            helpers:CursorHelper.UseHandCursor="True"
                             ToolTipService.ToolTip="Collapse Now Playing (Esc)">
-                        <FontIcon Glyph="&#xE70D;" FontSize="18" Foreground="White" />
+                        <FontIcon Glyph="&#xE70D;" FontSize="16" Foreground="White" />
                     </Button>
 
                     <Border Background="#1CFFFFFF"
                             BorderBrush="#18FFFFFF"
                             BorderThickness="1"
-                            CornerRadius="16"
-                            Padding="12,6">
+                            CornerRadius="15"
+                            Padding="12,5">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <FontIcon Glyph="&#xEC4F;" FontSize="13" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                            <FontIcon Glyph="&#xEC4F;" FontSize="12" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
                             <TextBlock Text="NOW PLAYING"
                                        FontSize="11"
                                        FontWeight="Bold"
@@ -103,56 +106,60 @@
                             Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            Visibility="{x:Bind ViewModel.IsUserScrolledAway, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            Visibility="{x:Bind ViewModel.ShowSyncLyricsButton, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                     <Button Command="{x:Bind ViewModel.ResumeAutoScrollCommand}"
                             Style="{ThemeResource AccentButtonStyle}"
-                            Height="34"
-                            Padding="14,4"
-                            CornerRadius="17"
+                            Height="32"
+                            Padding="14,2"
+                            CornerRadius="16"
+                            helpers:CursorHelper.UseHandCursor="True"
                             ToolTipService.ToolTip="Re-center lyrics on playing line">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <FontIcon Glyph="&#xE895;" FontSize="13" />
+                            <FontIcon Glyph="&#xE895;" FontSize="12" />
                             <TextBlock Text="Sync to current line" FontSize="12" FontWeight="SemiBold" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
 
-                <!-- Right: Action Buttons (Album, Fullscreen, Close) -->
+                <!-- Right: Action Buttons (Album, Fullscreen, Collapse) - placed before the 140px window caption buttons area -->
                 <StackPanel Grid.Column="2"
                             Orientation="Horizontal"
-                            Spacing="10"
+                            Spacing="8"
                             VerticalAlignment="Center">
                     <Button Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
-                            Width="40"
-                            Height="40"
+                            Width="38"
+                            Height="38"
                             Padding="0"
-                            CornerRadius="20"
+                            CornerRadius="19"
                             Background="#20FFFFFF"
                             BorderBrush="#20FFFFFF"
+                            helpers:CursorHelper.UseHandCursor="True"
                             ToolTipService.ToolTip="View Album">
-                        <FontIcon Glyph="&#xE8D6;" FontSize="16" Foreground="White" />
+                        <FontIcon Glyph="&#xE8D6;" FontSize="15" Foreground="White" />
                     </Button>
 
                     <Button Click="FullscreenButton_Click"
-                            Width="40"
-                            Height="40"
+                            Width="38"
+                            Height="38"
                             Padding="0"
-                            CornerRadius="20"
+                            CornerRadius="19"
                             Background="#20FFFFFF"
                             BorderBrush="#20FFFFFF"
+                            helpers:CursorHelper.UseHandCursor="True"
                             ToolTipService.ToolTip="Toggle Fullscreen">
-                        <FontIcon x:Name="FullscreenIcon" Glyph="&#xE740;" FontSize="16" Foreground="White" />
+                        <FontIcon x:Name="FullscreenIcon" Glyph="&#xE740;" FontSize="15" Foreground="White" />
                     </Button>
 
                     <Button Command="{x:Bind ViewModel.CloseNowPlayingDrawerCommand}"
-                            Width="40"
-                            Height="40"
+                            Width="38"
+                            Height="38"
                             Padding="0"
-                            CornerRadius="20"
+                            CornerRadius="19"
                             Background="#20FFFFFF"
                             BorderBrush="#20FFFFFF"
-                            ToolTipService.ToolTip="Close (Esc)">
-                        <FontIcon Glyph="&#xE8BB;" FontSize="14" Foreground="White" />
+                            helpers:CursorHelper.UseHandCursor="True"
+                            ToolTipService.ToolTip="Collapse Now Playing (Esc)">
+                        <FontIcon Glyph="&#xE74B;" FontSize="14" Foreground="White" />
                     </Button>
                 </StackPanel>
             </Grid>
@@ -189,34 +196,39 @@
                             </Grid>
                         </Border>
 
-                        <!-- Track Title, Artists & Album -->
-                        <StackPanel Spacing="3" HorizontalAlignment="Left" Width="300">
-                            <TextBlock Text="{x:Bind ViewModel.TrackTitle, Mode=OneWay}"
-                                       FontFamily="Segoe UI Variable Display, Segoe UI"
-                                       FontSize="22"
-                                       FontWeight="Bold"
-                                       Foreground="White"
-                                       TextWrapping="Wrap"
-                                       MaxLines="2" />
-                            <TextBlock Text="{x:Bind ViewModel.ArtistNames, Mode=OneWay}"
-                                       FontSize="15"
-                                       FontWeight="Medium"
-                                       Foreground="#B5FFFFFF"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxLines="1" />
+                        <!-- Track Title & Artists (Interactive: Title opens album, Artist opens artist card) -->
+                        <StackPanel Spacing="4" HorizontalAlignment="Left" Width="300">
                             <HyperlinkButton Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
                                              Padding="0"
-                                             Margin="0,1,0,0"
+                                             Margin="0"
                                              HorizontalAlignment="Left"
-                                             ToolTipService.ToolTip="View Album">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <FontIcon Glyph="&#xE8D6;" FontSize="11" Foreground="#85FFFFFF" />
-                                    <TextBlock Text="{x:Bind ViewModel.CurrentTrack.AlbumTitle, Mode=OneWay}"
-                                               FontSize="12"
-                                               Foreground="#85FFFFFF"
-                                               TextTrimming="CharacterEllipsis"
-                                               MaxLines="1" />
-                                </StackPanel>
+                                             HorizontalContentAlignment="Left"
+                                             helpers:CursorHelper.UseHandCursor="True"
+                                             ToolTipService.ToolTip="Перейти к альбому">
+                                <TextBlock Text="{x:Bind ViewModel.TrackTitle, Mode=OneWay}"
+                                           FontFamily="Segoe UI Variable Display, Segoe UI"
+                                           FontSize="22"
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           TextWrapping="Wrap"
+                                           MaxLines="2"
+                                           IsHitTestVisible="False" />
+                            </HyperlinkButton>
+
+                            <HyperlinkButton Command="{x:Bind ViewModel.OpenCurrentArtistCommand}"
+                                             Padding="0"
+                                             Margin="0,2,0,0"
+                                             HorizontalAlignment="Left"
+                                             HorizontalContentAlignment="Left"
+                                             helpers:CursorHelper.UseHandCursor="True"
+                                             ToolTipService.ToolTip="Об исполнителе">
+                                <TextBlock Text="{x:Bind ViewModel.ArtistNames, Mode=OneWay}"
+                                           FontSize="15"
+                                           FontWeight="Medium"
+                                           Foreground="#B5FFFFFF"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxLines="1"
+                                           IsHitTestVisible="False" />
                             </HyperlinkButton>
                         </StackPanel>
 
@@ -229,6 +241,7 @@
                                     CornerRadius="18"
                                     Background="#25FFFFFF"
                                     BorderBrush="#25FFFFFF"
+                                    helpers:CursorHelper.UseHandCursor="True"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.LikeTooltip, Mode=OneWay}">
                                 <FontIcon Glyph="{x:Bind ViewModel.LikeGlyph, Mode=OneWay}"
                                           FontSize="16"
@@ -259,8 +272,8 @@
                                     VerticalAlignment="Center"
                                     Visibility="{x:Bind ViewModel.HasLyrics, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <FontIcon Glyph="&#xEC4F;" FontSize="11" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
-                                    <TextBlock Text="Synced Lyrics" FontSize="11" FontWeight="SemiBold" Foreground="#E0FFFFFF" VerticalAlignment="Center" />
+                                    <FontIcon Glyph="{x:Bind ViewModel.LyricsBadgeGlyph, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                                    <TextBlock Text="{x:Bind ViewModel.LyricsBadgeText, Mode=OneWay}" FontSize="11" FontWeight="SemiBold" Foreground="#E0FFFFFF" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -299,6 +312,7 @@
                                     CornerRadius="18"
                                     Background="Transparent"
                                     BorderBrush="Transparent"
+                                    helpers:CursorHelper.UseHandCursor="True"
                                     ToolTipService.ToolTip="Shuffle">
                                 <FontIcon Glyph="&#xE8B1;"
                                           FontSize="16"
@@ -313,6 +327,7 @@
                                     CornerRadius="19"
                                     Background="#20FFFFFF"
                                     BorderBrush="Transparent"
+                                    helpers:CursorHelper.UseHandCursor="True"
                                     ToolTipService.ToolTip="Previous">
                                 <FontIcon Glyph="&#xE892;" FontSize="16" Foreground="White" />
                             </Button>
@@ -324,6 +339,7 @@
                                     Padding="0"
                                     CornerRadius="25"
                                     Style="{ThemeResource AccentButtonStyle}"
+                                    helpers:CursorHelper.UseHandCursor="True"
                                     ToolTipService.ToolTip="Play / Pause">
                                 <FontIcon Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}"
                                           FontSize="20"
@@ -338,6 +354,7 @@
                                     CornerRadius="19"
                                     Background="#20FFFFFF"
                                     BorderBrush="Transparent"
+                                    helpers:CursorHelper.UseHandCursor="True"
                                     ToolTipService.ToolTip="Next">
                                 <FontIcon Glyph="&#xE893;" FontSize="16" Foreground="White" />
                             </Button>
@@ -350,6 +367,7 @@
                                     CornerRadius="18"
                                     Background="Transparent"
                                     BorderBrush="Transparent"
+                                    helpers:CursorHelper.UseHandCursor="True"
                                     ToolTipService.ToolTip="Repeat">
                                 <FontIcon Glyph="{x:Bind ViewModel.RepeatGlyph, Mode=OneWay}"
                                           FontSize="16"
@@ -368,6 +386,7 @@
                                     CornerRadius="16"
                                     Background="Transparent"
                                     BorderBrush="Transparent"
+                                    helpers:CursorHelper.UseHandCursor="True"
                                     ToolTipService.ToolTip="Mute / Unmute">
                                 <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" FontSize="14" Foreground="#B0FFFFFF" />
                             </Button>
@@ -386,45 +405,65 @@
                     <!-- Loading lyrics state -->
                     <StackPanel HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
-                                Spacing="18"
+                                Spacing="20"
                                 Visibility="{x:Bind ViewModel.IsLoadingLyrics, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <ProgressRing IsActive="True" Width="52" Height="52" />
-                        <TextBlock Text="Loading synchronized lyrics..."
-                                   FontFamily="Segoe UI Variable Display, Segoe UI"
-                                   FontSize="16"
-                                   FontWeight="Medium"
-                                   Foreground="#90FFFFFF"
-                                   HorizontalAlignment="Center" />
+                        <Grid Width="72" Height="72" HorizontalAlignment="Center">
+                            <Border Width="72"
+                                    Height="72"
+                                    CornerRadius="36"
+                                    Background="#14FFFFFF"
+                                    BorderBrush="#1EFFFFFF"
+                                    BorderThickness="1" />
+                            <ProgressRing IsActive="{x:Bind ViewModel.IsLoadingLyrics, Mode=OneWay}"
+                                          Width="44"
+                                          Height="44"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                        </Grid>
+                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                            <TextBlock Text="Loading lyrics..."
+                                       FontFamily="Segoe UI Variable Display, Segoe UI"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#E0FFFFFF"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="Looking for synchronized timecodes"
+                                       FontSize="13"
+                                       Foreground="#70FFFFFF"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- No lyrics state -->
                     <StackPanel HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Spacing="16"
-                                Visibility="{x:Bind ViewModel.HasLyrics, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=invert}">
-                        <Border Width="88"
-                                Height="88"
-                                CornerRadius="44"
-                                Background="#18FFFFFF"
-                                BorderBrush="#20FFFFFF"
-                                BorderThickness="1.5"
+                                Visibility="{x:Bind ViewModel.ShowNoLyricsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Border Width="80"
+                                Height="80"
+                                CornerRadius="40"
+                                Background="#14FFFFFF"
+                                BorderBrush="#1EFFFFFF"
+                                BorderThickness="1"
                                 HorizontalAlignment="Center">
                             <FontIcon Glyph="&#xEC4F;"
-                                      FontSize="38"
+                                      FontSize="34"
                                       Foreground="#60FFFFFF"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Text="{x:Bind ViewModel.LyricsStatusText, Mode=OneWay}"
-                                   FontFamily="Segoe UI Variable Display, Segoe UI"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"
-                                   Foreground="#E0FFFFFF"
-                                   HorizontalAlignment="Center" />
-                        <TextBlock Text="Enjoy the music"
-                                   FontSize="14"
-                                   Foreground="#70FFFFFF"
-                                   HorizontalAlignment="Center" />
+                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                            <TextBlock Text="{x:Bind ViewModel.LyricsStatusText, Mode=OneWay}"
+                                       FontFamily="Segoe UI Variable Display, Segoe UI"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#E0FFFFFF"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="Enjoy the music"
+                                       FontSize="13"
+                                       Foreground="#70FFFFFF"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- Synchronized Karaoke Lyrics List (Apple Music style) -->
@@ -446,38 +485,7 @@
 
                         <controls:ObservableListView.ItemTemplate>
                             <DataTemplate x:DataType="models:LyricLine">
-                                <Border Padding="18,12"
-                                        CornerRadius="14"
-                                        Background="Transparent"
-                                        HorizontalAlignment="Stretch">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-
-                                        <!-- Emotive Large Karaoke Line -->
-                                        <TextBlock Grid.Column="0"
-                                                   Text="{x:Bind Text}"
-                                                   FontFamily="Segoe UI Variable Display, Segoe UI"
-                                                   FontSize="{x:Bind LineFontSize, Mode=OneWay}"
-                                                   FontWeight="{x:Bind LineFontWeight, Mode=OneWay}"
-                                                   Foreground="{x:Bind Converter={StaticResource ActiveLyricToForegroundConverter}, Mode=OneWay}"
-                                                   Opacity="{x:Bind LineOpacity, Mode=OneWay}"
-                                                   TextWrapping="Wrap"
-                                                   LineHeight="44"
-                                                   VerticalAlignment="Center" />
-
-                                        <!-- Subtle Timestamp -->
-                                        <TextBlock Grid.Column="1"
-                                                   Text="{x:Bind FormattedTimestamp}"
-                                                   FontSize="12"
-                                                   Foreground="#50FFFFFF"
-                                                   Opacity="{x:Bind LineOpacity, Mode=OneWay}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="18,0,0,0" />
-                                    </Grid>
-                                </Border>
+                                <controls:LyricLineControl Line="{x:Bind}" />
                             </DataTemplate>
                         </controls:ObservableListView.ItemTemplate>
                     </controls:ObservableListView>

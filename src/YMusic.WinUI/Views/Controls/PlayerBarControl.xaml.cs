@@ -47,4 +47,20 @@ public sealed partial class PlayerBarControl : UserControl
             ViewModel.FinishSeeking(slider.Value);
         }
     }
+
+    private void CoverButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (CoverHoverOverlay != null)
+        {
+            CoverHoverOverlay.Opacity = 1;
+        }
+    }
+
+    private void CoverButton_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (CoverHoverOverlay != null)
+        {
+            CoverHoverOverlay.Opacity = 0;
+        }
+    }
 }

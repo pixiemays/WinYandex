@@ -24,6 +24,11 @@
             <converters:BoolToTrackHighlightBrushConverter x:Key="BoolToTrackHighlightBrushConverter" />
             <converters:BoolToPillBackgroundConverter x:Key="BoolToPillBackgroundConverter" />
             <converters:BoolToPillForegroundConverter x:Key="BoolToPillForegroundConverter" />
+            <converters:BoolToPinGlyphConverter x:Key="BoolToPinGlyphConverter" />
+            <converters:BoolToPinTooltipConverter x:Key="BoolToPinTooltipConverter" />
+            <converters:BoolToPinButtonTextConverter x:Key="BoolToPinButtonTextConverter" />
+            <converters:BoolToPinMenuTextConverter x:Key="BoolToPinMenuTextConverter" />
+            <converters:BoolToPinForegroundBrushConverter x:Key="BoolToPinForegroundBrushConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

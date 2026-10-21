@@ -46,6 +46,13 @@ public sealed partial class Album : ObservableObject
     [property: JsonIgnore]
     private bool _isLiked;
 
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isPinned;
+
+    [JsonIgnore]
+    public string PinKey => $"album:{Id}";
+
     [JsonPropertyName("id")]
     [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
     public long Id { get; set; }

@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
 using YMusic.WinUI.Converters;
 
 namespace YMusic.WinUI.Models;
@@ -38,8 +39,14 @@ public sealed class PlaylistTrackItem
     public Track? Track { get; set; }
 }
 
-public sealed class Playlist
+public sealed partial class Playlist : ObservableObject
 {
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isPinned;
+
+    [JsonIgnore]
+    public string PinKey => $"playlist:{Uid}:{Kind}";
     [JsonPropertyName("uid")]
     [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
     public long Uid { get; set; }

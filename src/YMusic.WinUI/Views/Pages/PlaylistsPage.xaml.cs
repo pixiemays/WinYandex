@@ -137,6 +137,38 @@ public sealed partial class PlaylistsPage : Page
         }
     }
 
+    private void PinPlaylist_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is Playlist playlist)
+        {
+            ViewModel.TogglePlaylistPinCommand.Execute(playlist);
+        }
+    }
+
+    private void TogglePlaylistPinContext_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is Playlist playlist)
+        {
+            ViewModel.TogglePlaylistPinCommand.Execute(playlist);
+        }
+    }
+
+    private void PinAlbum_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is Album album)
+        {
+            ViewModel.ToggleAlbumPinCommand.Execute(album);
+        }
+    }
+
+    private void ToggleAlbumPinContext_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is Album album)
+        {
+            ViewModel.ToggleAlbumPinCommand.Execute(album);
+        }
+    }
+
     public void ResetScrollAndHeader()
     {
         UpdatePlaylistHeaderCollapse(0);

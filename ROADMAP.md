@@ -15,7 +15,7 @@
 | 11 | **Localization / Мультиязычность (RU / EN)** | [ ] Planned | Full Russian and English localization with runtime language switching, .resw resource files, and localized UI/player strings |
 | 12 | **Интеграция FckCensor** | [ ] Planned | Короче надо засунуть аддон из pulsesync в прогу как опцию в настройках или тип того |
 | 13 | **Profile** | [ ] Planned | ну както профиль сделать а то там полузаглушка щас |
-| 14 | **Закрепление плейлистов и альбомов (Pinned Items)** | [ ] Planned | Возможность закреплять избранные плейлисты и альбомы в медиатеке (pin to top) для быстрого доступа |
+| 14 | **Закрепление плейлистов и альбомов (Pinned Items)** | [x] Done | Закрепление избранных плейлистов и альбомов (Pin to top) с автосортировкой наверх, визуальным бейджем «Pinned» и кнопкой пина на карточках, в контекстном меню (ПКМ) и в шапке детального просмотра, с локальным сохранением в `pinned_items.json` |
 
 ---
 

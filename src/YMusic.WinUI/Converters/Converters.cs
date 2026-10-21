@@ -317,3 +317,78 @@ public sealed class BoolToPillForegroundConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+public sealed class BoolToPinGlyphConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return value is bool b && b ? "\uE840" : "\uE718";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public sealed class BoolToPinTooltipConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return value is bool b && b ? "Unpin from top" : "Pin to top";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public sealed class BoolToPinButtonTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return value is bool b && b ? "Pinned" : "Pin";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public sealed class BoolToPinMenuTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return value is bool b && b ? "Unpin from top" : "Pin to top";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public sealed class BoolToPinForegroundBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool b && b)
+        {
+            if (Application.Current.Resources.TryGetValue("AccentFillColorDefaultBrush", out var accent) && accent is Brush ab)
+                return ab;
+            return new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 204, 0));
+        }
+
+        if (Application.Current.Resources.TryGetValue("TextFillColorPrimaryBrush", out var primary) && primary is Brush pb)
+            return pb;
+
+        return new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}

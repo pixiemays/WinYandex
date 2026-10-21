@@ -14,6 +14,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     private readonly IAudioPlayerService _audioPlayer;
     private readonly ICredentialStorageService _credentialStorage;
     private readonly ITrackPlaybackCoordinator _playbackCoordinator;
+    private readonly IPinnedItemsService _pinnedItemsService;
 
     public ObservableCollection<Playlist> Playlists { get; } = new();
     public ObservableCollection<Album> LikedAlbums { get; } = new();
@@ -26,6 +27,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(DetailDescription))]
     [NotifyPropertyChangedFor(nameof(DetailTypeBadge))]
     [NotifyPropertyChangedFor(nameof(DetailPlayButtonText))]
+    [NotifyPropertyChangedFor(nameof(IsDetailPinned))]
     private Playlist? _selectedPlaylist;
 
     [ObservableProperty]
@@ -35,7 +37,10 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(DetailDescription))]
     [NotifyPropertyChangedFor(nameof(DetailTypeBadge))]
     [NotifyPropertyChangedFor(nameof(DetailPlayButtonText))]
+    [NotifyPropertyChangedFor(nameof(IsDetailPinned))]
     private Album? _selectedAlbum;
+
+    public bool IsDetailPinned => SelectedPlaylist?.IsPinned ?? SelectedAlbum?.IsPinned ?? false;
 
     public string DetailTitle => SelectedPlaylist?.Title ?? SelectedAlbum?.Title ?? string.Empty;
     public string DetailSubtitle
@@ -99,13 +104,16 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         IYandexMusicService musicService,
         IAudioPlayerService audioPlayer,
         ICredentialStorageService credentialStorage,
-        ITrackPlaybackCoordinator playbackCoordinator)
+        ITrackPlaybackCoordinator playbackCoordinator,
+        IPinnedItemsService pinnedItemsService)
     {
         _musicService = musicService;
         _audioPlayer = audioPlayer;
         _credentialStorage = credentialStorage;
         _playbackCoordinator = playbackCoordinator;
+        _pinnedItemsService = pinnedItemsService;
 
+        _pinnedItemsService.PinStateChanged += OnPinStateChanged;
         _playbackCoordinator.Register(SelectedPlaylistTracks);
     }
 
@@ -159,14 +167,40 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
 
             RunOnUi(() =>
             {
-                Playlists.Clear();
                 foreach (var playlist in playlists)
+                {
+                    playlist.IsPinned = _pinnedItemsService.IsPlaylistPinned(playlist.Uid, playlist.Kind);
+                    if (playlist.IsPinned)
+                    {
+                        _pinnedItemsService.PinPlaylist(playlist.Uid, playlist.Kind, playlist.Title, playlist.CoverUrl);
+                    }
+                }
+                var sortedPlaylists = playlists
+                    .OrderByDescending(p => p.IsPinned)
+                    .ThenBy(p => _pinnedItemsService.GetPinOrder(p.PinKey))
+                    .ToList();
+
+                Playlists.Clear();
+                foreach (var playlist in sortedPlaylists)
                 {
                     Playlists.Add(playlist);
                 }
 
-                LikedAlbums.Clear();
                 foreach (var album in albums)
+                {
+                    album.IsPinned = _pinnedItemsService.IsAlbumPinned(album.Id);
+                    if (album.IsPinned)
+                    {
+                        _pinnedItemsService.PinAlbum(album.Id, album.Title, album.CoverUrl);
+                    }
+                }
+                var sortedAlbums = albums
+                    .OrderByDescending(a => a.IsPinned)
+                    .ThenBy(a => _pinnedItemsService.GetPinOrder(a.PinKey))
+                    .ToList();
+
+                LikedAlbums.Clear();
+                foreach (var album in sortedAlbums)
                 {
                     LikedAlbums.Add(album);
                 }
@@ -277,6 +311,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                 if (fullAlbum != null)
                 {
                     fullAlbum.IsLiked = _musicService.IsAlbumLiked(fullAlbum.Id);
+                    fullAlbum.IsPinned = _pinnedItemsService.IsAlbumPinned(fullAlbum.Id);
                     SelectedAlbum = fullAlbum;
                     FormattedTrackCount = fullAlbum.FormattedTrackCount;
                 }
@@ -438,6 +473,99 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         else
         {
             await _musicService.UnlikeTrackAsync(track.Id).ConfigureAwait(false);
+        }
+    }
+
+    [RelayCommand]
+    public void TogglePlaylistPin(Playlist? playlist)
+    {
+        if (playlist == null) return;
+        bool isPinned = _pinnedItemsService.TogglePlaylistPin(playlist.Uid, playlist.Kind, playlist.Title, playlist.CoverUrl);
+        playlist.IsPinned = isPinned;
+        ReorderPlaylists();
+        OnPropertyChanged(nameof(IsDetailPinned));
+    }
+
+    [RelayCommand]
+    public void ToggleAlbumPin(Album? album)
+    {
+        if (album == null) return;
+        bool isPinned = _pinnedItemsService.ToggleAlbumPin(album.Id, album.Title, album.CoverUrl);
+        album.IsPinned = isPinned;
+        ReorderAlbums();
+        OnPropertyChanged(nameof(IsDetailPinned));
+    }
+
+    [RelayCommand]
+    public void ToggleCurrentDetailPin()
+    {
+        if (SelectedPlaylist != null)
+        {
+            TogglePlaylistPin(SelectedPlaylist);
+        }
+        else if (SelectedAlbum != null)
+        {
+            ToggleAlbumPin(SelectedAlbum);
+        }
+    }
+
+    private void OnPinStateChanged(object? sender, string key)
+    {
+        RunOnUi(() =>
+        {
+            foreach (var p in Playlists)
+            {
+                if (string.Equals(p.PinKey, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    p.IsPinned = _pinnedItemsService.IsPinned(key);
+                    break;
+                }
+            }
+            foreach (var a in LikedAlbums)
+            {
+                if (string.Equals(a.PinKey, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    a.IsPinned = _pinnedItemsService.IsPinned(key);
+                    break;
+                }
+            }
+            ReorderPlaylists();
+            ReorderAlbums();
+            OnPropertyChanged(nameof(IsDetailPinned));
+        });
+    }
+
+    private void ReorderPlaylists()
+    {
+        var ordered = Playlists
+            .OrderByDescending(p => p.IsPinned)
+            .ThenBy(p => _pinnedItemsService.GetPinOrder(p.PinKey))
+            .ToList();
+
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            int oldIndex = Playlists.IndexOf(ordered[i]);
+            if (oldIndex >= 0 && oldIndex != i)
+            {
+                Playlists.Move(oldIndex, i);
+            }
+        }
+    }
+
+    private void ReorderAlbums()
+    {
+        var ordered = LikedAlbums
+            .OrderByDescending(a => a.IsPinned)
+            .ThenBy(a => _pinnedItemsService.GetPinOrder(a.PinKey))
+            .ToList();
+
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            int oldIndex = LikedAlbums.IndexOf(ordered[i]);
+            if (oldIndex >= 0 && oldIndex != i)
+            {
+                LikedAlbums.Move(oldIndex, i);
+            }
         }
     }
 }

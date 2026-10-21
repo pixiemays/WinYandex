@@ -56,6 +56,7 @@ public partial class App : Application
         services.AddSingleton<IEqualizerService, EqualizerService>();
         services.AddSingleton<ITrackPlaybackCoordinator, TrackPlaybackCoordinator>();
         services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<IPinnedItemsService, PinnedItemsService>();
 
         // ViewModels
         services.AddSingleton<PlayerBarViewModel>();

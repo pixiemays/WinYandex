@@ -14,6 +14,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
     private readonly IAudioPlayerService _audioPlayer;
     private readonly ITrackPlaybackCoordinator _playbackCoordinator;
     private readonly ICredentialStorageService _credentialStorage;
+    private readonly IPinnedItemsService _pinnedItemsService;
 
     public ObservableCollection<Playlist> PersonalPlaylists { get; } = new();
     public ObservableCollection<Playlist> EditorialPlaylists { get; } = new();
@@ -54,19 +55,25 @@ public sealed partial class ExploreViewModel : BaseViewModel
     [ObservableProperty]
     private bool _isLoadingDetail;
 
+    [ObservableProperty]
+    private bool _isDetailPinned;
+
     public bool HasLoaded { get; private set; }
 
     public ExploreViewModel(
         IYandexMusicService musicService,
         IAudioPlayerService audioPlayer,
         ITrackPlaybackCoordinator playbackCoordinator,
-        ICredentialStorageService credentialStorage)
+        ICredentialStorageService credentialStorage,
+        IPinnedItemsService pinnedItemsService)
     {
         _musicService = musicService;
         _audioPlayer = audioPlayer;
         _playbackCoordinator = playbackCoordinator;
         _credentialStorage = credentialStorage;
+        _pinnedItemsService = pinnedItemsService;
 
+        _pinnedItemsService.PinStateChanged += OnPinStateChanged;
         _playbackCoordinator.Register(DetailTracks);
         _playbackCoordinator.Register(ChartTracks);
     }
@@ -157,6 +164,8 @@ public sealed partial class ExploreViewModel : BaseViewModel
         DetailTypeBadge = playlist.Owner?.Login?.Contains("daily") == true ? "DAILY MIX" : "PLAYLIST";
         DetailMeta = $"{playlist.TrackCount} tracks";
         DetailTracks.Clear();
+        IsDetailPinned = _pinnedItemsService.IsPlaylistPinned(playlist.Uid, playlist.Kind);
+        playlist.IsPinned = IsDetailPinned;
         IsDetailOpen = true;
         IsLoadingDetail = true;
 
@@ -219,6 +228,8 @@ public sealed partial class ExploreViewModel : BaseViewModel
         DetailTypeBadge = "ALBUM";
         DetailMeta = album.Year.HasValue ? $"{album.Year.Value} • {album.TrackCount} tracks" : $"{album.TrackCount} tracks";
         DetailTracks.Clear();
+        IsDetailPinned = _pinnedItemsService.IsAlbumPinned(album.Id);
+        album.IsPinned = IsDetailPinned;
         IsDetailOpen = true;
         IsLoadingDetail = true;
 
@@ -379,5 +390,37 @@ public sealed partial class ExploreViewModel : BaseViewModel
         {
             await _musicService.UnlikeTrackAsync(track.Id).ConfigureAwait(false);
         }
+    }
+
+    [RelayCommand]
+    public void ToggleDetailPin()
+    {
+        if (ActivePlaylist != null)
+        {
+            IsDetailPinned = _pinnedItemsService.TogglePlaylistPin(ActivePlaylist.Uid, ActivePlaylist.Kind, ActivePlaylist.Title, ActivePlaylist.CoverUrl);
+            ActivePlaylist.IsPinned = IsDetailPinned;
+        }
+        else if (ActiveAlbum != null)
+        {
+            IsDetailPinned = _pinnedItemsService.ToggleAlbumPin(ActiveAlbum.Id, ActiveAlbum.Title, ActiveAlbum.CoverUrl);
+            ActiveAlbum.IsPinned = IsDetailPinned;
+        }
+    }
+
+    private void OnPinStateChanged(object? sender, string key)
+    {
+        RunOnUi(() =>
+        {
+            if (ActivePlaylist != null && string.Equals(ActivePlaylist.PinKey, key, StringComparison.OrdinalIgnoreCase))
+            {
+                IsDetailPinned = _pinnedItemsService.IsPinned(key);
+                ActivePlaylist.IsPinned = IsDetailPinned;
+            }
+            else if (ActiveAlbum != null && string.Equals(ActiveAlbum.PinKey, key, StringComparison.OrdinalIgnoreCase))
+            {
+                IsDetailPinned = _pinnedItemsService.IsPinned(key);
+                ActiveAlbum.IsPinned = IsDetailPinned;
+            }
+        });
     }
 }

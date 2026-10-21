@@ -541,6 +541,19 @@
                                 <TextBlock Text="Shuffle" />
                             </StackPanel>
                         </Button>
+
+                        <Button Command="{x:Bind ViewModel.ToggleDetailPinCommand}"
+                                Height="36"
+                                Padding="14,0"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinTooltipConverter}}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinGlyphConverter}}"
+                                          FontSize="13"
+                                          Foreground="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinForegroundBrushConverter}}" />
+                                <TextBlock Text="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinButtonTextConverter}}"
+                                           FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </Grid>

@@ -43,12 +43,26 @@
                         ItemInvoked="NavView_ItemInvoked"
                         SelectionChanged="NavView_SelectionChanged">
             
+            <NavigationView.AutoSuggestBox>
+                <AutoSuggestBox x:Name="NavAutoSuggestBox"
+                                QueryIcon="Find"
+                                PlaceholderText="Search catalog..."
+                                QuerySubmitted="NavAutoSuggestBox_QuerySubmitted" />
+            </NavigationView.AutoSuggestBox>
+
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="NavItemExplore"
                                     Content="Explore"
                                     Tag="Explore">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="NavItemSearch"
+                                    Content="Search"
+                                    Tag="Search">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE721;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemWave"

@@ -49,6 +49,13 @@ public sealed partial class ShellWindow : Window
                         }
                     }
                 }
+                else if ((e.Key == Windows.System.VirtualKey.F || e.Key == Windows.System.VirtualKey.K) &&
+                         Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down))
+                {
+                    NavigateToTag("Search");
+                    NavAutoSuggestBox?.Focus(FocusState.Programmatic);
+                    e.Handled = true;
+                }
             };
         }
 
@@ -147,6 +154,7 @@ public sealed partial class ShellWindow : Window
             tag = itemStr switch
             {
                 "Explore" or "Главное" => "Explore",
+                "Search" or "Поиск" => "Search",
                 "My Wave" or "Моя волна" => "Wave",
                 "Liked Tracks" => "Likes",
                 "Playlists" or "Playlists & Albums" => "Playlists",
@@ -173,6 +181,17 @@ public sealed partial class ShellWindow : Window
         }
 
         NavigateToTag(tag);
+    }
+
+    private void NavAutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        string query = args.QueryText?.Trim() ?? string.Empty;
+        NavigateToTag("Search");
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var searchVm = App.GetService<SearchViewModel>();
+            searchVm.SetQueryAndSearch(query);
+        }
     }
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -221,10 +240,12 @@ public sealed partial class ShellWindow : Window
         Type? targetPage = tag switch
         {
             "Explore" => typeof(ExplorePage),
+            "Search" => typeof(SearchPage),
             "Wave" => typeof(WavePage),
             "Likes" => typeof(LikedTracksPage),
             "Playlists" => typeof(PlaylistsPage),
             "Account" => typeof(LoginPage),
+            "Artist" => typeof(ArtistPage),
             _ => null
         };
 
@@ -235,6 +256,7 @@ public sealed partial class ShellWindow : Window
                 NavigationViewItem? navItem = tag switch
                 {
                     "Explore" => NavItemExplore,
+                    "Search" => NavItemSearch,
                     "Wave" => NavItemWave,
                     "Likes" => NavItemLikes,
                     "Playlists" => NavItemPlaylists,
@@ -244,6 +266,10 @@ public sealed partial class ShellWindow : Window
                 if (navItem != null && !ReferenceEquals(NavView.SelectedItem, navItem))
                 {
                     NavView.SelectedItem = navItem;
+                }
+                else if (navItem == null)
+                {
+                    NavView.SelectedItem = null;
                 }
 
                 if (ContentFrame.CurrentSourcePageType != targetPage)
@@ -269,12 +295,55 @@ public sealed partial class ShellWindow : Window
     public string? CurrentPageTag => ContentFrame.CurrentSourcePageType switch
     {
         Type t when t == typeof(ExplorePage) => "Explore",
+        Type t when t == typeof(SearchPage) => "Search",
         Type t when t == typeof(WavePage) => "Wave",
         Type t when t == typeof(LikedTracksPage) => "Likes",
         Type t when t == typeof(PlaylistsPage) => "Playlists",
         Type t when t == typeof(LoginPage) => "Account",
         _ => null
     };
+
+    public async Task NavigateToArtistAsync(Artist artist)
+    {
+        App.GetService<PlayerBarViewModel>().IsNowPlayingDrawerOpen = false;
+
+        var artistVm = App.GetService<ArtistViewModel>();
+        string? currentTag = CurrentPageTag;
+        if (!string.IsNullOrEmpty(currentTag))
+        {
+            artistVm.PreviousPageTag = currentTag;
+        }
+
+        NavView.SelectedItem = null;
+        if (ContentFrame.CurrentSourcePageType != typeof(ArtistPage))
+        {
+            ContentFrame.Navigate(typeof(ArtistPage));
+        }
+        (ContentFrame.Content as ArtistPage)?.ResetScroll();
+
+        await artistVm.LoadArtistAsync(artist);
+    }
+
+    public async Task NavigateToArtistByIdAsync(long artistId, string? artistName = null)
+    {
+        App.GetService<PlayerBarViewModel>().IsNowPlayingDrawerOpen = false;
+
+        var artistVm = App.GetService<ArtistViewModel>();
+        string? currentTag = CurrentPageTag;
+        if (!string.IsNullOrEmpty(currentTag))
+        {
+            artistVm.PreviousPageTag = currentTag;
+        }
+
+        NavView.SelectedItem = null;
+        if (ContentFrame.CurrentSourcePageType != typeof(ArtistPage))
+        {
+            ContentFrame.Navigate(typeof(ArtistPage));
+        }
+        (ContentFrame.Content as ArtistPage)?.ResetScroll();
+
+        await artistVm.LoadArtistByIdAsync(artistId, artistName);
+    }
 
     public void SelectPlaylistsTab()
     {

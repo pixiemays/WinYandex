@@ -59,6 +59,9 @@ public sealed class Artist
 
     [JsonIgnore]
     public string FormattedGenres => Genres != null && Genres.Count > 0 ? string.Join(", ", Genres) : string.Empty;
+
+    [JsonIgnore]
+    public string GenresString => !string.IsNullOrWhiteSpace(FormattedGenres) ? FormattedGenres : "Исполнитель";
 }
 
 public sealed class ArtistCounts
@@ -116,4 +119,25 @@ public sealed class ArtistBriefInfoResult
 
     [JsonPropertyName("stats")]
     public ArtistStats? Stats { get; set; }
+}
+
+public sealed class ArtistAlbumsResponse
+{
+    [JsonPropertyName("albums")]
+    public List<Album>? Albums { get; set; }
+
+    [JsonPropertyName("pager")]
+    public PagerInfo? Pager { get; set; }
+}
+
+public sealed class PagerInfo
+{
+    [JsonPropertyName("page")]
+    public int Page { get; set; }
+
+    [JsonPropertyName("perPage")]
+    public int PerPage { get; set; }
+
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
 }

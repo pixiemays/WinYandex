@@ -53,7 +53,8 @@ public sealed partial class ShellViewModel : BaseViewModel
                     }
                     else
                     {
-                        IsAuthenticated = false;
+                        // Maintain authentication if valid token is stored
+                        IsAuthenticated = !string.IsNullOrWhiteSpace(_credentialStorage.GetToken());
                     }
                 });
 
@@ -62,9 +63,10 @@ public sealed partial class ShellViewModel : BaseViewModel
                     _ = _musicService.EnsureLikedTracksLoadedAsync();
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                RunOnUi(() => IsAuthenticated = false);
+                System.Diagnostics.Debug.WriteLine($"[ShellViewModel Initialize warning] {ex.Message}");
+                RunOnUi(() => IsAuthenticated = !string.IsNullOrWhiteSpace(_credentialStorage.GetToken()));
             }
         }
         else

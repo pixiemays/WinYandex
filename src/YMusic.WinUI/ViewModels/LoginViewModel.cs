@@ -63,11 +63,10 @@ public sealed partial class LoginViewModel : BaseViewModel
             }
             else
             {
-                _credentialStorage.RemoveToken();
                 RunOnUi(() =>
                 {
                     IsLoggedIn = false;
-                    ErrorMessage = "Stored session expired. Please sign in again.";
+                    ErrorMessage = "Unable to connect to Yandex Music. Please check your internet connection.";
                 });
             }
         }

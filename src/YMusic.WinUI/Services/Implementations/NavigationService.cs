@@ -142,4 +142,96 @@ public sealed class NavigationService : INavigationService
 
         await tcs.Task;
     }
+
+    public async Task NavigateToArtistAsync(Artist artist)
+    {
+        if (artist == null || _shellWindow == null) return;
+
+        var tcs = new TaskCompletionSource();
+
+        void Execute()
+        {
+            try
+            {
+                _ = _shellWindow.NavigateToArtistAsync(artist).ContinueWith(_ =>
+                {
+                    tcs.TrySetResult();
+                });
+            }
+            catch (Exception ex)
+            {
+                tcs.TrySetException(ex);
+            }
+        }
+
+        var dispatcher = App.MainDispatcherQueue;
+        if (dispatcher != null && !dispatcher.HasThreadAccess)
+        {
+            dispatcher.TryEnqueue(Execute);
+        }
+        else
+        {
+            Execute();
+        }
+
+        await tcs.Task;
+    }
+
+    public async Task NavigateToArtistByIdAsync(long artistId, string? artistName = null)
+    {
+        if (_shellWindow == null) return;
+
+        var tcs = new TaskCompletionSource();
+
+        void Execute()
+        {
+            try
+            {
+                _ = _shellWindow.NavigateToArtistByIdAsync(artistId, artistName).ContinueWith(_ =>
+                {
+                    tcs.TrySetResult();
+                });
+            }
+            catch (Exception ex)
+            {
+                tcs.TrySetException(ex);
+            }
+        }
+
+        var dispatcher = App.MainDispatcherQueue;
+        if (dispatcher != null && !dispatcher.HasThreadAccess)
+        {
+            dispatcher.TryEnqueue(Execute);
+        }
+        else
+        {
+            Execute();
+        }
+
+        await tcs.Task;
+    }
+
+    public void NavigateToSearch(string? query = null)
+    {
+        void Execute()
+        {
+            if (_shellWindow == null) return;
+            _shellWindow.NavigateToTag("Search");
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var searchVm = App.GetService<SearchViewModel>();
+                searchVm.SetQueryAndSearch(query);
+            }
+        }
+
+        var dispatcher = App.MainDispatcherQueue;
+        if (dispatcher != null && !dispatcher.HasThreadAccess)
+        {
+            dispatcher.TryEnqueue(Execute);
+        }
+        else
+        {
+            Execute();
+        }
+    }
 }

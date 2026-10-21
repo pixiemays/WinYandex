@@ -32,6 +32,12 @@ public interface IYandexMusicService
     bool IsAlbumLiked(long albumId);
     event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
 
+    Task<bool> LikeArtistAsync(long artistId, CancellationToken cancellationToken = default);
+    Task<bool> UnlikeArtistAsync(long artistId, CancellationToken cancellationToken = default);
+    bool IsArtistLiked(long artistId);
+    Task EnsureLikedArtistsLoadedAsync(CancellationToken cancellationToken = default);
+    event EventHandler<(long ArtistId, bool IsLiked)>? ArtistLikeChanged;
+
     AudioQualityPreference PreferredQuality { get; set; }
 
     Task<string?> GetTrackDownloadUrlAsync(string trackId, CancellationToken cancellationToken = default);
@@ -49,5 +55,8 @@ public interface IYandexMusicService
     Task<Playlist?> GetPlaylistWithTracksAsync(long ownerUid, int kind, CancellationToken cancellationToken = default);
     Task<Album?> GetAlbumWithTracksAsync(long albumId, CancellationToken cancellationToken = default);
     Task<ArtistBriefInfoResult?> GetArtistBriefInfoAsync(long artistId, CancellationToken cancellationToken = default);
+    Task<List<Album>> GetArtistDirectAlbumsAsync(long artistId, int page = 0, int pageSize = 100, CancellationToken cancellationToken = default);
+    Task<List<Album>> GetArtistAlsoAlbumsAsync(long artistId, int page = 0, int pageSize = 100, CancellationToken cancellationToken = default);
+    Task<SearchResult?> SearchAsync(string query, string type = "all", int page = 0, CancellationToken cancellationToken = default);
 }
 

@@ -133,6 +133,15 @@ public sealed class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
+        if (parameter != null)
+        {
+            string valStr = value?.ToString() ?? string.Empty;
+            string paramStr = parameter.ToString() ?? string.Empty;
+            return string.Equals(valStr, paramStr, StringComparison.OrdinalIgnoreCase)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
         bool isNull = value == null;
         if (value is int count) isNull = count <= 0;
         else if (value is long lCount) isNull = lCount <= 0;

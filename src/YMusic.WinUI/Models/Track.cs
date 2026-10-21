@@ -16,6 +16,9 @@ public sealed partial class Track : ObservableObject
     [property: JsonIgnore]
     private bool _isPlaying;
 
+    [JsonIgnore]
+    public bool IsCurrentTrack => IsCurrent;
+
     [ObservableProperty]
     [property: JsonIgnore]
     private bool _isLiked;

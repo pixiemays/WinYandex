@@ -24,6 +24,7 @@ public sealed class YandexMusicService : IYandexMusicService
     private readonly ICredentialStorageService? _credentialStorage;
     private readonly HashSet<string> _likedTrackIds = new();
     private readonly HashSet<long> _likedAlbumIds = new();
+    private readonly HashSet<long> _likedArtistIds = new();
     private readonly ConcurrentDictionary<string, List<LyricLine>> _lyricsCache = new();
     private static readonly HttpClient _lrclibHttpClient = new HttpClient
     {
@@ -39,6 +40,7 @@ public sealed class YandexMusicService : IYandexMusicService
     public event EventHandler? UnauthorizedResponseReceived;
     public event EventHandler<(string TrackId, bool IsLiked)>? TrackLikeChanged;
     public event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
+    public event EventHandler<(long ArtistId, bool IsLiked)>? ArtistLikeChanged;
     public event EventHandler? LikedTracksLoaded;
 
     public string? CurrentToken => _token;
@@ -659,6 +661,140 @@ public sealed class YandexMusicService : IYandexMusicService
         }
     }
 
+
+    public bool IsArtistLiked(long artistId)
+    {
+        lock (_likedArtistIds)
+        {
+            return _likedArtistIds.Contains(artistId);
+        }
+    }
+
+    public async Task EnsureLikedArtistsLoadedAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_likedArtistIds)
+        {
+            if (_likedArtistIds.Count > 0) return;
+        }
+
+        string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(userId)) return;
+
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"users/{userId}/likes/artists", null, cancellationToken).ConfigureAwait(false);
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resEl) && resEl.ValueKind == JsonValueKind.Array)
+                {
+                    lock (_likedArtistIds)
+                    {
+                        foreach (var item in resEl.EnumerateArray())
+                        {
+                            if (item.TryGetProperty("artist", out var artEl) && artEl.TryGetProperty("id", out var subId) && subId.TryGetInt64(out long sid))
+                            {
+                                _likedArtistIds.Add(sid);
+                            }
+                            else if (item.TryGetProperty("id", out var idEl) && idEl.TryGetInt64(out long id))
+                            {
+                                _likedArtistIds.Add(id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[EnsureLikedArtistsLoaded warning] {ex.Message}");
+        }
+    }
+
+    public async Task<bool> LikeArtistAsync(long artistId, CancellationToken cancellationToken = default)
+    {
+        lock (_likedArtistIds)
+        {
+            _likedArtistIds.Add(artistId);
+        }
+        ArtistLikeChanged?.Invoke(this, (artistId, true));
+
+        try
+        {
+            string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                lock (_likedArtistIds) { _likedArtistIds.Remove(artistId); }
+                ArtistLikeChanged?.Invoke(this, (artistId, false));
+                return false;
+            }
+
+            var formValues = new List<KeyValuePair<string, string>>
+            {
+                new("artist-id", artistId.ToString())
+            };
+            using var content = new FormUrlEncodedContent(formValues);
+            using var response = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/artists/add", content, cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            lock (_likedArtistIds) { _likedArtistIds.Remove(artistId); }
+            ArtistLikeChanged?.Invoke(this, (artistId, false));
+            return false;
+        }
+        catch
+        {
+            lock (_likedArtistIds) { _likedArtistIds.Remove(artistId); }
+            ArtistLikeChanged?.Invoke(this, (artistId, false));
+            throw;
+        }
+    }
+
+    public async Task<bool> UnlikeArtistAsync(long artistId, CancellationToken cancellationToken = default)
+    {
+        lock (_likedArtistIds)
+        {
+            _likedArtistIds.Remove(artistId);
+        }
+        ArtistLikeChanged?.Invoke(this, (artistId, false));
+
+        try
+        {
+            string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                lock (_likedArtistIds) { _likedArtistIds.Add(artistId); }
+                ArtistLikeChanged?.Invoke(this, (artistId, true));
+                return false;
+            }
+
+            var formValues = new List<KeyValuePair<string, string>>
+            {
+                new("artist-id", artistId.ToString())
+            };
+            using var content = new FormUrlEncodedContent(formValues);
+            using var response = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/artists/remove", content, cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            lock (_likedArtistIds) { _likedArtistIds.Add(artistId); }
+            ArtistLikeChanged?.Invoke(this, (artistId, true));
+            return false;
+        }
+        catch
+        {
+            lock (_likedArtistIds) { _likedArtistIds.Add(artistId); }
+            ArtistLikeChanged?.Invoke(this, (artistId, true));
+            throw;
+        }
+    }
 
     public AudioQualityPreference PreferredQuality { get; set; } = AudioQualityPreference.AacPreferred;
 
@@ -1433,6 +1569,170 @@ public sealed class YandexMusicService : IYandexMusicService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API GetArtistBriefInfo Warning] {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<List<Album>> GetArtistDirectAlbumsAsync(long artistId, int page = 0, int pageSize = 100, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var allAlbums = new List<Album>();
+            int currentPage = page;
+            int total = int.MaxValue;
+
+            while (allAlbums.Count < total && currentPage < 10)
+            {
+                using var response = await SendRequestAsync(HttpMethod.Get, $"artists/{artistId}/direct-albums?page={currentPage}&page-size={pageSize}", null, cancellationToken).ConfigureAwait(false);
+                if (response == null || !response.IsSuccessStatusCode)
+                {
+                    break;
+                }
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var apiResult = JsonSerializer.Deserialize<YandexApiResponse<ArtistAlbumsResponse>>(json, _jsonOptions);
+                var result = apiResult?.Result;
+                if (result?.Albums == null || result.Albums.Count == 0)
+                {
+                    break;
+                }
+
+                foreach (var album in result.Albums)
+                {
+                    album.IsLiked = IsAlbumLiked(album.Id);
+                    allAlbums.Add(album);
+                }
+
+                if (result.Pager != null)
+                {
+                    total = result.Pager.Total;
+                }
+                else
+                {
+                    break;
+                }
+
+                if (result.Albums.Count < pageSize)
+                {
+                    break;
+                }
+
+                currentPage++;
+            }
+
+            return allAlbums;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetArtistDirectAlbums Warning] {ex.Message}");
+            return new List<Album>();
+        }
+    }
+
+    public async Task<List<Album>> GetArtistAlsoAlbumsAsync(long artistId, int page = 0, int pageSize = 100, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"artists/{artistId}/also-albums?page={page}&page-size={pageSize}", null, cancellationToken).ConfigureAwait(false);
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                return new List<Album>();
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var apiResult = JsonSerializer.Deserialize<YandexApiResponse<ArtistAlbumsResponse>>(json, _jsonOptions);
+            var albums = apiResult?.Result?.Albums ?? new List<Album>();
+            foreach (var album in albums)
+            {
+                album.IsLiked = IsAlbumLiked(album.Id);
+            }
+            return albums;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetArtistAlsoAlbums Warning] {ex.Message}");
+            return new List<Album>();
+        }
+    }
+
+    public async Task<SearchResult?> SearchAsync(
+        string query,
+        string type = "all",
+        int page = 0,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return null;
+        }
+
+        try
+        {
+            string endpoint = $"search?text={Uri.EscapeDataString(query.Trim())}&type={type}&page={page}&nocorrect=false";
+            using var response = await SendRequestAsync(HttpMethod.Get, endpoint, null, cancellationToken).ConfigureAwait(false);
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var apiResult = JsonSerializer.Deserialize<YandexApiResponse<SearchResult>>(json, _jsonOptions);
+            var result = apiResult?.Result;
+
+            if (result != null)
+            {
+                if (result.Best != null && result.Best.ResultElement.ValueKind == JsonValueKind.Object)
+                {
+                    var rawText = result.Best.ResultElement.GetRawText();
+                    switch (result.Best.Type)
+                    {
+                        case "artist":
+                            result.Best.Artist = JsonSerializer.Deserialize<Artist>(rawText, _jsonOptions);
+                            break;
+                        case "track":
+                            result.Best.Track = JsonSerializer.Deserialize<Track>(rawText, _jsonOptions);
+                            break;
+                        case "album":
+                            result.Best.Album = JsonSerializer.Deserialize<Album>(rawText, _jsonOptions);
+                            break;
+                        case "playlist":
+                            result.Best.Playlist = JsonSerializer.Deserialize<Playlist>(rawText, _jsonOptions);
+                            break;
+                    }
+                }
+
+                if (result.Tracks?.Results != null)
+                {
+                    foreach (var track in result.Tracks.Results)
+                    {
+                        track.IsLiked = IsTrackLiked(track.Id);
+                    }
+                }
+
+                if (result.Best?.Track != null)
+                {
+                    result.Best.Track.IsLiked = IsTrackLiked(result.Best.Track.Id);
+                }
+
+                if (result.Albums?.Results != null)
+                {
+                    foreach (var album in result.Albums.Results)
+                    {
+                        album.IsLiked = IsAlbumLiked(album.Id);
+                    }
+                }
+
+                if (result.Best?.Album != null)
+                {
+                    result.Best.Album.IsLiked = IsAlbumLiked(result.Best.Album.Id);
+                }
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Search Warning] {ex.Message}");
             return null;
         }
     }

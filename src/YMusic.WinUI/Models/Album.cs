@@ -63,6 +63,26 @@ public sealed partial class Album : ObservableObject
     [JsonPropertyName("year")]
     public int? Year { get; set; }
 
+    [JsonPropertyName("releaseDate")]
+    public string? ReleaseDate { get; set; }
+
+    [JsonIgnore]
+    public DateTime? ParsedReleaseDate
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(ReleaseDate) && DateTime.TryParse(ReleaseDate, out var dt))
+            {
+                return dt;
+            }
+            if (Year.HasValue && Year.Value > 0)
+            {
+                return new DateTime(Year.Value, 1, 1);
+            }
+            return null;
+        }
+    }
+
     [JsonPropertyName("coverUri")]
     public string? CoverUri { get; set; }
 
@@ -71,6 +91,15 @@ public sealed partial class Album : ObservableObject
 
     [JsonPropertyName("trackCount")]
     public int TrackCount { get; set; }
+
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
+
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
+
+    [JsonPropertyName("metaType")]
+    public string? MetaType { get; set; }
 
     [JsonPropertyName("genre")]
     public string? Genre { get; set; }
@@ -87,7 +116,15 @@ public sealed partial class Album : ObservableObject
         : string.Empty;
 
     [JsonIgnore]
-    public string FormattedTrackCount => TrackCount == 1 ? "1 track" : $"{TrackCount} tracks";
+    public string FormattedTrackCount => string.Equals(Type, "single", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(MetaType, "single", StringComparison.OrdinalIgnoreCase)
+        ? "Сингл"
+        : TrackCount switch
+        {
+            1 => "1 трек",
+            2 or 3 or 4 => $"{TrackCount} трека",
+            _ => $"{TrackCount} треков"
+        };
 
     [JsonIgnore]
     public string FormattedYearAndTracks => Year.HasValue ? $"{Year.Value} • {FormattedTrackCount}" : FormattedTrackCount;

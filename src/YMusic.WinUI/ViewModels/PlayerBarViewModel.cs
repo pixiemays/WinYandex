@@ -655,8 +655,6 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         }
     }
 
-    private static ContentDialog? _activeContentDialog;
-
     [RelayCommand]
     public async Task OpenCurrentAlbumAsync()
     {
@@ -691,54 +689,21 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     {
         if (CurrentTrack == null) return;
 
+        IsNowPlayingDrawerOpen = false;
+
         var primaryArtist = CurrentTrack.Artists?.FirstOrDefault();
         long artistId = primaryArtist?.Id ?? 0;
         string artistName = !string.IsNullOrWhiteSpace(primaryArtist?.Name)
             ? primaryArtist.Name
             : CurrentTrack.ArtistNames;
 
-        await OpenArtistCardAsync(artistId, artistName);
-    }
-
-    public async Task OpenArtistCardAsync(long artistId, string artistName)
-    {
-        var xamlRoot = App.MainWindow?.Content?.XamlRoot;
-        if (xamlRoot == null) return;
-
-        try
+        if (primaryArtist != null && primaryArtist.Id > 0)
         {
-            if (_activeContentDialog != null)
-            {
-                _activeContentDialog.Hide();
-                _activeContentDialog = null;
-            }
-
-            var dialog = new ArtistCardDialog(_audioPlayer, _navigationService, _musicService)
-            {
-                XamlRoot = xamlRoot
-            };
-            dialog.SetBasicInfo(artistName);
-            dialog.SetNavigationCallback(() =>
-            {
-                IsNowPlayingDrawerOpen = false;
-            });
-
-            _activeContentDialog = dialog;
-
-            var showTask = dialog.ShowAsync();
-            if (artistId > 0)
-            {
-                _ = dialog.LoadArtistDataAsync(artistId);
-            }
-            await showTask;
+            await _navigationService.NavigateToArtistAsync(primaryArtist);
         }
-        catch (Exception ex)
+        else if (artistId > 0)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpenArtistCard Error]: {ex.Message}");
-        }
-        finally
-        {
-            _activeContentDialog = null;
+            await _navigationService.NavigateToArtistByIdAsync(artistId, artistName);
         }
     }
 

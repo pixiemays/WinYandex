@@ -67,6 +67,8 @@ public partial class App : Application
         services.AddSingleton<ExploreViewModel>();
         services.AddSingleton<LikedTracksViewModel>();
         services.AddSingleton<PlaylistsViewModel>();
+        services.AddSingleton<SearchViewModel>();
+        services.AddSingleton<ArtistViewModel>();
 
         return services.BuildServiceProvider();
     }

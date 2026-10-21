@@ -39,15 +39,63 @@ public sealed class TrackSupplementResult
     public TrackLyricsResult? Lyrics { get; set; }
 }
 
+public sealed class LrclibResponse
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("trackName")]
+    public string? TrackName { get; set; }
+
+    [JsonPropertyName("artistName")]
+    public string? ArtistName { get; set; }
+
+    [JsonPropertyName("albumName")]
+    public string? AlbumName { get; set; }
+
+    [JsonPropertyName("duration")]
+    public double Duration { get; set; }
+
+    [JsonPropertyName("instrumental")]
+    public bool Instrumental { get; set; }
+
+    [JsonPropertyName("plainLyrics")]
+    public string? PlainLyrics { get; set; }
+
+    [JsonPropertyName("syncedLyrics")]
+    public string? SyncedLyrics { get; set; }
+}
+
 public sealed partial class LyricLine : ObservableObject
 {
     public TimeSpan Timestamp { get; set; }
     public string Text { get; set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LineOpacity))]
+    [NotifyPropertyChangedFor(nameof(LineFontSize))]
+    [NotifyPropertyChangedFor(nameof(LineFontWeight))]
     private bool _isActive;
 
-    public static List<LyricLine> ParseLrc(string rawLrc)
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LineOpacity))]
+    private bool _isPast;
+
+    public bool HasTimestamp => Timestamp >= TimeSpan.Zero;
+
+    public string FormattedTimestamp => Timestamp >= TimeSpan.Zero
+        ? (Timestamp.Hours > 0 ? Timestamp.ToString(@"h\:mm\:ss") : Timestamp.ToString(@"m\:ss"))
+        : string.Empty;
+
+    public double LineOpacity => IsActive ? 1.0 : (IsPast ? 0.35 : 0.65);
+
+    public double LineFontSize => IsActive ? 32.0 : 24.0;
+
+    public Windows.UI.Text.FontWeight LineFontWeight => IsActive
+        ? Microsoft.UI.Text.FontWeights.ExtraBold
+        : Microsoft.UI.Text.FontWeights.SemiBold;
+
+    public static List<LyricLine> ParseLrc(string rawLrc, double durationSeconds = 0)
     {
         var result = new List<LyricLine>();
         if (string.IsNullOrWhiteSpace(rawLrc))
@@ -105,6 +153,22 @@ public sealed partial class LyricLine : ObservableObject
         }
 
         result.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+
+        // If lyrics only have plain text without timestamps, distribute timestamps proportionally across duration
+        bool hasTimestamps = result.Any(l => l.Timestamp > TimeSpan.Zero);
+        if (!hasTimestamps && result.Count > 0 && durationSeconds > 10)
+        {
+            double introSec = Math.Min(12.0, durationSeconds * 0.08);
+            double outroSec = Math.Min(10.0, durationSeconds * 0.06);
+            double singDuration = Math.Max(durationSeconds - introSec - outroSec, durationSeconds * 0.7);
+            double step = singDuration / Math.Max(1, result.Count);
+
+            for (int i = 0; i < result.Count; i++)
+            {
+                result[i].Timestamp = TimeSpan.FromSeconds(introSec + (i * step));
+            }
+        }
+
         return result;
     }
 }

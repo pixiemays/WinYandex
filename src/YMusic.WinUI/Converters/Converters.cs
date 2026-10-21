@@ -392,3 +392,55 @@ public sealed class BoolToPinForegroundBrushConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+public sealed class BoolToSubtleHighlightBrushConverter : IValueConverter
+{
+    private static readonly SolidColorBrush TransparentBrush = new(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool b && b)
+        {
+            if (Application.Current.Resources.TryGetValue("SubtleFillColorSecondaryBrush", out var brush) && brush is Brush sb)
+            {
+                return sb;
+            }
+            return new SolidColorBrush(Windows.UI.Color.FromArgb(30, 255, 255, 255));
+        }
+
+        return TransparentBrush;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public sealed class ActiveLyricToForegroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is LyricLine line)
+        {
+            if (line.IsActive)
+            {
+                return new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));
+            }
+
+            if (line.IsPast)
+            {
+                return new SolidColorBrush(Windows.UI.Color.FromArgb(120, 255, 255, 255));
+            }
+
+            return new SolidColorBrush(Windows.UI.Color.FromArgb(215, 255, 255, 255));
+        }
+
+        return new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}

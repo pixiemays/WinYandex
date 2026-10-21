@@ -73,6 +73,9 @@ public sealed partial class Track : ObservableObject
     public string? CoverUrl => GetCoverUrl(200);
 
     [JsonIgnore]
+    public string? HdCoverUrl => GetCoverUrl(800);
+
+    [JsonIgnore]
     public string? ThumbnailUrl => GetCoverUrl(100);
 
     public string? GetCoverUrl(int size = 200)

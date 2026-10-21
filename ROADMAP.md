@@ -7,7 +7,7 @@
 | 3 | **Gapless Playback & 80% Preloading** | [x] Done | Background stream resolution at 80% track progress to eliminate buffering delays between tracks |
 | 4 | **«Моя волна» (My Wave)** | [x] Done | Endless personalized radio stream (`user:onyourwave`), mood/activity presets, interactive Up Next queue, isolated playback mode, like/dislike feedback & instant Liked Tracks sync |
 | 5 | **Альбомы и плейлисты от яндекса** | [x] Done | Реализован раздел «Explore» («Главное») с витринами «Плейлист дня / Собрано для вас», популярными редакционными плейлистами, новыми альбомами/релизами, топ-чартом и полноэкранным просмотром плейлистов/альбомов с треклистами и воспроизведением |
-| 6 | **Now Playing Drawer & Karaoke Lyrics** | [ ] Up Next | HD cover view, LRC timed lyrics with real-time synchronized karaoke highlight and auto-scroll |
+| 6 | **Now Playing Drawer & Karaoke Lyrics** | [x] Done | HD cover view (800x800), ambient blurred backdrop, LRC timed lyrics with real-time synchronized karaoke highlight, smooth auto-scroll with manual scroll detection & sync button, clickable lyric seeking, fullscreen mode & hotkeys (L / Esc) |
 | 7 | **Global Catalog Search** | [ ] Planned | Full Yandex Music catalog search with tabbed categories (Tracks, Albums, Artists, Playlists) and counters |
 | 8 | **Audio Disk Cache (LRU)** | [ ] Planned | Local offline caching for played tracks in `%LocalAppData%/YMusic/Cache`, instant replay without network re-downloading |
 | 9 | **Windows System Tray & Notifications** | [ ] Planned | Taskbar notification area tray icon, minimize-to-tray on close, background playback menu, Windows Toast notifications |

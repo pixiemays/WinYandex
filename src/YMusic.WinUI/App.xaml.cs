@@ -11,6 +11,7 @@ namespace YMusic.WinUI;
 
 public partial class App : Application
 {
+    public static ShellWindow? MainWindow { get; private set; }
     private Window? _window;
 
     public static Microsoft.UI.Dispatching.DispatcherQueue? MainDispatcherQueue { get; set; }
@@ -72,7 +73,8 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        _window = new ShellWindow();
+        MainWindow = new ShellWindow();
+        _window = MainWindow;
         MainDispatcherQueue = _window.DispatcherQueue;
         _window.Activate();
     }

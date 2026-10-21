@@ -29,6 +29,8 @@
             <converters:BoolToPinButtonTextConverter x:Key="BoolToPinButtonTextConverter" />
             <converters:BoolToPinMenuTextConverter x:Key="BoolToPinMenuTextConverter" />
             <converters:BoolToPinForegroundBrushConverter x:Key="BoolToPinForegroundBrushConverter" />
+            <converters:BoolToSubtleHighlightBrushConverter x:Key="BoolToSubtleHighlightBrushConverter" />
+            <converters:ActiveLyricToForegroundConverter x:Key="ActiveLyricToForegroundConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

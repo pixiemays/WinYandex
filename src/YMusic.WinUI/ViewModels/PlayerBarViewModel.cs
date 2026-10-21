@@ -60,6 +60,20 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     private string? _coverUrl;
 
     [ObservableProperty]
+    private string? _hdCoverUrl;
+
+    [ObservableProperty]
+    private bool _isNowPlayingDrawerOpen;
+
+    [ObservableProperty]
+    private bool _isAutoScrollEnabled = true;
+
+    [ObservableProperty]
+    private bool _isUserScrolledAway;
+
+    public event EventHandler<LyricLine?>? ActiveLyricChanged;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LikeGlyph))]
     [NotifyPropertyChangedFor(nameof(LikeTooltip))]
     private bool _isCurrentTrackLiked;
@@ -175,11 +189,16 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         _currentTrack = _audioPlayer.CurrentTrack;
         _isCurrentTrackLiked = _currentTrack != null && _musicService.IsTrackLiked(_currentTrack.Id);
         _coverUrl = _currentTrack?.CoverUrl;
+        _hdCoverUrl = _currentTrack?.HdCoverUrl ?? _currentTrack?.CoverUrl;
         _duration = _currentTrack?.Duration ?? TimeSpan.Zero;
         _durationSeconds = _duration.TotalSeconds;
         _position = _audioPlayer.Position;
         _positionSeconds = _position.TotalSeconds;
         _isPlaying = _audioPlayer.IsPlaying;
+        if (_currentTrack != null)
+        {
+            _ = LoadLyricsForTrackAsync(_currentTrack);
+        }
 
         _audioPlayer.CurrentTrackChanged += OnCurrentTrackChanged;
         _audioPlayer.CurrentQualityChanged += OnCurrentQualityChanged;
@@ -249,6 +268,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         {
             CurrentTrack = track;
             CoverUrl = track?.CoverUrl;
+            HdCoverUrl = track?.HdCoverUrl ?? track?.CoverUrl;
             Duration = track?.Duration ?? TimeSpan.Zero;
             DurationSeconds = Duration.TotalSeconds;
             Position = TimeSpan.Zero;
@@ -256,16 +276,17 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             Lyrics.Clear();
             ActiveLyricLine = null;
             HasLyrics = false;
+            IsUserScrolledAway = false;
             IsCurrentTrackLiked = track != null && _musicService.IsTrackLiked(track.Id);
         });
 
         if (track != null)
         {
-            _ = LoadLyricsForTrackAsync(track.Id);
+            _ = LoadLyricsForTrackAsync(track);
         }
     }
 
-    private async Task LoadLyricsForTrackAsync(string trackId)
+    private async Task LoadLyricsForTrackAsync(Track track)
     {
         RunOnUi(() =>
         {
@@ -275,7 +296,8 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
         try
         {
-            var lines = await _musicService.GetTrackLyricsAsync(trackId).ConfigureAwait(false);
+            double durationSec = track.DurationMs > 0 ? track.DurationMs / 1000.0 : DurationSeconds;
+            var lines = await _musicService.GetTrackLyricsAsync(track.Id, track.Title, track.ArtistNames, durationSec).ConfigureAwait(false);
             RunOnUi(() =>
             {
                 Lyrics.Clear();
@@ -287,6 +309,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                     }
                     HasLyrics = true;
                     LyricsStatusText = string.Empty;
+                    UpdateActiveLyric(Position);
                 }
                 else
                 {
@@ -334,6 +357,8 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         if (Lyrics.Count == 0) return;
 
         LyricLine? currentActive = null;
+        int activeIndex = -1;
+
         for (int i = 0; i < Lyrics.Count; i++)
         {
             var line = Lyrics[i];
@@ -342,11 +367,32 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             if (position >= line.Timestamp && position < nextTimestamp)
             {
                 currentActive = line;
+                activeIndex = i;
                 break;
             }
         }
 
-        if (currentActive != null && currentActive != ActiveLyricLine)
+        // Update IsPast for all lines
+        for (int i = 0; i < Lyrics.Count; i++)
+        {
+            var line = Lyrics[i];
+            bool isPast = activeIndex >= 0 && i < activeIndex;
+            if (line.IsPast != isPast)
+            {
+                line.IsPast = isPast;
+            }
+        }
+
+        if (currentActive == null)
+        {
+            if (ActiveLyricLine != null)
+            {
+                ActiveLyricLine.IsActive = false;
+                ActiveLyricLine = null;
+                ActiveLyricChanged?.Invoke(this, null);
+            }
+        }
+        else if (currentActive != ActiveLyricLine)
         {
             if (ActiveLyricLine != null)
             {
@@ -354,15 +400,20 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             }
             currentActive.IsActive = true;
             ActiveLyricLine = currentActive;
+            ActiveLyricChanged?.Invoke(this, currentActive);
         }
     }
 
     [RelayCommand]
     private void SeekToLyric(LyricLine line)
     {
-        if (line != null && line.Timestamp > TimeSpan.Zero)
+        if (line != null && line.Timestamp >= TimeSpan.Zero)
         {
+            IsUserScrolledAway = false;
             _audioPlayer.Seek(line.Timestamp);
+            Position = line.Timestamp;
+            PositionSeconds = line.Timestamp.TotalSeconds;
+            UpdateActiveLyric(line.Timestamp);
         }
     }
 
@@ -587,6 +638,34 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         if (!string.IsNullOrEmpty(CurrentTrack.AlbumTitle) && targetAlbum != null)
         {
             await _navigationService.NavigateToAlbumAsync(targetAlbum);
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleNowPlayingDrawer()
+    {
+        IsNowPlayingDrawerOpen = !IsNowPlayingDrawerOpen;
+    }
+
+    [RelayCommand]
+    private void OpenNowPlayingDrawer()
+    {
+        IsNowPlayingDrawerOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseNowPlayingDrawer()
+    {
+        IsNowPlayingDrawerOpen = false;
+    }
+
+    [RelayCommand]
+    private void ResumeAutoScroll()
+    {
+        IsUserScrolledAway = false;
+        if (ActiveLyricLine != null)
+        {
+            ActiveLyricChanged?.Invoke(this, ActiveLyricLine);
         }
     }
 }

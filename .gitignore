@@ -13,3 +13,6 @@ AppPackages/
 BundleArtifacts/
 *.msix
 *.appx
+
+# Scratch directory
+scratch/

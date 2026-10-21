@@ -33,16 +33,16 @@
                 <ColumnDefinition Width="40" />
             </Grid.ColumnDefinitions>
 
-            <!-- Album Art (Clickable to open album) -->
+            <!-- Album Art (Clickable to open Now Playing Drawer) -->
             <Button Grid.Column="0"
-                    Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
+                    Command="{x:Bind ViewModel.ToggleNowPlayingDrawerCommand}"
                     Padding="0"
                     Width="52"
                     Height="52"
                     CornerRadius="6"
                     Background="Transparent"
                     BorderBrush="Transparent"
-                    ToolTipService.ToolTip="View album">
+                    ToolTipService.ToolTip="Now Playing &amp; Lyrics">
                 <Border Width="52"
                         Height="52"
                         CornerRadius="6"
@@ -232,6 +232,19 @@
                     VerticalAlignment="Center"
                     Spacing="8">
             
+            <!-- Now Playing & Karaoke Lyrics Toggle Button -->
+            <Button Command="{x:Bind ViewModel.ToggleNowPlayingDrawerCommand}"
+                    Width="36"
+                    Height="36"
+                    CornerRadius="18"
+                    Background="{x:Bind ViewModel.IsNowPlayingDrawerOpen, Mode=OneWay, Converter={StaticResource BoolToSubtleHighlightBrushConverter}}"
+                    BorderBrush="Transparent"
+                    ToolTipService.ToolTip="Lyrics &amp; Now Playing (Esc to close)">
+                <FontIcon Glyph="&#xEC4F;"
+                          FontSize="16"
+                          Foreground="{x:Bind ViewModel.IsNowPlayingDrawerOpen, Mode=OneWay, Converter={StaticResource BoolToAccentBrushConverter}}" />
+            </Button>
+
             <!-- Audio Quality Pill & Selector Flyout -->
             <Button Height="28"
                     MinWidth="52"

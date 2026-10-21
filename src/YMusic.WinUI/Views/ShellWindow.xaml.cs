@@ -25,6 +25,46 @@ public sealed partial class ShellWindow : Window
 
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1180, 780));
 
+        if (Content is FrameworkElement rootElement)
+        {
+            rootElement.KeyDown += (s, e) =>
+            {
+                if (e.Key == Windows.System.VirtualKey.Escape)
+                {
+                    if (ViewModel.PlayerBar.IsNowPlayingDrawerOpen)
+                    {
+                        ViewModel.PlayerBar.IsNowPlayingDrawerOpen = false;
+                        e.Handled = true;
+                    }
+                }
+                else if (e.Key == Windows.System.VirtualKey.L && rootElement.XamlRoot != null)
+                {
+                    var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(rootElement.XamlRoot);
+                    if (focused is not TextBox && focused is not PasswordBox)
+                    {
+                        if (ViewModel.PlayerBar.HasTrack)
+                        {
+                            ViewModel.PlayerBar.ToggleNowPlayingDrawerCommand.Execute(null);
+                            e.Handled = true;
+                        }
+                    }
+                }
+            };
+        }
+
+        ViewModel.PlayerBar.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(PlayerBarViewModel.IsNowPlayingDrawerOpen))
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    BottomPlayerBar.Visibility = ViewModel.PlayerBar.IsNowPlayingDrawerOpen
+                        ? Visibility.Collapsed
+                        : Visibility.Visible;
+                });
+            }
+        };
+
         var loginVm = App.GetService<LoginViewModel>();
         loginVm.LoginSucceeded += (_, _) =>
         {
@@ -378,6 +418,20 @@ public sealed partial class ShellWindow : Window
                     FontSize = 14
                 };
             }
+        }
+    }
+
+    public bool IsFullScreen => AppWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen;
+
+    public void ToggleFullScreen()
+    {
+        if (AppWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen)
+        {
+            AppWindow.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.Default);
+        }
+        else
+        {
+            AppWindow.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen);
         }
     }
 }

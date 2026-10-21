@@ -40,7 +40,7 @@ public interface IYandexMusicService
     Task<RotorStationResult?> GetRotorStationTracksAsync(string stationType = "user", string stationTag = "onyourwave", string? queueTrackId = null, CancellationToken cancellationToken = default);
     Task SendRotorFeedbackAsync(string eventType, string stationType, string stationTag, string trackId, string? batchId = null, double? totalPlayedSeconds = null, CancellationToken cancellationToken = default);
 
-    Task<List<LyricLine>> GetTrackLyricsAsync(string trackId, CancellationToken cancellationToken = default);
+    Task<List<LyricLine>> GetTrackLyricsAsync(string trackId, string? title = null, string? artist = null, double durationSeconds = 0, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Playlist>> GetPersonalPlaylistsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Playlist>> GetEditorialPlaylistsAsync(CancellationToken cancellationToken = default);

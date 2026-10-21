@@ -87,7 +87,13 @@
             <Frame x:Name="ContentFrame" />
         </NavigationView>
 
-        <!-- Fixed Bottom Player Bar -->
-        <controls:PlayerBarControl Grid.Row="2" />
+        <!-- Fixed Bottom Player Bar (Hidden when Now Playing Drawer is open) -->
+        <controls:PlayerBarControl Grid.Row="2"
+                                   x:Name="BottomPlayerBar" />
+
+        <!-- Now Playing & Karaoke Lyrics Drawer Overlay (Full Window Immersion, spans Rows 1 and 2) -->
+        <controls:NowPlayingDrawerControl Grid.Row="1"
+                                          Grid.RowSpan="2"
+                                          x:Name="NowPlayingDrawer" />
     </Grid>
 </Window>

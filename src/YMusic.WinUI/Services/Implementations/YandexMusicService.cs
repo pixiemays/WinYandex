@@ -2,6 +2,8 @@
 
 using System.Net;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using YMusic.WinUI.Models;
@@ -791,12 +793,30 @@ public sealed class YandexMusicService : IYandexMusicService
         using var response = await SendRequestAsync(HttpMethod.Post, endpoint, content, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<List<LyricLine>> GetTrackLyricsAsync(string trackId, CancellationToken cancellationToken = default)
+    public async Task<List<LyricLine>> GetTrackLyricsAsync(
+        string trackId,
+        string? title = null,
+        string? artist = null,
+        double durationSeconds = 0,
+        CancellationToken cancellationToken = default)
     {
-        // 1. Try tracks/{trackId}/lyrics?format=LRC
+        if (string.IsNullOrWhiteSpace(trackId))
+        {
+            return new List<LyricLine>();
+        }
+
+        string cleanTrackId = trackId.Contains(':') ? trackId.Split(':')[0] : trackId;
+
+        // 1. Try tracks/{cleanTrackId}/lyrics?format=LRC with HMAC-SHA256 signature
         try
         {
-            using var response = await SendRequestAsync(HttpMethod.Get, $"tracks/{Uri.EscapeDataString(trackId)}/lyrics?format=LRC", null, cancellationToken).ConfigureAwait(false);
+            long ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string msg = $"{cleanTrackId}{ts}";
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes("kzqU4XhfCaY6B6JTHODeq5"));
+            string sign = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(msg)));
+            string signedUrl = $"tracks/{Uri.EscapeDataString(cleanTrackId)}/lyrics?format=LRC&timeStamp={ts}&sign={Uri.EscapeDataString(sign)}";
+
+            using var response = await SendRequestAsync(HttpMethod.Get, signedUrl, null, cancellationToken).ConfigureAwait(false);
             if (response != null && response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -805,18 +825,31 @@ public sealed class YandexMusicService : IYandexMusicService
                 {
                     if (!string.IsNullOrWhiteSpace(apiResult.Result.DownloadUrl))
                     {
-                        var lrcContent = await _httpClient.GetStringAsync(apiResult.Result.DownloadUrl, cancellationToken).ConfigureAwait(false);
-                        var parsed = LyricLine.ParseLrc(lrcContent);
-                        if (parsed.Count > 0)
+                        try
+                        {
+                            var lrcContent = await _httpClient.GetStringAsync(apiResult.Result.DownloadUrl, cancellationToken).ConfigureAwait(false);
+                            var parsed = LyricLine.ParseLrc(lrcContent, durationSeconds);
+                            if (parsed.Count > 0 && parsed.Any(l => l.Timestamp > TimeSpan.Zero))
+                            {
+                                return parsed;
+                            }
+                        }
+                        catch { }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(apiResult.Result.FullLyrics))
+                    {
+                        var parsed = LyricLine.ParseLrc(apiResult.Result.FullLyrics, durationSeconds);
+                        if (parsed.Count > 0 && parsed.Any(l => l.Timestamp > TimeSpan.Zero))
                         {
                             return parsed;
                         }
                     }
 
-                    if (!string.IsNullOrWhiteSpace(apiResult.Result.FullLyrics))
+                    if (!string.IsNullOrWhiteSpace(apiResult.Result.Lyrics))
                     {
-                        var parsed = LyricLine.ParseLrc(apiResult.Result.FullLyrics);
-                        if (parsed.Count > 0)
+                        var parsed = LyricLine.ParseLrc(apiResult.Result.Lyrics, durationSeconds);
+                        if (parsed.Count > 0 && parsed.Any(l => l.Timestamp > TimeSpan.Zero))
                         {
                             return parsed;
                         }
@@ -826,13 +859,30 @@ public sealed class YandexMusicService : IYandexMusicService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[Lyrics API Warning] {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[Yandex Signed Lyrics API Warning] {ex.Message}");
         }
 
-        // 2. Fallback to tracks/{trackId}/supplement
+        // 2. Try LRCLIB for synchronized LRC lyrics (e.g. Kai Angel - TV, etc.)
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            try
+            {
+                var lrclibLines = await FetchFromLrclibAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                if (lrclibLines != null && lrclibLines.Count > 0 && lrclibLines.Any(l => l.Timestamp > TimeSpan.Zero))
+                {
+                    return lrclibLines;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LRCLIB Warning] {ex.Message}");
+            }
+        }
+
+        // 3. Fallback to tracks/{cleanTrackId}/supplement
         try
         {
-            using var response = await SendRequestAsync(HttpMethod.Get, $"tracks/{Uri.EscapeDataString(trackId)}/supplement", null, cancellationToken).ConfigureAwait(false);
+            using var response = await SendRequestAsync(HttpMethod.Get, $"tracks/{Uri.EscapeDataString(cleanTrackId)}/supplement", null, cancellationToken).ConfigureAwait(false);
             if (response != null && response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -840,19 +890,22 @@ public sealed class YandexMusicService : IYandexMusicService
                 var lyrics = apiResult?.Result?.Lyrics;
                 if (lyrics != null)
                 {
+                    string? rawLyrics = null;
                     if (!string.IsNullOrWhiteSpace(lyrics.DownloadUrl))
                     {
-                        var lrcContent = await _httpClient.GetStringAsync(lyrics.DownloadUrl, cancellationToken).ConfigureAwait(false);
-                        var parsed = LyricLine.ParseLrc(lrcContent);
-                        if (parsed.Count > 0)
+                        try
                         {
-                            return parsed;
+                            rawLyrics = await _httpClient.GetStringAsync(lyrics.DownloadUrl, cancellationToken).ConfigureAwait(false);
                         }
+                        catch { }
                     }
 
-                    if (!string.IsNullOrWhiteSpace(lyrics.FullLyrics))
+                    if (string.IsNullOrWhiteSpace(rawLyrics)) rawLyrics = lyrics.FullLyrics;
+                    if (string.IsNullOrWhiteSpace(rawLyrics)) rawLyrics = lyrics.Lyrics;
+
+                    if (!string.IsNullOrWhiteSpace(rawLyrics))
                     {
-                        var parsed = LyricLine.ParseLrc(lyrics.FullLyrics);
+                        var parsed = LyricLine.ParseLrc(rawLyrics, durationSeconds);
                         if (parsed.Count > 0)
                         {
                             return parsed;
@@ -867,6 +920,99 @@ public sealed class YandexMusicService : IYandexMusicService
         }
 
         return new List<LyricLine>();
+    }
+
+    private async Task<List<LyricLine>?> FetchFromLrclibAsync(
+        string title,
+        string? artist,
+        double durationSeconds,
+        CancellationToken cancellationToken)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("User-Agent", "WinYandex/1.0 (https://github.com/winyandex)");
+        client.Timeout = TimeSpan.FromSeconds(5);
+
+        string cleanTitle = title.Trim();
+        string cleanArtist = (artist ?? string.Empty).Trim();
+
+        // 1. Exact query: /api/get
+        try
+        {
+            var queryBuilder = new StringBuilder("https://lrclib.net/api/get?");
+            queryBuilder.Append($"track_name={Uri.EscapeDataString(cleanTitle)}");
+            if (!string.IsNullOrWhiteSpace(cleanArtist))
+            {
+                queryBuilder.Append($"&artist_name={Uri.EscapeDataString(cleanArtist)}");
+            }
+            if (durationSeconds > 0)
+            {
+                queryBuilder.Append($"&duration={(int)Math.Round(durationSeconds)}");
+            }
+
+            using var resp = await client.GetAsync(queryBuilder.ToString(), cancellationToken).ConfigureAwait(false);
+            if (resp.IsSuccessStatusCode)
+            {
+                var json = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var lrclibItem = JsonSerializer.Deserialize<LrclibResponse>(json, _jsonOptions);
+                if (lrclibItem != null && !string.IsNullOrWhiteSpace(lrclibItem.SyncedLyrics))
+                {
+                    var lines = LyricLine.ParseLrc(lrclibItem.SyncedLyrics, durationSeconds);
+                    if (lines.Count > 0) return lines;
+                }
+            }
+        }
+        catch { }
+
+        // 2. Search query: /api/search?track_name=...&artist_name=...
+        try
+        {
+            string searchUrl = $"https://lrclib.net/api/search?track_name={Uri.EscapeDataString(cleanTitle)}&artist_name={Uri.EscapeDataString(cleanArtist)}";
+            using var resp = await client.GetAsync(searchUrl, cancellationToken).ConfigureAwait(false);
+            if (resp.IsSuccessStatusCode)
+            {
+                var json = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var items = JsonSerializer.Deserialize<List<LrclibResponse>>(json, _jsonOptions);
+                if (items != null)
+                {
+                    foreach (var item in items)
+                    {
+                        if (!string.IsNullOrWhiteSpace(item.SyncedLyrics))
+                        {
+                            var lines = LyricLine.ParseLrc(item.SyncedLyrics, durationSeconds);
+                            if (lines.Count > 0) return lines;
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
+        // 3. Fallback search: /api/search?q=...
+        try
+        {
+            string query = $"{cleanArtist} {cleanTitle}".Trim();
+            string searchUrl = $"https://lrclib.net/api/search?q={Uri.EscapeDataString(query)}";
+            using var resp = await client.GetAsync(searchUrl, cancellationToken).ConfigureAwait(false);
+            if (resp.IsSuccessStatusCode)
+            {
+                var json = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var items = JsonSerializer.Deserialize<List<LrclibResponse>>(json, _jsonOptions);
+                if (items != null)
+                {
+                    foreach (var item in items)
+                    {
+                        if (!string.IsNullOrWhiteSpace(item.SyncedLyrics))
+                        {
+                            var lines = LyricLine.ParseLrc(item.SyncedLyrics, durationSeconds);
+                            if (lines.Count > 0) return lines;
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return null;
     }
 
     public async Task<IReadOnlyList<Playlist>> GetPersonalPlaylistsAsync(CancellationToken cancellationToken = default)

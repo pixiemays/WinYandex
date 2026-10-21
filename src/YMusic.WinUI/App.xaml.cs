@@ -1,0 +1,75 @@
+#nullable enable
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using YMusic.WinUI.Services.Implementations;
+using YMusic.WinUI.Services.Interfaces;
+using YMusic.WinUI.ViewModels;
+using YMusic.WinUI.Views;
+
+namespace YMusic.WinUI;
+
+public partial class App : Application
+{
+    private Window? _window;
+
+    public static Microsoft.UI.Dispatching.DispatcherQueue? MainDispatcherQueue { get; set; }
+
+    public static IServiceProvider Services { get; private set; } = null!;
+
+    public static T GetService<T>() where T : class
+    {
+        return Services.GetRequiredService<T>();
+    }
+
+    public App()
+    {
+        InitializeComponent();
+        MainDispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        Services = ConfigureServices();
+
+        UnhandledException += (sender, e) =>
+        {
+            string msg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [CRITICAL UnhandledException]: {e.Message}\n{e.Exception}\nStackTrace:\n{e.Exception?.StackTrace}\n";
+            System.Diagnostics.Debug.WriteLine(msg);
+            try
+            {
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string dir = System.IO.Path.Combine(appData, "YMusic");
+                System.IO.Directory.CreateDirectory(dir);
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "app_debug.log"), msg);
+            }
+            catch { }
+            e.Handled = true;
+        };
+    }
+
+    private static IServiceProvider ConfigureServices()
+    {
+        var services = new ServiceCollection();
+
+        // Core services
+        services.AddSingleton<ICredentialStorageService, CredentialStorageService>();
+        services.AddSingleton<IPlaybackStateStorageService, PlaybackStateStorageService>();
+        services.AddSingleton<IYandexMusicService, YandexMusicService>();
+        services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
+        services.AddSingleton<IEqualizerService, EqualizerService>();
+
+        // ViewModels
+        services.AddSingleton<PlayerBarViewModel>();
+        services.AddSingleton<ShellViewModel>();
+        services.AddSingleton<LoginViewModel>();
+        services.AddSingleton<WaveViewModel>();
+        services.AddSingleton<LikedTracksViewModel>();
+        services.AddTransient<PlaylistsViewModel>();
+
+        return services.BuildServiceProvider();
+    }
+
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        _window = new ShellWindow();
+        MainDispatcherQueue = _window.DispatcherQueue;
+        _window.Activate();
+    }
+}

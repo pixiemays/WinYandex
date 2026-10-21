@@ -1,0 +1,15 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# .NET / Build output
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+AppPackages/
+BundleArtifacts/
+*.msix
+*.appx

@@ -1,0 +1,1009 @@
+#nullable enable
+
+using System.Security.Cryptography;
+using Windows.Media;
+using Windows.Media.Audio;
+using Windows.Media.Core;
+using Windows.Media.Playback;
+using Windows.Media.Render;
+using Windows.Storage.Streams;
+using YMusic.WinUI.Models;
+using YMusic.WinUI.Services.Interfaces;
+
+namespace YMusic.WinUI.Services.Implementations;
+
+public sealed class AudioPlayerService : IAudioPlayerService
+{
+    private readonly IYandexMusicService _yandexMusicService;
+    private readonly IEqualizerService _equalizerService;
+    private readonly IPlaybackStateStorageService _playbackStateStorage;
+    private readonly MediaPlayer _mediaPlayer;
+    private readonly SystemMediaTransportControls _smtc;
+    private readonly System.Timers.Timer _positionTimer;
+
+    private AudioGraph? _audioGraph;
+    private AudioDeviceOutputNode? _deviceOutput;
+    private MediaSourceAudioInputNode? _currentInputNode;
+    private EqualizerEffectDefinition? _eq1;
+    private EqualizerEffectDefinition? _eq2;
+    private EqualizerEffectDefinition? _eq3;
+
+    private readonly List<Track> _queue = new();
+    private List<int> _playOrder = new();
+    private int _orderIndex = -1;
+
+    private Track? _currentTrack;
+    private StreamAudioQuality? _currentQuality;
+    private (string TrackId, string StreamUrl, StreamAudioQuality? Quality)? _preloadedTrack;
+    private bool _isPreloading;
+    private bool _isPlaying;
+    private RepeatMode _repeatMode = RepeatMode.None;
+    private bool _isShuffle;
+    private bool _isDisposed;
+    private double _volume = 80.0;
+    private bool _isMuted;
+    private TimeSpan _restoredPosition = TimeSpan.Zero;
+    private DateTime _lastPeriodicSaveTime = DateTime.UtcNow;
+    private readonly object _saveLock = new();
+
+    public Track? CurrentTrack => _currentTrack;
+    public StreamAudioQuality? CurrentQuality => _currentQuality;
+    public bool IsPlaying => _isPlaying;
+    public TimeSpan Position
+    {
+        get
+        {
+            if (_currentInputNode != null)
+            {
+                return _currentInputNode.Position;
+            }
+            if (_mediaPlayer.PlaybackSession.Position > TimeSpan.Zero)
+            {
+                return _mediaPlayer.PlaybackSession.Position;
+            }
+            return _restoredPosition;
+        }
+    }
+
+    public TimeSpan Duration
+    {
+        get
+        {
+            if (_currentInputNode != null)
+            {
+                return _currentInputNode.Duration;
+            }
+            if (_currentTrack != null && _currentTrack.Duration > TimeSpan.Zero)
+            {
+                return _currentTrack.Duration;
+            }
+            return _mediaPlayer.PlaybackSession.NaturalDuration;
+        }
+    }
+
+    public double Volume
+    {
+        get => _volume;
+        set
+        {
+            _volume = Math.Clamp(value, 0.0, 100.0);
+            _mediaPlayer.Volume = _volume / 100.0;
+            if (_deviceOutput != null)
+            {
+                _deviceOutput.OutgoingGain = _isMuted ? 0.0 : (_volume / 100.0);
+            }
+            VolumeChanged?.Invoke(this, _volume);
+            RequestSaveState();
+        }
+    }
+
+    public bool IsMuted
+    {
+        get => _isMuted;
+        set
+        {
+            _isMuted = value;
+            _mediaPlayer.IsMuted = value;
+            if (_deviceOutput != null)
+            {
+                _deviceOutput.OutgoingGain = _isMuted ? 0.0 : (_volume / 100.0);
+            }
+            MuteChanged?.Invoke(this, value);
+            RequestSaveState();
+        }
+    }
+
+    public RepeatMode RepeatMode
+    {
+        get => _repeatMode;
+        set
+        {
+            if (_repeatMode != value)
+            {
+                _repeatMode = value;
+                RepeatModeChanged?.Invoke(this, value);
+                RequestSaveState();
+            }
+        }
+    }
+
+    public bool IsShuffle
+    {
+        get => _isShuffle;
+        set
+        {
+            if (_isShuffle != value)
+            {
+                _isShuffle = value;
+                RebuildPlayOrder();
+                IsShuffleChanged?.Invoke(this, value);
+                RequestSaveState();
+            }
+        }
+    }
+
+    public IReadOnlyList<Track> Queue => _queue;
+    public int CurrentIndex => (_orderIndex >= 0 && _orderIndex < _playOrder.Count)
+        ? _playOrder[_orderIndex]
+        : -1;
+
+    private PlaybackMode _currentPlaybackMode = PlaybackMode.None;
+
+    public PlaybackMode CurrentPlaybackMode
+    {
+        get => _currentPlaybackMode;
+        set
+        {
+            if (_currentPlaybackMode != value)
+            {
+                _currentPlaybackMode = value;
+                PlaybackModeChanged?.Invoke(this, value);
+                RequestSaveState();
+            }
+        }
+    }
+
+    public event EventHandler<Track?>? CurrentTrackChanged;
+    event EventHandler<StreamAudioQuality?>? IAudioPlayerService.CurrentQualityChanged
+    {
+        add => CurrentQualityChanged += value;
+        remove => CurrentQualityChanged -= value;
+    }
+    public event EventHandler<StreamAudioQuality?>? CurrentQualityChanged;
+    public event EventHandler<bool>? IsPlayingChanged;
+    public event EventHandler<TimeSpan>? PositionChanged;
+    public event EventHandler<TimeSpan>? DurationChanged;
+    public event EventHandler<double>? VolumeChanged;
+    public event EventHandler<bool>? MuteChanged;
+    public event EventHandler<RepeatMode>? RepeatModeChanged;
+    public event EventHandler<bool>? IsShuffleChanged;
+    public event EventHandler? QueueChanged;
+    public event EventHandler<PlaybackMode>? PlaybackModeChanged;
+
+    public AudioPlayerService(
+        IYandexMusicService yandexMusicService,
+        IEqualizerService equalizerService,
+        IPlaybackStateStorageService playbackStateStorage)
+    {
+        _yandexMusicService = yandexMusicService;
+        _equalizerService = equalizerService;
+        _playbackStateStorage = playbackStateStorage;
+
+        _mediaPlayer = new MediaPlayer
+        {
+            AudioCategory = MediaPlayerAudioCategory.Media
+        };
+
+        _mediaPlayer.PlaybackSession.PlaybackStateChanged += OnPlaybackStateChanged;
+        _mediaPlayer.PlaybackSession.NaturalDurationChanged += OnNaturalDurationChanged;
+        _mediaPlayer.MediaEnded += OnMediaEnded;
+
+        _smtc = _mediaPlayer.SystemMediaTransportControls;
+        _smtc.IsPlayEnabled = true;
+        _smtc.IsPauseEnabled = true;
+        _smtc.IsNextEnabled = true;
+        _smtc.IsPreviousEnabled = true;
+        _smtc.ButtonPressed += OnSmtcButtonPressed;
+
+        _positionTimer = new System.Timers.Timer(250);
+        _positionTimer.Elapsed += (_, _) =>
+        {
+            if (_isPlaying)
+            {
+                var pos = Position;
+                PositionChanged?.Invoke(this, pos);
+                CheckPreloadNextTrack(pos);
+
+                if ((DateTime.UtcNow - _lastPeriodicSaveTime).TotalSeconds >= 3.0)
+                {
+                    _lastPeriodicSaveTime = DateTime.UtcNow;
+                    RequestSaveState();
+                }
+            }
+        };
+
+        _equalizerService.EqualizerChanged += (_, _) => ApplyEqualizerGains();
+        RestoreSavedState();
+        _ = InitializeAudioGraphAsync();
+    }
+
+    private void RestoreSavedState()
+    {
+        try
+        {
+            var saved = _playbackStateStorage.LoadPlaybackState();
+            if (saved == null) return;
+
+            _volume = Math.Clamp(saved.Volume, 0.0, 100.0);
+            _mediaPlayer.Volume = _volume / 100.0;
+            _isMuted = saved.IsMuted;
+            _mediaPlayer.IsMuted = _isMuted;
+            _repeatMode = saved.RepeatMode;
+            _isShuffle = saved.IsShuffle;
+            _currentPlaybackMode = saved.PlaybackMode;
+
+            if (saved.Queue != null && saved.Queue.Count > 0)
+            {
+                _queue.Clear();
+                _queue.AddRange(saved.Queue);
+
+                if (saved.PlayOrder != null && saved.PlayOrder.Count == saved.Queue.Count)
+                {
+                    _playOrder = new List<int>(saved.PlayOrder);
+                }
+                else
+                {
+                    RebuildPlayOrder();
+                }
+
+                _orderIndex = Math.Clamp(saved.OrderIndex, 0, _playOrder.Count - 1);
+            }
+
+            if (saved.CurrentTrack != null)
+            {
+                _currentTrack = saved.CurrentTrack;
+                _restoredPosition = TimeSpan.FromSeconds(Math.Max(0, saved.PositionSeconds));
+                UpdateSmtcMetadata(_currentTrack);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AudioPlayerService] Failed to restore state: {ex.Message}");
+        }
+    }
+
+    public void SaveCurrentState()
+    {
+        lock (_saveLock)
+        {
+            try
+            {
+                var state = new PlaybackSessionState
+                {
+                    Volume = _volume,
+                    IsMuted = _isMuted,
+                    RepeatMode = _repeatMode,
+                    IsShuffle = _isShuffle,
+                    PlaybackMode = _currentPlaybackMode,
+                    OrderIndex = _orderIndex,
+                    PositionSeconds = Position.TotalSeconds,
+                    CurrentTrack = _currentTrack,
+                    Queue = new List<Track>(_queue),
+                    PlayOrder = new List<int>(_playOrder)
+                };
+
+                _playbackStateStorage.SavePlaybackState(state);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AudioPlayerService] Failed to save state: {ex.Message}");
+            }
+        }
+    }
+
+    public void RequestSaveState()
+    {
+        _ = Task.Run(SaveCurrentState);
+    }
+
+    private async Task InitializeAudioGraphAsync()
+    {
+        try
+        {
+            var settings = new AudioGraphSettings(AudioRenderCategory.Media);
+            var result = await AudioGraph.CreateAsync(settings);
+            if (result.Status == AudioGraphCreationStatus.Success)
+            {
+                _audioGraph = result.Graph;
+                var outputResult = await _audioGraph.CreateDeviceOutputNodeAsync();
+                if (outputResult.Status == AudioDeviceNodeCreationStatus.Success)
+                {
+                    _deviceOutput = outputResult.DeviceOutputNode;
+
+                    _eq1 = new EqualizerEffectDefinition(_audioGraph);
+                    _eq2 = new EqualizerEffectDefinition(_audioGraph);
+                    _eq3 = new EqualizerEffectDefinition(_audioGraph);
+
+                    SetupEqualizerFrequencies();
+                    ApplyEqualizerGains();
+
+                    _deviceOutput.EffectDefinitions.Add(_eq1);
+                    _deviceOutput.EffectDefinitions.Add(_eq2);
+                    _deviceOutput.EffectDefinitions.Add(_eq3);
+
+                    _deviceOutput.OutgoingGain = _isMuted ? 0.0 : (_volume / 100.0);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AudioGraph Init Warning] {ex.Message}");
+        }
+    }
+
+    private void SetupEqualizerFrequencies()
+    {
+        if (_eq1 == null || _eq2 == null || _eq3 == null) return;
+
+        // 10 bands mapped across 3 4-band equalizer definitions:
+        // eq1: 32Hz, 64Hz, 125Hz, 250Hz
+        _eq1.Bands[0].FrequencyCenter = 32;
+        _eq1.Bands[0].Bandwidth = 1.0;
+        _eq1.Bands[1].FrequencyCenter = 64;
+        _eq1.Bands[1].Bandwidth = 1.0;
+        _eq1.Bands[2].FrequencyCenter = 125;
+        _eq1.Bands[2].Bandwidth = 1.0;
+        _eq1.Bands[3].FrequencyCenter = 250;
+        _eq1.Bands[3].Bandwidth = 1.0;
+
+        // eq2: 500Hz, 1kHz, 2kHz, 4kHz
+        _eq2.Bands[0].FrequencyCenter = 500;
+        _eq2.Bands[0].Bandwidth = 1.0;
+        _eq2.Bands[1].FrequencyCenter = 1000;
+        _eq2.Bands[1].Bandwidth = 1.0;
+        _eq2.Bands[2].FrequencyCenter = 2000;
+        _eq2.Bands[2].Bandwidth = 1.0;
+        _eq2.Bands[3].FrequencyCenter = 4000;
+        _eq2.Bands[3].Bandwidth = 1.0;
+
+        // eq3: 8kHz, 16kHz
+        _eq3.Bands[0].FrequencyCenter = 8000;
+        _eq3.Bands[0].Bandwidth = 1.0;
+        _eq3.Bands[1].FrequencyCenter = 16000;
+        _eq3.Bands[1].Bandwidth = 1.0;
+    }
+
+    private void ApplyEqualizerGains()
+    {
+        if (_eq1 == null || _eq2 == null || _eq3 == null) return;
+
+        try
+        {
+            if (!_equalizerService.IsEnabled)
+            {
+                for (int i = 0; i < 4; i++) { _eq1.Bands[i].Gain = 1.0; _eq2.Bands[i].Gain = 1.0; }
+                for (int i = 0; i < 2; i++) { _eq3.Bands[i].Gain = 1.0; }
+                return;
+            }
+
+            var bands = _equalizerService.Bands;
+            if (bands.Count >= 10)
+            {
+                _eq1.Bands[0].Gain = ToLinearGain(bands[0].Gain);
+                _eq1.Bands[1].Gain = ToLinearGain(bands[1].Gain);
+                _eq1.Bands[2].Gain = ToLinearGain(bands[2].Gain);
+                _eq1.Bands[3].Gain = ToLinearGain(bands[3].Gain);
+
+                _eq2.Bands[0].Gain = ToLinearGain(bands[4].Gain);
+                _eq2.Bands[1].Gain = ToLinearGain(bands[5].Gain);
+                _eq2.Bands[2].Gain = ToLinearGain(bands[6].Gain);
+                _eq2.Bands[3].Gain = ToLinearGain(bands[7].Gain);
+
+                _eq3.Bands[0].Gain = ToLinearGain(bands[8].Gain);
+                _eq3.Bands[1].Gain = ToLinearGain(bands[9].Gain);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ApplyEqualizerGains Error] {ex.Message}");
+        }
+    }
+
+    private static double ToLinearGain(double gainDb)
+    {
+        // 0 dB = 1.0 (unity gain)
+        // Valid range for Windows.Media.Audio.EqualizerBand.Gain is [0.158, 7.079] (-16 dB to +17 dB)
+        double clampedDb = Math.Clamp(gainDb, -15.0, 15.0);
+        return Math.Pow(10.0, clampedDb / 20.0);
+    }
+
+    public async Task PlayTrackAsync(Track track, IEnumerable<Track>? newQueue = null)
+    {
+        if (newQueue != null)
+        {
+            _queue.Clear();
+            _queue.AddRange(newQueue);
+            RebuildPlayOrder();
+            QueueChanged?.Invoke(this, EventArgs.Empty);
+
+            int trackIndex = _queue.FindIndex(t => t.Id == track.Id);
+            if (trackIndex >= 0)
+            {
+                _orderIndex = _playOrder.IndexOf(trackIndex);
+            }
+            else
+            {
+                _queue.Insert(0, track);
+                RebuildPlayOrder();
+                _orderIndex = 0;
+            }
+        }
+        else
+        {
+            int existing = _queue.FindIndex(t => t.Id == track.Id);
+            if (existing >= 0)
+            {
+                _orderIndex = _playOrder.IndexOf(existing);
+            }
+            else
+            {
+                _queue.Add(track);
+                RebuildPlayOrder();
+                _orderIndex = _playOrder.IndexOf(_queue.Count - 1);
+                QueueChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        await LoadAndPlayTrackAsync(track).ConfigureAwait(false);
+    }
+
+    public async Task PlayQueueAsync(IEnumerable<Track> queue, int startIndex = 0)
+    {
+        var tracks = queue.ToList();
+        if (tracks.Count == 0)
+        {
+            return;
+        }
+
+        _queue.Clear();
+        _queue.AddRange(tracks);
+        RebuildPlayOrder();
+        QueueChanged?.Invoke(this, EventArgs.Empty);
+
+        int targetIndex = Math.Clamp(startIndex, 0, _queue.Count - 1);
+        _orderIndex = _playOrder.IndexOf(targetIndex);
+
+        var trackToPlay = _queue[targetIndex];
+        await LoadAndPlayTrackAsync(trackToPlay).ConfigureAwait(false);
+    }
+
+    public void AppendToQueue(IEnumerable<Track> tracks)
+    {
+        var list = tracks.ToList();
+        if (list.Count == 0) return;
+
+        int previousCount = _queue.Count;
+        _queue.AddRange(list);
+
+        if (_isShuffle)
+        {
+            var newIndices = Enumerable.Range(previousCount, list.Count).ToList();
+            for (int i = newIndices.Count - 1; i > 0; i--)
+            {
+                int j = RandomNumberGenerator.GetInt32(i + 1);
+                (newIndices[i], newIndices[j]) = (newIndices[j], newIndices[i]);
+            }
+            _playOrder.AddRange(newIndices);
+        }
+        else
+        {
+            for (int i = previousCount; i < _queue.Count; i++)
+            {
+                _playOrder.Add(i);
+            }
+        }
+
+        QueueChanged?.Invoke(this, EventArgs.Empty);
+        RequestSaveState();
+    }
+
+    public void Play()
+    {
+        if (_currentInputNode != null && _audioGraph != null)
+        {
+            _currentInputNode.Start();
+            _audioGraph.Start();
+            _isPlaying = true;
+            _smtc.PlaybackStatus = MediaPlaybackStatus.Playing;
+            IsPlayingChanged?.Invoke(this, true);
+            _positionTimer.Start();
+            return;
+        }
+
+        if (_currentInputNode == null && _mediaPlayer.Source == null && _currentTrack != null)
+        {
+            _ = LoadAndPlayTrackAsync(_currentTrack, _restoredPosition);
+            return;
+        }
+
+        _mediaPlayer.Play();
+    }
+
+    public void Pause()
+    {
+        if (_currentInputNode != null && _audioGraph != null)
+        {
+            _currentInputNode.Stop();
+            _isPlaying = false;
+            _smtc.PlaybackStatus = MediaPlaybackStatus.Paused;
+            IsPlayingChanged?.Invoke(this, false);
+            _positionTimer.Stop();
+            RequestSaveState();
+            return;
+        }
+
+        _mediaPlayer.Pause();
+        RequestSaveState();
+    }
+
+    public void TogglePlayPause()
+    {
+        if (_isPlaying)
+        {
+            Pause();
+        }
+        else
+        {
+            Play();
+        }
+    }
+
+    public async Task NextAsync()
+    {
+        if (_queue.Count == 0 || _playOrder.Count == 0)
+        {
+            return;
+        }
+
+        int nextOrderIndex = _orderIndex + 1;
+        if (nextOrderIndex >= _playOrder.Count)
+        {
+            if (_repeatMode == RepeatMode.All)
+            {
+                nextOrderIndex = 0;
+            }
+            else
+            {
+                Pause();
+                Seek(TimeSpan.Zero);
+                return;
+            }
+        }
+
+        _orderIndex = nextOrderIndex;
+        int trackIndex = _playOrder[_orderIndex];
+        var track = _queue[trackIndex];
+        await LoadAndPlayTrackAsync(track).ConfigureAwait(false);
+    }
+
+    public async Task PreviousAsync()
+    {
+        if (_queue.Count == 0 || _playOrder.Count == 0)
+        {
+            return;
+        }
+
+        // If played more than 3 seconds, restart current track
+        if (Position.TotalSeconds > 3.0)
+        {
+            Seek(TimeSpan.Zero);
+            Play();
+            return;
+        }
+
+        int prevOrderIndex = _orderIndex - 1;
+        if (prevOrderIndex < 0)
+        {
+            if (_repeatMode == RepeatMode.All)
+            {
+                prevOrderIndex = _playOrder.Count - 1;
+            }
+            else
+            {
+                Seek(TimeSpan.Zero);
+                Play();
+                return;
+            }
+        }
+
+        _orderIndex = prevOrderIndex;
+        int trackIndex = _playOrder[_orderIndex];
+        var track = _queue[trackIndex];
+        await LoadAndPlayTrackAsync(track).ConfigureAwait(false);
+    }
+
+    public void Seek(TimeSpan position)
+    {
+        var duration = Duration;
+        double maxSec = duration.TotalSeconds > 0 ? duration.TotalSeconds : double.MaxValue;
+        var clamped = TimeSpan.FromSeconds(Math.Clamp(position.TotalSeconds, 0, maxSec));
+        _restoredPosition = clamped;
+
+        if (_currentInputNode != null)
+        {
+            try
+            {
+                _currentInputNode.Seek(clamped);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AudioPlayer Seek Warning] {ex.Message}");
+            }
+            PositionChanged?.Invoke(this, clamped);
+            RequestSaveState();
+            return;
+        }
+
+        try
+        {
+            _mediaPlayer.PlaybackSession.Position = clamped;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[MediaPlayer Seek Warning] {ex.Message}");
+        }
+        PositionChanged?.Invoke(this, clamped);
+        RequestSaveState();
+    }
+
+    public async Task ReloadCurrentTrackQualityAsync()
+    {
+        if (_currentTrack == null)
+        {
+            return;
+        }
+
+        var currentPos = Position;
+        var wasPlaying = _isPlaying;
+
+        var (streamUrl, quality) = await _yandexMusicService.GetTrackStreamInfoAsync(_currentTrack.Id).ConfigureAwait(false);
+        _currentQuality = quality;
+        CurrentQualityChanged?.Invoke(this, quality);
+
+        if (!string.IsNullOrWhiteSpace(streamUrl))
+        {
+            var source = MediaSource.CreateFromUri(new Uri(streamUrl));
+
+            if (_audioGraph != null && _deviceOutput != null)
+            {
+                try
+                {
+                    var inputResult = await _audioGraph.CreateMediaSourceAudioInputNodeAsync(source);
+                    if (inputResult.Status == MediaSourceAudioInputNodeCreationStatus.Success)
+                    {
+                        if (_currentInputNode != null)
+                        {
+                            _currentInputNode.Stop();
+                            _currentInputNode.RemoveOutgoingConnection(_deviceOutput);
+                            _currentInputNode.Dispose();
+                        }
+
+                        _currentInputNode = inputResult.Node;
+                        _currentInputNode.AddOutgoingConnection(_deviceOutput);
+                        _currentInputNode.MediaSourceCompleted += OnInputNodeMediaCompleted;
+                        _currentInputNode.Seek(currentPos);
+                        if (wasPlaying)
+                        {
+                            _currentInputNode.Start();
+                            _audioGraph.Start();
+                            _isPlaying = true;
+                            _smtc.PlaybackStatus = MediaPlaybackStatus.Playing;
+                            IsPlayingChanged?.Invoke(this, true);
+                        }
+                        return;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            _mediaPlayer.Source = source;
+            Seek(currentPos);
+            if (wasPlaying)
+            {
+                _mediaPlayer.Play();
+            }
+        }
+    }
+
+    private void CheckPreloadNextTrack(TimeSpan pos)
+    {
+        var duration = Duration;
+        if (duration.TotalSeconds < 10 || _isPreloading)
+        {
+            return;
+        }
+
+        if (pos.TotalSeconds >= duration.TotalSeconds * 0.80)
+        {
+            int nextOrderIndex = _orderIndex + 1;
+            if (nextOrderIndex >= _playOrder.Count && _repeatMode == RepeatMode.All)
+            {
+                nextOrderIndex = 0;
+            }
+
+            if (nextOrderIndex < _playOrder.Count)
+            {
+                int nextTrackIndex = _playOrder[nextOrderIndex];
+                if (nextTrackIndex >= 0 && nextTrackIndex < _queue.Count)
+                {
+                    var nextTrack = _queue[nextTrackIndex];
+                    if (_preloadedTrack?.TrackId != nextTrack.Id)
+                    {
+                        _isPreloading = true;
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                var (url, quality) = await _yandexMusicService.GetTrackStreamInfoAsync(nextTrack.Id).ConfigureAwait(false);
+                                if (!string.IsNullOrEmpty(url))
+                                {
+                                    _preloadedTrack = (nextTrack.Id, url, quality);
+                                }
+                            }
+                            catch
+                            {
+                                // Prefetch failure is non-fatal
+                            }
+                            finally
+                            {
+                                _isPreloading = false;
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    private async Task LoadAndPlayTrackAsync(Track track, TimeSpan? startPosition = null)
+    {
+        _currentTrack = track;
+        CurrentTrackChanged?.Invoke(this, track);
+        UpdateSmtcMetadata(track);
+        RequestSaveState();
+
+        string? streamUrl;
+        StreamAudioQuality? quality;
+
+        if (_preloadedTrack?.TrackId == track.Id)
+        {
+            streamUrl = _preloadedTrack.Value.StreamUrl;
+            quality = _preloadedTrack.Value.Quality;
+            _preloadedTrack = null;
+        }
+        else
+        {
+            _preloadedTrack = null;
+            (streamUrl, quality) = await _yandexMusicService.GetTrackStreamInfoAsync(track.Id).ConfigureAwait(false);
+        }
+
+        _currentQuality = quality;
+        CurrentQualityChanged?.Invoke(this, quality);
+
+        if (string.IsNullOrWhiteSpace(streamUrl))
+        {
+            // If failed to resolve stream, attempt next track
+            await NextAsync().ConfigureAwait(false);
+            return;
+        }
+
+        var source = MediaSource.CreateFromUri(new Uri(streamUrl));
+
+        if (_audioGraph != null && _deviceOutput != null)
+        {
+            try
+            {
+                var inputResult = await _audioGraph.CreateMediaSourceAudioInputNodeAsync(source);
+                if (inputResult.Status == MediaSourceAudioInputNodeCreationStatus.Success)
+                {
+                    if (_currentInputNode != null)
+                    {
+                        _currentInputNode.Stop();
+                        _currentInputNode.RemoveOutgoingConnection(_deviceOutput);
+                        _currentInputNode.Dispose();
+                    }
+
+                    _currentInputNode = inputResult.Node;
+                    _currentInputNode.AddOutgoingConnection(_deviceOutput);
+                    _currentInputNode.MediaSourceCompleted += OnInputNodeMediaCompleted;
+
+                    if (startPosition.HasValue && startPosition.Value > TimeSpan.Zero)
+                    {
+                        try
+                        {
+                            _currentInputNode.Seek(startPosition.Value);
+                        }
+                        catch { }
+                    }
+
+                    _currentInputNode.Start();
+                    _audioGraph.Start();
+                    _isPlaying = true;
+                    _smtc.PlaybackStatus = MediaPlaybackStatus.Playing;
+                    IsPlayingChanged?.Invoke(this, true);
+                    _positionTimer.Start();
+                    if (startPosition.HasValue && startPosition.Value > TimeSpan.Zero)
+                    {
+                        PositionChanged?.Invoke(this, startPosition.Value);
+                    }
+                    _restoredPosition = TimeSpan.Zero;
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AudioGraph Playback Fallback] {ex.Message}");
+            }
+        }
+
+        _mediaPlayer.Source = source;
+        if (startPosition.HasValue && startPosition.Value > TimeSpan.Zero)
+        {
+            try
+            {
+                _mediaPlayer.PlaybackSession.Position = startPosition.Value;
+            }
+            catch { }
+        }
+        _mediaPlayer.Play();
+        if (startPosition.HasValue && startPosition.Value > TimeSpan.Zero)
+        {
+            PositionChanged?.Invoke(this, startPosition.Value);
+        }
+        _restoredPosition = TimeSpan.Zero;
+    }
+
+    private void OnInputNodeMediaCompleted(MediaSourceAudioInputNode sender, object args)
+    {
+        if (_repeatMode == RepeatMode.One)
+        {
+            Seek(TimeSpan.Zero);
+            Play();
+            return;
+        }
+
+        _ = NextAsync();
+    }
+
+    private void UpdateSmtcMetadata(Track track)
+    {
+        try
+        {
+            _smtc.DisplayUpdater.Type = MediaPlaybackType.Music;
+            _smtc.DisplayUpdater.MusicProperties.Title = track.FullTitle;
+            _smtc.DisplayUpdater.MusicProperties.Artist = track.ArtistNames;
+            _smtc.DisplayUpdater.MusicProperties.AlbumTitle = track.AlbumTitle;
+
+            var coverUrl = track.GetCoverUrl(400);
+            if (!string.IsNullOrWhiteSpace(coverUrl))
+            {
+                _smtc.DisplayUpdater.Thumbnail = RandomAccessStreamReference.CreateFromUri(new Uri(coverUrl));
+            }
+            else
+            {
+                _smtc.DisplayUpdater.Thumbnail = null;
+            }
+
+            _smtc.DisplayUpdater.Update();
+        }
+        catch
+        {
+            // Defensive: SMTC display update can fail if OS component is busy
+        }
+    }
+
+    private void OnPlaybackStateChanged(MediaPlaybackSession session, object args)
+    {
+        var state = session.PlaybackState;
+        _isPlaying = state == MediaPlaybackState.Playing;
+
+        switch (state)
+        {
+            case MediaPlaybackState.Playing:
+                _smtc.PlaybackStatus = MediaPlaybackStatus.Playing;
+                _positionTimer.Start();
+                break;
+            case MediaPlaybackState.Paused:
+                _smtc.PlaybackStatus = MediaPlaybackStatus.Paused;
+                _positionTimer.Stop();
+                break;
+            case MediaPlaybackState.None:
+                _smtc.PlaybackStatus = MediaPlaybackStatus.Closed;
+                _positionTimer.Stop();
+                break;
+            default:
+                _smtc.PlaybackStatus = MediaPlaybackStatus.Stopped;
+                _positionTimer.Stop();
+                break;
+        }
+
+        IsPlayingChanged?.Invoke(this, _isPlaying);
+    }
+
+    private void OnNaturalDurationChanged(MediaPlaybackSession session, object args)
+    {
+        DurationChanged?.Invoke(this, session.NaturalDuration);
+    }
+
+    private void OnMediaEnded(MediaPlayer sender, object args)
+    {
+        if (_repeatMode == RepeatMode.One)
+        {
+            Seek(TimeSpan.Zero);
+            Play();
+            return;
+        }
+
+        _ = NextAsync();
+    }
+
+    private void OnSmtcButtonPressed(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs args)
+    {
+        switch (args.Button)
+        {
+            case SystemMediaTransportControlsButton.Play:
+                Play();
+                break;
+            case SystemMediaTransportControlsButton.Pause:
+                Pause();
+                break;
+            case SystemMediaTransportControlsButton.Next:
+                _ = NextAsync();
+                break;
+            case SystemMediaTransportControlsButton.Previous:
+                _ = PreviousAsync();
+                break;
+        }
+    }
+
+    private void RebuildPlayOrder()
+    {
+        int count = _queue.Count;
+        _playOrder = Enumerable.Range(0, count).ToList();
+
+        if (_isShuffle && count > 1)
+        {
+            // Fisher-Yates shuffle
+            for (int i = count - 1; i > 0; i--)
+            {
+                int j = RandomNumberGenerator.GetInt32(i + 1);
+                (_playOrder[i], _playOrder[j]) = (_playOrder[j], _playOrder[i]);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        SaveCurrentState();
+        _isDisposed = true;
+        _positionTimer.Stop();
+        _positionTimer.Dispose();
+
+        _currentInputNode?.Dispose();
+        _deviceOutput?.Dispose();
+        _audioGraph?.Dispose();
+
+        _smtc.ButtonPressed -= OnSmtcButtonPressed;
+        _mediaPlayer.PlaybackSession.PlaybackStateChanged -= OnPlaybackStateChanged;
+        _mediaPlayer.PlaybackSession.NaturalDurationChanged -= OnNaturalDurationChanged;
+        _mediaPlayer.MediaEnded -= OnMediaEnded;
+        _mediaPlayer.Dispose();
+    }
+}

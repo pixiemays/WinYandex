@@ -20,6 +20,13 @@ public sealed partial class ShellViewModel : BaseViewModel
     [ObservableProperty]
     private bool _isAuthenticated;
 
+    public string AccountNavItemTitle => IsAuthenticated
+        ? (!string.IsNullOrWhiteSpace(CurrentUser?.DisplayName) ? CurrentUser.DisplayName : "Profile & Settings")
+        : "Account / Sign In";
+
+    partial void OnCurrentUserChanged(UserProfile? value) => OnPropertyChanged(nameof(AccountNavItemTitle));
+    partial void OnIsAuthenticatedChanged(bool value) => OnPropertyChanged(nameof(AccountNavItemTitle));
+
     public ShellViewModel(
         PlayerBarViewModel playerBar,
         ICredentialStorageService credentialStorage,

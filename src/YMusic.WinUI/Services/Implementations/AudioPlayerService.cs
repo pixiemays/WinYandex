@@ -17,6 +17,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
     private readonly IYandexMusicService _yandexMusicService;
     private readonly IEqualizerService _equalizerService;
     private readonly IPlaybackStateStorageService _playbackStateStorage;
+    private readonly IFckCensorService _fckCensorService;
     private readonly MediaPlayer _mediaPlayer;
     private readonly SystemMediaTransportControls _smtc;
     private readonly System.Timers.Timer _positionTimer;
@@ -48,6 +49,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public Track? CurrentTrack => _currentTrack;
     public StreamAudioQuality? CurrentQuality => _currentQuality;
+    public bool IsPreloadingEnabled { get; set; } = true;
     public bool IsPlaying => _isPlaying;
     public TimeSpan Position
     {
@@ -183,11 +185,31 @@ public sealed class AudioPlayerService : IAudioPlayerService
     public AudioPlayerService(
         IYandexMusicService yandexMusicService,
         IEqualizerService equalizerService,
-        IPlaybackStateStorageService playbackStateStorage)
+        IPlaybackStateStorageService playbackStateStorage,
+        IFckCensorService fckCensorService)
     {
         _yandexMusicService = yandexMusicService;
         _equalizerService = equalizerService;
         _playbackStateStorage = playbackStateStorage;
+        _fckCensorService = fckCensorService;
+
+        _fckCensorService.TrackReplacementChanged += async (_, changedTrackId) =>
+        {
+            if (_currentTrack != null && (Track.IsSameTrackId(_currentTrack.Id, changedTrackId) || (string.IsNullOrEmpty(changedTrackId) && _fckCensorService.IsReplaced(_currentTrack.Id))))
+            {
+                var pos = Position;
+                bool wasPlaying = _isPlaying;
+                await ReloadCurrentTrackQualityAsync().ConfigureAwait(false);
+                if (pos > TimeSpan.Zero)
+                {
+                    Seek(pos);
+                }
+                if (wasPlaying)
+                {
+                    Play();
+                }
+            }
+        };
 
         _mediaPlayer = new MediaPlayer
         {
@@ -666,7 +688,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         var currentPos = Position;
         var wasPlaying = _isPlaying;
 
-        var (streamUrl, quality) = await _yandexMusicService.GetTrackStreamInfoAsync(_currentTrack.Id).ConfigureAwait(false);
+        var (streamUrl, quality) = await ResolveTrackStreamAsync(_currentTrack.Id).ConfigureAwait(false);
         _currentQuality = quality;
         CurrentQualityChanged?.Invoke(this, quality);
 
@@ -719,6 +741,11 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     private void CheckPreloadNextTrack(TimeSpan pos)
     {
+        if (!IsPreloadingEnabled)
+        {
+            return;
+        }
+
         var duration = Duration;
         if (duration.TotalSeconds < 10 || _isPreloading)
         {
@@ -746,7 +773,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
                         {
                             try
                             {
-                                var (url, quality) = await _yandexMusicService.GetTrackStreamInfoAsync(nextTrack.Id).ConfigureAwait(false);
+                                var (url, quality) = await ResolveTrackStreamAsync(nextTrack.Id).ConfigureAwait(false);
                                 if (!string.IsNullOrEmpty(url))
                                 {
                                     _preloadedTrack = (nextTrack.Id, url, quality);
@@ -774,6 +801,20 @@ public sealed class AudioPlayerService : IAudioPlayerService
         }
     }
 
+    private async Task<(string? Url, StreamAudioQuality? Quality)> ResolveTrackStreamAsync(string trackId)
+    {
+        if (_fckCensorService != null && _fckCensorService.IsReplaced(trackId))
+        {
+            var replacementUrl = _fckCensorService.GetReplacementUrl(trackId);
+            if (!string.IsNullOrEmpty(replacementUrl))
+            {
+                return (replacementUrl, new StreamAudioQuality { Codec = "MP3", BitrateInKbps = 320 });
+            }
+        }
+
+        return await _yandexMusicService.GetTrackStreamInfoAsync(trackId).ConfigureAwait(false);
+    }
+
     private async Task LoadAndPlayTrackAsync(Track track, TimeSpan? startPosition = null)
     {
         _currentTrack = track;
@@ -793,7 +834,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         else
         {
             _preloadedTrack = null;
-            (streamUrl, quality) = await _yandexMusicService.GetTrackStreamInfoAsync(track.Id).ConfigureAwait(false);
+            (streamUrl, quality) = await ResolveTrackStreamAsync(track.Id).ConfigureAwait(false);
         }
 
         _currentQuality = quality;

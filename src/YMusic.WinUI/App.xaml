@@ -16,6 +16,7 @@
             <converters:BoolToAccentBrushConverter x:Key="BoolToAccentBrushConverter" />
             <converters:RepeatToAccentBrushConverter x:Key="RepeatToAccentBrushConverter" />
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:BoolToVisibilityConverter x:Key="InvertedBoolToVisibilityConverter" Invert="True" />
             <converters:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter" />
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
             <converters:SecondsToTimeConverter x:Key="SecondsToTimeConverter" />

@@ -16,6 +16,7 @@ public interface IAudioPlayerService : IDisposable
     bool IsShuffle { get; set; }
 
     StreamAudioQuality? CurrentQuality { get; }
+    bool IsPreloadingEnabled { get; set; }
 
     IReadOnlyList<Track> Queue { get; }
     int CurrentIndex { get; }

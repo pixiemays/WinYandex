@@ -178,22 +178,41 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         ? Duration.ToString(@"h\:mm\:ss")
         : Duration.ToString(@"m\:ss");
 
+    [ObservableProperty]
+    private bool _isCurrentTrackReplaced;
+
+    [ObservableProperty]
+    private bool _canReportCurrentTrack;
+
+    [ObservableProperty]
+    private string? _toastMessage;
+
+    [ObservableProperty]
+    private bool _isToastOpen;
+
+    private readonly ISettingsService _settingsService;
+    private readonly IFckCensorService _fckCensorService;
+
     public PlayerBarViewModel(
         IAudioPlayerService audioPlayer,
         IYandexMusicService musicService,
         IEqualizerService equalizer,
-        INavigationService navigationService)
+        INavigationService navigationService,
+        ISettingsService settingsService,
+        IFckCensorService fckCensorService)
     {
         _audioPlayer = audioPlayer;
         _musicService = musicService;
         _equalizer = equalizer;
         _navigationService = navigationService;
+        _settingsService = settingsService;
+        _fckCensorService = fckCensorService;
 
         _volume = _audioPlayer.Volume;
         _isMuted = _audioPlayer.IsMuted;
         _repeatMode = _audioPlayer.RepeatMode;
         _isShuffle = _audioPlayer.IsShuffle;
-        _selectedQualityPreference = _musicService.PreferredQuality;
+        _selectedQualityPreference = _settingsService.PreferredQuality;
         _qualityBadge = _selectedQualityPreference switch
         {
             AudioQualityPreference.AacPreferred => "AAC",
@@ -216,6 +235,32 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         {
             _ = LoadLyricsForTrackAsync(_currentTrack);
         }
+
+        _settingsService.SettingChanged += (s, prop) =>
+        {
+            if (prop == nameof(ISettingsService.PreferredQuality))
+            {
+                RunOnUi(() =>
+                {
+                    SelectedQualityPreference = _settingsService.PreferredQuality;
+                    QualityBadge = SelectedQualityPreference switch
+                    {
+                        AudioQualityPreference.AacPreferred => "AAC",
+                        AudioQualityPreference.Mp3Preferred => "320k",
+                        _ => "HQ"
+                    };
+                });
+            }
+        };
+
+        _fckCensorService.TrackReplacementChanged += (s, id) =>
+        {
+            if (CurrentTrack != null && Track.IsSameTrackId(CurrentTrack.Id, id))
+            {
+                UpdateFckCensorState();
+            }
+        };
+        UpdateFckCensorState();
 
         _audioPlayer.CurrentTrackChanged += OnCurrentTrackChanged;
         _audioPlayer.CurrentQualityChanged += OnCurrentQualityChanged;
@@ -297,6 +342,8 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             IsUserScrolledAway = false;
             IsCurrentTrackLiked = track != null && _musicService.IsTrackLiked(track.Id);
         });
+
+        UpdateFckCensorState();
 
         if (track != null)
         {
@@ -535,7 +582,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         if (Enum.TryParse<AudioQualityPreference>(preferenceString, true, out var preference))
         {
             SelectedQualityPreference = preference;
-            _musicService.PreferredQuality = preference;
+            _settingsService.PreferredQuality = preference;
             QualityBadge = preference switch
             {
                 AudioQualityPreference.AacPreferred => "AAC",
@@ -733,5 +780,103 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         {
             ActiveLyricChanged?.Invoke(this, ActiveLyricLine);
         }
+    }
+
+    private void UpdateFckCensorState()
+    {
+        RunOnUi(() =>
+        {
+            if (CurrentTrack == null)
+            {
+                IsCurrentTrackReplaced = false;
+                CanReportCurrentTrack = false;
+                return;
+            }
+
+            IsCurrentTrackReplaced = _fckCensorService.IsReplaced(CurrentTrack.Id);
+            CanReportCurrentTrack = !IsCurrentTrackReplaced && !_fckCensorService.IsReported(CurrentTrack.Id);
+        });
+    }
+
+    [RelayCommand]
+    public async Task ReplaceCurrentTrackAsync()
+    {
+        if (CurrentTrack == null) return;
+
+        try
+        {
+            var picker = new Windows.Storage.Pickers.FileOpenPicker
+            {
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.MusicLibrary
+            };
+            picker.FileTypeFilter.Add(".mp3");
+            picker.FileTypeFilter.Add(".wav");
+            picker.FileTypeFilter.Add(".flac");
+            picker.FileTypeFilter.Add(".ogg");
+            picker.FileTypeFilter.Add(".m4a");
+            picker.FileTypeFilter.Add(".aac");
+
+            if (App.MainWindow != null)
+            {
+                IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            }
+
+            var file = await picker.PickSingleFileAsync();
+            if (file != null)
+            {
+                bool ok = await _fckCensorService.ReplaceTrackWithFileAsync(CurrentTrack.Id, file.Path);
+                if (ok)
+                {
+                    UpdateFckCensorState();
+                    ShowToast("Трек успешно подменён (FckCensor)");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ReplaceCurrentTrackAsync] {ex.Message}");
+            ShowToast("Ошибка при выборе аудиофайла");
+        }
+    }
+
+    [RelayCommand]
+    public async Task RemoveCurrentTrackReplacementAsync()
+    {
+        if (CurrentTrack == null) return;
+
+        bool ok = await _fckCensorService.RemoveReplacementAsync(CurrentTrack.Id);
+        if (ok)
+        {
+            UpdateFckCensorState();
+            ShowToast("Трек восстановлен к оригиналу");
+        }
+    }
+
+    [RelayCommand]
+    public async Task ReportCurrentTrackCensorshipAsync()
+    {
+        if (CurrentTrack == null) return;
+
+        bool ok = await _fckCensorService.ReportCensorshipAsync(CurrentTrack.Id, replaced: false);
+        if (ok)
+        {
+            UpdateFckCensorState();
+            ShowToast("Спасибо! Трек скоро будет добавлен в базу.");
+        }
+    }
+
+    public void ShowToast(string message)
+    {
+        RunOnUi(() =>
+        {
+            ToastMessage = message;
+            IsToastOpen = true;
+        });
+
+        _ = Task.Delay(3000).ContinueWith(_ =>
+        {
+            RunOnUi(() => IsToastOpen = false);
+        });
     }
 }

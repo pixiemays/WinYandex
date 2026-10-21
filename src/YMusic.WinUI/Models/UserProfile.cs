@@ -52,6 +52,8 @@ public sealed class UserProfile
     public string UserId { get; set; } = string.Empty;
     public string Login { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
+    public string? FullName { get; set; }
+    public string? DefaultEmail { get; set; }
     public bool HasPlus { get; set; }
     public string? AvatarUrl { get; set; }
 
@@ -74,6 +76,8 @@ public sealed class UserProfile
             UserId = account.Uid.ToString(),
             Login = account.Login,
             DisplayName = displayName,
+            FullName = account.FullName,
+            DefaultEmail = account.DefaultEmail,
             HasPlus = hasPlus,
             AvatarUrl = $"https://avatars.yandex.net/get-yapic/{account.Uid}/islands-200"
         };

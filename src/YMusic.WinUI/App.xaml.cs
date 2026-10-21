@@ -2,6 +2,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
+using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Implementations;
 using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.ViewModels;
@@ -53,7 +54,9 @@ public partial class App : Application
         services.AddSingleton<ICredentialStorageService, CredentialStorageService>();
         services.AddSingleton<IPlaybackStateStorageService, PlaybackStateStorageService>();
         services.AddSingleton<IYandexMusicService, YandexMusicService>();
+        services.AddSingleton<IFckCensorService, FckCensorService>();
         services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
+        services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IEqualizerService, EqualizerService>();
         services.AddSingleton<ITrackPlaybackCoordinator, TrackPlaybackCoordinator>();
         services.AddSingleton<INavigationService, NavigationService>();
@@ -69,8 +72,12 @@ public partial class App : Application
         services.AddSingleton<PlaylistsViewModel>();
         services.AddSingleton<SearchViewModel>();
         services.AddSingleton<ArtistViewModel>();
+        services.AddSingleton<ProfileViewModel>();
 
-        return services.BuildServiceProvider();
+        var provider = services.BuildServiceProvider();
+        var fckCensor = provider.GetRequiredService<IFckCensorService>();
+        Track.IsTrackReplacedChecker = id => fckCensor.IsReplaced(id);
+        return provider;
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)

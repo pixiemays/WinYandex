@@ -8,6 +8,7 @@
     xmlns:models="using:YMusic.WinUI.Models"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
     xmlns:helpers="using:YMusic.WinUI.Helpers"
+    xmlns:controls="using:YMusic.WinUI.Views.Controls"
     Loaded="UserControl_Loaded"
     mc:Ignorable="d">
 
@@ -19,7 +20,7 @@
         
         <Grid.ColumnDefinitions>
             <!-- Left: Current Track Details -->
-            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="360" />
             <!-- Center: Controls & Seek Bar -->
             <ColumnDefinition Width="*" />
             <!-- Right: Volume & Extra -->
@@ -31,7 +32,8 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="52" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="38" />
+                <ColumnDefinition Width="38" />
             </Grid.ColumnDefinitions>
 
             <!-- Album Art (Clickable to open Now Playing Drawer with visual hover feedback) -->
@@ -88,20 +90,38 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <HyperlinkButton Grid.Row="0"
-                                 Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
-                                 Padding="0"
-                                 HorizontalAlignment="Left"
-                                 HorizontalContentAlignment="Left"
-                                 helpers:CursorHelper.UseHandCursor="True"
-                                 ToolTipService.ToolTip="Перейти к альбому">
-                    <TextBlock Text="{x:Bind ViewModel.TrackTitle, Mode=OneWay}"
-                               FontWeight="SemiBold"
-                               FontSize="14"
-                               TextTrimming="CharacterEllipsis"
-                               MaxLines="1"
-                               IsHitTestVisible="False" />
-                </HyperlinkButton>
+                <!-- Row 0: Track Title (Marquee) and FckCensor Badge -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <controls:MarqueeTextControl Grid.Column="0"
+                                                 Text="{x:Bind ViewModel.TrackTitle, Mode=OneWay}"
+                                                 FontSize="14"
+                                                 FontWeight="SemiBold"
+                                                 Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                                 Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
+                                                 ToolTipService.ToolTip="{x:Bind ViewModel.TrackTitle, Mode=OneWay}" />
+
+                    <!-- Replaced by FckCensor Badge (Pinned right next to title, guaranteed visible) -->
+                    <Border Grid.Column="1"
+                            Margin="6,0,0,0"
+                            Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                            Padding="5,1.5"
+                            CornerRadius="4"
+                            Background="#2EFD6C"
+                            BorderBrush="#40FFFFFF"
+                            BorderThickness="1"
+                            VerticalAlignment="Center"
+                            ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)">
+                        <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE70F;" FontSize="9" Foreground="#000000" />
+                            <TextBlock Text="FCK" FontSize="10" FontWeight="Bold" Foreground="#000000" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
                 <HyperlinkButton Grid.Row="1"
                                  Command="{x:Bind ViewModel.OpenCurrentArtistCommand}"
                                  Padding="0"
@@ -135,6 +155,61 @@
                 <FontIcon Glyph="{x:Bind ViewModel.LikeGlyph, Mode=OneWay}"
                           FontSize="18"
                           Foreground="{x:Bind ViewModel.IsCurrentTrackLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+            </Button>
+
+            <!-- More Options / FckCensor Button -->
+            <Button Grid.Column="3"
+                    Width="36"
+                    Height="36"
+                    Padding="0"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    CornerRadius="18"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    helpers:CursorHelper.UseHandCursor="True"
+                    ToolTipService.ToolTip="Дополнительно / FckCensor"
+                    Margin="2,0,0,0">
+                <Button.Flyout>
+                    <MenuFlyout>
+                        <!-- When Replaced: Remove replacement -->
+                        <MenuFlyoutItem Text="Удалить замену (FckCensor)"
+                                        Command="{x:Bind ViewModel.RemoveCurrentTrackReplacementCommand}"
+                                        Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE74D;" Foreground="#FF5555" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        
+                        <!-- When Replaced: Change with another file -->
+                        <MenuFlyoutItem Text="Выбрать другой аудиофайл..."
+                                        Command="{x:Bind ViewModel.ReplaceCurrentTrackCommand}"
+                                        Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE70F;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <!-- When Not Replaced: Replace Track -->
+                        <MenuFlyoutItem Text="Подменить трек (FckCensor)..."
+                                        Command="{x:Bind ViewModel.ReplaceCurrentTrackCommand}"
+                                        Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource InvertedBoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE70F;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <!-- When Not Replaced: Report Censorship -->
+                        <MenuFlyoutItem Text="Сообщить о цензуре"
+                                        Command="{x:Bind ViewModel.ReportCurrentTrackCensorshipCommand}"
+                                        Visibility="{x:Bind ViewModel.CanReportCurrentTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE7BA;" Foreground="#FFB900" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Button.Flyout>
+                <FontIcon Glyph="&#xE712;" FontSize="16" />
             </Button>
         </Grid>
 
@@ -427,5 +502,23 @@
                     Value="{x:Bind ViewModel.Volume, Mode=TwoWay}"
                     VerticalAlignment="Center" />
         </StackPanel>
+
+        <!-- Toast / Action Feedback Pill -->
+        <Border Grid.ColumnSpan="3"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Margin="0,-48,0,0"
+                Padding="16,8"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                Visibility="{x:Bind ViewModel.IsToastOpen, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                Canvas.ZIndex="1000">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <FontIcon Glyph="&#xE73E;" FontSize="14" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                <TextBlock Text="{x:Bind ViewModel.ToastMessage, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

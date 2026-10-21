@@ -14,7 +14,7 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <!-- Title Bar -->
             <RowDefinition Height="Auto" />
@@ -90,7 +90,7 @@
 
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem x:Name="NavItemAccount"
-                                    Content="Account / Sign In"
+                                    Content="{x:Bind ViewModel.AccountNavItemTitle, Mode=OneWay}"
                                     Tag="Account">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE77B;" />

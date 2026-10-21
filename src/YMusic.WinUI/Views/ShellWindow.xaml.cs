@@ -94,6 +94,7 @@ public sealed partial class ShellWindow : Window
             DispatcherQueue.TryEnqueue(() =>
             {
                 ViewModel.IsAuthenticated = true;
+                ViewModel.CurrentUser = loginVm.CurrentUser;
                 NavView.SelectedItem = NavItemExplore;
                 NavigateToTag("Explore");
             });
@@ -103,6 +104,7 @@ public sealed partial class ShellWindow : Window
             DispatcherQueue.TryEnqueue(() =>
             {
                 ViewModel.IsAuthenticated = false;
+                ViewModel.CurrentUser = null;
                 NavView.SelectedItem = NavItemAccount;
                 NavigateToTag("Account");
             });
@@ -131,6 +133,9 @@ public sealed partial class ShellWindow : Window
 
     private async void InitializeNavigation()
     {
+        var settingsService = App.GetService<ISettingsService>();
+        ApplyTheme(settingsService.AppTheme);
+
         await ViewModel.InitializeAsync();
 
         if (ViewModel.IsAuthenticated)
@@ -244,7 +249,9 @@ public sealed partial class ShellWindow : Window
             "Wave" => typeof(WavePage),
             "Likes" => typeof(LikedTracksPage),
             "Playlists" => typeof(PlaylistsPage),
-            "Account" => typeof(LoginPage),
+            "Account" => ViewModel.IsAuthenticated ? typeof(ProfilePage) : typeof(LoginPage),
+            "Profile" => typeof(ProfilePage),
+            "Settings" => typeof(ProfilePage),
             "Artist" => typeof(ArtistPage),
             _ => null
         };
@@ -260,7 +267,7 @@ public sealed partial class ShellWindow : Window
                     "Wave" => NavItemWave,
                     "Likes" => NavItemLikes,
                     "Playlists" => NavItemPlaylists,
-                    "Account" => NavItemAccount,
+                    "Account" or "Profile" or "Settings" => NavItemAccount,
                     _ => null
                 };
                 if (navItem != null && !ReferenceEquals(NavView.SelectedItem, navItem))
@@ -299,9 +306,22 @@ public sealed partial class ShellWindow : Window
         Type t when t == typeof(WavePage) => "Wave",
         Type t when t == typeof(LikedTracksPage) => "Likes",
         Type t when t == typeof(PlaylistsPage) => "Playlists",
-        Type t when t == typeof(LoginPage) => "Account",
+        Type t when t == typeof(LoginPage) || t == typeof(ProfilePage) => "Account",
         _ => null
     };
+
+    public void ApplyTheme(string theme)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            RootGrid.RequestedTheme = theme switch
+            {
+                "Light" => ElementTheme.Light,
+                "Default" => ElementTheme.Default,
+                _ => ElementTheme.Dark
+            };
+        });
+    }
 
     public async Task NavigateToArtistAsync(Artist artist)
     {

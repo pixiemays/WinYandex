@@ -23,9 +23,37 @@ public sealed partial class Track : ObservableObject
     [property: JsonIgnore]
     private bool _isLiked;
 
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isReplaced;
+
+    [JsonIgnore]
+    public static Func<string, bool>? IsTrackReplacedChecker { get; set; }
+
+    private string _id = string.Empty;
+
     [JsonPropertyName("id")]
     [JsonConverter(typeof(StringOrNumberConverter))]
-    public string Id { get; set; } = string.Empty;
+    public string Id
+    {
+        get => _id;
+        set
+        {
+            if (_id != value)
+            {
+                _id = value;
+                RefreshReplacedStatus();
+            }
+        }
+    }
+
+    public void RefreshReplacedStatus()
+    {
+        if (IsTrackReplacedChecker != null && !string.IsNullOrWhiteSpace(_id))
+        {
+            IsReplaced = IsTrackReplacedChecker(_id);
+        }
+    }
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;

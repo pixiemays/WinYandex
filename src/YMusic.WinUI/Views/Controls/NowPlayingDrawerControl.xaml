@@ -248,6 +248,57 @@
                                           Foreground="{x:Bind ViewModel.IsCurrentTrackLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
                             </Button>
 
+                            <!-- More Options / FckCensor Button -->
+                            <Button Width="36"
+                                    Height="36"
+                                    Padding="0"
+                                    CornerRadius="18"
+                                    Background="#25FFFFFF"
+                                    BorderBrush="#25FFFFFF"
+                                    helpers:CursorHelper.UseHandCursor="True"
+                                    ToolTipService.ToolTip="Дополнительно / FckCensor">
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <!-- When Replaced: Remove replacement -->
+                                        <MenuFlyoutItem Text="Удалить замену (FckCensor)"
+                                                        Command="{x:Bind ViewModel.RemoveCurrentTrackReplacementCommand}"
+                                                        Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74D;" Foreground="#FF5555" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        
+                                        <!-- When Replaced: Change with another file -->
+                                        <MenuFlyoutItem Text="Выбрать другой аудиофайл..."
+                                                        Command="{x:Bind ViewModel.ReplaceCurrentTrackCommand}"
+                                                        Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE70F;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+
+                                        <!-- When Not Replaced: Replace Track -->
+                                        <MenuFlyoutItem Text="Подменить трек (FckCensor)..."
+                                                        Command="{x:Bind ViewModel.ReplaceCurrentTrackCommand}"
+                                                        Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource InvertedBoolToVisibilityConverter}}">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE70F;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+
+                                        <!-- When Not Replaced: Report Censorship -->
+                                        <MenuFlyoutItem Text="Сообщить о цензуре"
+                                                        Command="{x:Bind ViewModel.ReportCurrentTrackCensorshipCommand}"
+                                                        Visibility="{x:Bind ViewModel.CanReportCurrentTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE7BA;" Foreground="#FFB900" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                                <FontIcon Glyph="&#xE712;" FontSize="16" Foreground="White" />
+                            </Button>
+
                             <Border Height="28"
                                     Padding="10,2"
                                     CornerRadius="8"
@@ -274,6 +325,22 @@
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <FontIcon Glyph="{x:Bind ViewModel.LyricsBadgeGlyph, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
                                     <TextBlock Text="{x:Bind ViewModel.LyricsBadgeText, Mode=OneWay}" FontSize="11" FontWeight="SemiBold" Foreground="#E0FFFFFF" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- FCK Replaced Pill in Drawer -->
+                            <Border Height="28"
+                                    Padding="9,2"
+                                    CornerRadius="8"
+                                    Background="#2EFD6C"
+                                    BorderBrush="#40FFFFFF"
+                                    BorderThickness="1"
+                                    ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)"
+                                    VerticalAlignment="Center"
+                                    Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE70F;" FontSize="10" Foreground="#000000" />
+                                    <TextBlock Text="FCK" FontSize="11" FontWeight="Bold" Foreground="#000000" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>

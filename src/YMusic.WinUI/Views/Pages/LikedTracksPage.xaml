@@ -167,11 +167,34 @@
 
                                 <!-- Title & Artist -->
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                    <TextBlock Text="{x:Bind FullTitle}"
-                                               FontWeight="SemiBold"
-                                               FontSize="14"
-                                               Foreground="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackTitleBrushConverter}}"
-                                               TextTrimming="CharacterEllipsis" />
+                                    <Grid VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MaxWidth="360" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{x:Bind FullTitle}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="14"
+                                                   Foreground="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackTitleBrushConverter}}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxLines="1" />
+                                        <Border Grid.Column="1"
+                                                Margin="6,0,0,0"
+                                                Visibility="{x:Bind IsReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                Padding="4,1"
+                                                CornerRadius="3"
+                                                Background="#2EFD6C"
+                                                BorderBrush="#40FFFFFF"
+                                                BorderThickness="1"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)">
+                                            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="#000000" />
+                                                <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="#000000" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
                                     <TextBlock Text="{x:Bind ArtistNames}"
                                                FontSize="12"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"

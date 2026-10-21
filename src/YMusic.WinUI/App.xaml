@@ -16,8 +16,14 @@
             <converters:RepeatToAccentBrushConverter x:Key="RepeatToAccentBrushConverter" />
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
             <converters:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter" />
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
             <converters:SecondsToTimeConverter x:Key="SecondsToTimeConverter" />
             <converters:BoolToLikeBrushConverter x:Key="BoolToLikeBrushConverter" />
+            <converters:BoolToLikeGlyphConverter x:Key="BoolToLikeGlyphConverter" />
+            <converters:BoolToTrackTitleBrushConverter x:Key="BoolToTrackTitleBrushConverter" />
+            <converters:BoolToTrackHighlightBrushConverter x:Key="BoolToTrackHighlightBrushConverter" />
+            <converters:BoolToPillBackgroundConverter x:Key="BoolToPillBackgroundConverter" />
+            <converters:BoolToPillForegroundConverter x:Key="BoolToPillForegroundConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

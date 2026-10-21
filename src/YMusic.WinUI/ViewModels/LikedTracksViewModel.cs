@@ -13,6 +13,7 @@ public sealed partial class LikedTracksViewModel : BaseViewModel
     private readonly IYandexMusicService _musicService;
     private readonly IAudioPlayerService _audioPlayer;
     private readonly ICredentialStorageService _credentialStorage;
+    private readonly ITrackPlaybackCoordinator _playbackCoordinator;
 
     private readonly List<Track> _allTracks = new();
 
@@ -32,11 +33,15 @@ public sealed partial class LikedTracksViewModel : BaseViewModel
     public LikedTracksViewModel(
         IYandexMusicService musicService,
         IAudioPlayerService audioPlayer,
-        ICredentialStorageService credentialStorage)
+        ICredentialStorageService credentialStorage,
+        ITrackPlaybackCoordinator playbackCoordinator)
     {
         _musicService = musicService;
         _audioPlayer = audioPlayer;
         _credentialStorage = credentialStorage;
+        _playbackCoordinator = playbackCoordinator;
+
+        _playbackCoordinator.Register(FilteredTracks);
 
         _currentlyPlayingTrack = _audioPlayer.CurrentTrack;
         _audioPlayer.CurrentTrackChanged += (_, track) =>
@@ -195,6 +200,8 @@ public sealed partial class LikedTracksViewModel : BaseViewModel
         {
             FilteredTracks.Add(track);
         }
+
+        _playbackCoordinator.Sync(FilteredTracks);
     }
 
     [RelayCommand]
@@ -202,6 +209,19 @@ public sealed partial class LikedTracksViewModel : BaseViewModel
     {
         if (track == null)
         {
+            return;
+        }
+
+        if (Track.IsSameTrackId(track.Id, _audioPlayer.CurrentTrack?.Id))
+        {
+            if (_audioPlayer.IsPlaying)
+            {
+                _audioPlayer.Pause();
+            }
+            else
+            {
+                _audioPlayer.Play();
+            }
             return;
         }
 

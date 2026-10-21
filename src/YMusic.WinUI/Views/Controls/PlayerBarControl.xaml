@@ -33,24 +33,33 @@
                 <ColumnDefinition Width="40" />
             </Grid.ColumnDefinitions>
 
-            <!-- Album Art -->
-            <Border Grid.Column="0"
+            <!-- Album Art (Clickable to open album) -->
+            <Button Grid.Column="0"
+                    Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
+                    Padding="0"
                     Width="52"
                     Height="52"
                     CornerRadius="6"
-                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                <Grid>
-                    <FontIcon Glyph="&#xE8D6;"
-                              FontSize="24"
-                              Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center" />
-                    <Image Source="{x:Bind ViewModel.CoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
-                           Stretch="UniformToFill" />
-                </Grid>
-            </Border>
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    ToolTipService.ToolTip="View album">
+                <Border Width="52"
+                        Height="52"
+                        CornerRadius="6"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                    <Grid>
+                        <FontIcon Glyph="&#xE8D6;"
+                                  FontSize="24"
+                                  Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                        <Image Source="{x:Bind ViewModel.CoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
+                               Stretch="UniformToFill" />
+                    </Grid>
+                </Border>
+            </Button>
 
-            <!-- Title & Artist -->
+            <!-- Title & Artist (Click title to open album) -->
             <Grid Grid.Column="1"
                   Margin="12,0,8,0"
                   VerticalAlignment="Center">
@@ -58,12 +67,17 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0"
-                           Text="{x:Bind ViewModel.TrackTitle, Mode=OneWay}"
-                           FontWeight="SemiBold"
-                           FontSize="14"
-                           TextTrimming="CharacterEllipsis"
-                           MaxLines="1" />
+                <HyperlinkButton Grid.Row="0"
+                                 Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
+                                 Padding="0"
+                                 HorizontalAlignment="Left"
+                                 ToolTipService.ToolTip="View album">
+                    <TextBlock Text="{x:Bind ViewModel.TrackTitle, Mode=OneWay}"
+                               FontWeight="SemiBold"
+                               FontSize="14"
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1" />
+                </HyperlinkButton>
                 <TextBlock Grid.Row="1"
                            Text="{x:Bind ViewModel.ArtistNames, Mode=OneWay}"
                            FontSize="12"

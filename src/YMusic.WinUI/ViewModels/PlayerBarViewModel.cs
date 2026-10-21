@@ -13,6 +13,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     private readonly IAudioPlayerService _audioPlayer;
     private readonly IYandexMusicService _musicService;
     private readonly IEqualizerService _equalizer;
+    private readonly INavigationService _navigationService;
     private bool _isUserSeeking;
 
     public IEqualizerService Equalizer => _equalizer;
@@ -149,11 +150,13 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     public PlayerBarViewModel(
         IAudioPlayerService audioPlayer,
         IYandexMusicService musicService,
-        IEqualizerService equalizer)
+        IEqualizerService equalizer,
+        INavigationService navigationService)
     {
         _audioPlayer = audioPlayer;
         _musicService = musicService;
         _equalizer = equalizer;
+        _navigationService = navigationService;
 
         _volume = _audioPlayer.Volume;
         _isMuted = _audioPlayer.IsMuted;
@@ -556,6 +559,34 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         catch
         {
             RunOnUi(() => IsCurrentTrackLiked = currentlyLiked);
+        }
+    }
+
+    [RelayCommand]
+    public async Task OpenCurrentAlbumAsync()
+    {
+        if (CurrentTrack == null) return;
+
+        Album? targetAlbum = CurrentTrack.Albums?.FirstOrDefault();
+        if (targetAlbum != null && targetAlbum.Id > 0)
+        {
+            await _navigationService.NavigateToAlbumAsync(targetAlbum);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(CurrentTrack.Id) && CurrentTrack.Id.Contains(':'))
+        {
+            string[] parts = CurrentTrack.Id.Split(':');
+            if (parts.Length > 1 && long.TryParse(parts[1], out long albumId) && albumId > 0)
+            {
+                await _navigationService.NavigateToAlbumByIdAsync(albumId, CurrentTrack.AlbumTitle);
+                return;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(CurrentTrack.AlbumTitle) && targetAlbum != null)
+        {
+            await _navigationService.NavigateToAlbumAsync(targetAlbum);
         }
     }
 }

@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:YMusic.WinUI.Models"
     xmlns:converters="using:YMusic.WinUI.Converters"
+    xmlns:controls="using:YMusic.WinUI.Views.Controls"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
     mc:Ignorable="d">
 
@@ -359,47 +360,73 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:Track">
-                            <Grid Height="48" ColumnSpacing="14" Margin="0,2">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                            <Border CornerRadius="8"
+                                    Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}"
+                                    Margin="0,1">
+                                <Grid Height="48" ColumnSpacing="12" Padding="6,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                                <Border Grid.Column="0"
-                                        Width="38" Height="38"
-                                        CornerRadius="6"
-                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                                    <Grid>
-                                        <FontIcon Glyph="&#xE8D6;"
-                                                  FontSize="16"
-                                                  Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                                  HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center" />
-                                        <Image Source="{x:Bind ThumbnailUrl, Converter={StaticResource StringToImageSourceConverter}}"
-                                               Stretch="UniformToFill" />
-                                    </Grid>
-                                </Border>
+                                    <!-- Left Accent Bar -->
+                                    <Rectangle Grid.Column="0"
+                                               Width="3"
+                                               Height="16"
+                                               RadiusX="1.5"
+                                               RadiusY="1.5"
+                                               Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Left"
+                                               Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                    <TextBlock Text="{x:Bind FullTitle}"
-                                               FontSize="13"
-                                               FontWeight="SemiBold"
-                                               TextTrimming="CharacterEllipsis"
-                                               MaxLines="1" />
-                                    <TextBlock Text="{x:Bind ArtistNames}"
-                                               FontSize="11"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextTrimming="CharacterEllipsis"
-                                               MaxLines="1" />
-                                </StackPanel>
+                                    <Border Grid.Column="1"
+                                            Width="38" Height="38"
+                                            CornerRadius="6"
+                                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                        <Grid>
+                                            <FontIcon Glyph="&#xE8D6;"
+                                                      FontSize="16"
+                                                      Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center" />
+                                            <Image Source="{x:Bind ThumbnailUrl, Converter={StaticResource StringToImageSourceConverter}}"
+                                                   Stretch="UniformToFill" />
 
-                                <TextBlock Grid.Column="2"
-                                           Text="{x:Bind FormattedDuration}"
-                                           FontSize="12"
-                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                           VerticalAlignment="Center" />
-                            </Grid>
+                                            <!-- Equalizer Overlay -->
+                                            <Grid Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                  Background="#A6000000"
+                                                  CornerRadius="6">
+                                                <controls:MiniEqualizerControl IsPlaying="{x:Bind IsPlaying, Mode=OneWay}"
+                                                                               HorizontalAlignment="Center"
+                                                                               VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="{x:Bind FullTitle}"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackTitleBrushConverter}}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxLines="1" />
+                                        <TextBlock Text="{x:Bind ArtistNames}"
+                                                   FontSize="11"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxLines="1" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="3"
+                                               Text="{x:Bind FormattedDuration}"
+                                               FontSize="12"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>

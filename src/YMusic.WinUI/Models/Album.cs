@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace YMusic.WinUI.Models;
 
@@ -39,8 +40,12 @@ public sealed class Cover
     }
 }
 
-public sealed class Album
+public sealed partial class Album : ObservableObject
 {
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isLiked;
+
     [JsonPropertyName("id")]
     [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
     public long Id { get; set; }
@@ -53,6 +58,40 @@ public sealed class Album
 
     [JsonPropertyName("coverUri")]
     public string? CoverUri { get; set; }
+
+    [JsonPropertyName("artists")]
+    public List<Artist> Artists { get; set; } = new();
+
+    [JsonPropertyName("trackCount")]
+    public int TrackCount { get; set; }
+
+    [JsonPropertyName("genre")]
+    public string? Genre { get; set; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("volumes")]
+    public List<List<Track>>? Volumes { get; set; }
+
+    [JsonIgnore]
+    public string ArtistNames => Artists.Count > 0
+        ? string.Join(", ", Artists.Select(a => a.Name))
+        : string.Empty;
+
+    [JsonIgnore]
+    public string FormattedTrackCount => TrackCount == 1 ? "1 track" : $"{TrackCount} tracks";
+
+    [JsonIgnore]
+    public string FormattedYearAndTracks => Year.HasValue ? $"{Year.Value} • {FormattedTrackCount}" : FormattedTrackCount;
+
+    [JsonIgnore]
+    public string? CoverUrl => GetCoverUrl(300);
+
+    [JsonIgnore]
+    public List<Track> AllTracks => Volumes != null
+        ? Volumes.SelectMany(v => v).ToList()
+        : new List<Track>();
 
     public string? GetCoverUrl(int size = 200)
     {
@@ -71,3 +110,4 @@ public sealed class Album
         return formatted;
     }
 }
+

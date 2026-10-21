@@ -6,11 +6,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:YMusic.WinUI.Models"
+    xmlns:controls="using:YMusic.WinUI.Views.Controls"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <Grid Padding="32,24,32,16">
+    <Grid Padding="20,18,20,16">
         <Grid.RowDefinitions>
             <!-- Header & Controls -->
             <RowDefinition Height="Auto" />
@@ -98,7 +99,14 @@
                       IsItemClickEnabled="True"
                       ItemClick="TrackListView_ItemClick"
                       SelectionMode="None">
-                
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0,1" />
+                        <Setter Property="MinHeight" Value="48" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <ItemsStackPanel />
@@ -107,79 +115,112 @@
 
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:Track">
-                        <Grid Height="52" Padding="8,4" ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="40" />
-                                <ColumnDefinition Width="2*" />
-                                <ColumnDefinition Width="1*" />
-                                <ColumnDefinition Width="50" />
-                                <ColumnDefinition Width="40" />
-                            </Grid.ColumnDefinitions>
+                        <Border CornerRadius="8"
+                                Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}"
+                                Margin="0">
+                            <Grid Height="48" Padding="6,4" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="40" />
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="50" />
+                                    <ColumnDefinition Width="40" />
+                                </Grid.ColumnDefinitions>
 
-                            <!-- Thumbnail -->
-                            <Border Grid.Column="0"
-                                    Width="40"
-                                    Height="40"
-                                    CornerRadius="4"
-                                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                                <Grid>
-                                    <FontIcon Glyph="&#xE8D6;"
-                                              FontSize="16"
-                                              Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
-                                    <Image Source="{x:Bind ThumbnailUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
-                                </Grid>
-                            </Border>
+                                <!-- Accent Indicator Bar -->
+                                <Rectangle Grid.Column="0"
+                                           Width="3"
+                                           Height="18"
+                                           RadiusX="1.5"
+                                           RadiusY="1.5"
+                                           Margin="0,0,6,0"
+                                           Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Left"
+                                           Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-                            <!-- Title & Artist -->
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{x:Bind FullTitle}"
-                                           FontWeight="SemiBold"
-                                           FontSize="14"
-                                           TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{x:Bind ArtistNames}"
+                                <!-- Thumbnail -->
+                                <Border Grid.Column="1"
+                                        Width="40"
+                                        Height="40"
+                                        CornerRadius="4"
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                    <Grid>
+                                        <FontIcon Glyph="&#xE8D6;"
+                                                  FontSize="16"
+                                                  Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                                        <Image Source="{x:Bind ThumbnailUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
+
+                                        <!-- Equalizer Playing Overlay -->
+                                        <Grid Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                              Background="#A6000000"
+                                              CornerRadius="4">
+                                            <controls:MiniEqualizerControl IsPlaying="{x:Bind IsPlaying, Mode=OneWay}"
+                                                                           HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Title & Artist -->
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind FullTitle}"
+                                               FontWeight="SemiBold"
+                                               FontSize="14"
+                                               Foreground="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackTitleBrushConverter}}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind ArtistNames}"
+                                               FontSize="12"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               Margin="0,2,0,0" />
+                                </StackPanel>
+
+                                <!-- Album (Clickable) -->
+                                <HyperlinkButton Grid.Column="3"
+                                                 Click="TrackAlbum_Click"
+                                                 Tag="{x:Bind}"
+                                                 Padding="0"
+                                                 HorizontalAlignment="Left"
+                                                 VerticalAlignment="Center"
+                                                 ToolTipService.ToolTip="{x:Bind AlbumTitle}">
+                                    <TextBlock Text="{x:Bind AlbumTitle}"
+                                               FontSize="12"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </HyperlinkButton>
+
+                                <!-- Duration -->
+                                <TextBlock Grid.Column="4"
+                                           Text="{x:Bind FormattedDuration}"
                                            FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextTrimming="CharacterEllipsis"
-                                           Margin="0,2,0,0" />
-                            </StackPanel>
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center" />
 
-                            <!-- Album -->
-                            <TextBlock Grid.Column="2"
-                                       Text="{x:Bind AlbumTitle}"
-                                       FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       VerticalAlignment="Center" />
-
-                            <!-- Duration -->
-                            <TextBlock Grid.Column="3"
-                                       Text="{x:Bind FormattedDuration}"
-                                       FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Center" />
-
-                            <!-- Like Button (в самом право, после времени трека) -->
-                            <Button Grid.Column="4"
-                                    Click="UnlikeButton_Click"
-                                    Tag="{x:Bind}"
-                                    Width="36"
-                                    Height="36"
-                                    Padding="0"
-                                    HorizontalAlignment="Right"
-                                    HorizontalContentAlignment="Center"
-                                    VerticalContentAlignment="Center"
-                                    CornerRadius="18"
-                                    Background="Transparent"
-                                    BorderBrush="Transparent"
-                                    ToolTipService.ToolTip="Liked (Click to unlike)">
-                                <FontIcon Glyph="&#xEB52;"
-                                          FontSize="16"
-                                          Foreground="#FF4081" />
-                            </Button>
-                        </Grid>
+                                <!-- Like Button -->
+                                <Button Grid.Column="5"
+                                        Click="UnlikeButton_Click"
+                                        Tag="{x:Bind}"
+                                        Width="36"
+                                        Height="36"
+                                        Padding="0"
+                                        HorizontalAlignment="Right"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        CornerRadius="18"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        ToolTipService.ToolTip="Liked (Click to unlike)">
+                                    <FontIcon Glyph="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeGlyphConverter}}"
+                                              FontSize="16"
+                                              Foreground="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+                                </Button>
+                            </Grid>
+                        </Border>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

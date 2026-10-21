@@ -54,14 +54,17 @@ public partial class App : Application
         services.AddSingleton<IYandexMusicService, YandexMusicService>();
         services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
         services.AddSingleton<IEqualizerService, EqualizerService>();
+        services.AddSingleton<ITrackPlaybackCoordinator, TrackPlaybackCoordinator>();
+        services.AddSingleton<INavigationService, NavigationService>();
 
         // ViewModels
         services.AddSingleton<PlayerBarViewModel>();
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<LoginViewModel>();
         services.AddSingleton<WaveViewModel>();
+        services.AddSingleton<ExploreViewModel>();
         services.AddSingleton<LikedTracksViewModel>();
-        services.AddTransient<PlaylistsViewModel>();
+        services.AddSingleton<PlaylistsViewModel>();
 
         return services.BuildServiceProvider();
     }

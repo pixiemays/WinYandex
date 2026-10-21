@@ -66,10 +66,27 @@ public sealed class Playlist
     public List<PlaylistTrackItem> Tracks { get; set; } = new();
 
     [JsonIgnore]
-    public string? CoverUrl => GetCoverUrl(200);
+    public string OwnerName => !string.IsNullOrWhiteSpace(Owner?.DisplayName)
+        ? Owner.DisplayName
+        : (!string.IsNullOrWhiteSpace(Owner?.Name)
+            ? Owner.Name
+            : (!string.IsNullOrWhiteSpace(Owner?.Login) ? Owner.Login : "Yandex Music"));
 
-    public string? GetCoverUrl(int size = 200)
+    [JsonIgnore]
+    public List<Track> ResolvedTracks => Tracks
+        .Where(t => t.Track != null)
+        .Select(t => t.Track!)
+        .ToList();
+
+    [JsonIgnore]
+    public string FormattedTrackCount => TrackCount == 1 ? "1 track" : $"{TrackCount} tracks";
+
+    [JsonIgnore]
+    public string? CoverUrl => GetCoverUrl(300);
+
+    public string? GetCoverUrl(int size = 300)
     {
         return Cover?.GetFormattedUrl(size);
     }
 }
+

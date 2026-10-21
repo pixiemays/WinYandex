@@ -36,12 +36,21 @@
         <NavigationView x:Name="NavView"
                         Grid.Row="1"
                         PaneDisplayMode="Left"
+                        OpenPaneLength="210"
+                        CompactPaneLength="48"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
                         ItemInvoked="NavView_ItemInvoked"
                         SelectionChanged="NavView_SelectionChanged">
             
             <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="NavItemExplore"
+                                    Content="Explore"
+                                    Tag="Explore">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemWave"
                                     Content="My Wave"
                                     Tag="Wave">
@@ -57,7 +66,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemPlaylists"
-                                    Content="Playlists"
+                                    Content="Playlists &amp; Albums"
                                     Tag="Playlists">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE142;" />

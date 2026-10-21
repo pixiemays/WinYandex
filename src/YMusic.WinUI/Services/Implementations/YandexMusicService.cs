@@ -19,11 +19,13 @@ public sealed class YandexMusicService : IYandexMusicService
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly ICredentialStorageService? _credentialStorage;
     private readonly HashSet<string> _likedTrackIds = new();
+    private readonly HashSet<long> _likedAlbumIds = new();
     private string? _cachedUserId;
     private string? _token;
 
     public event EventHandler? UnauthorizedResponseReceived;
     public event EventHandler<(string TrackId, bool IsLiked)>? TrackLikeChanged;
+    public event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
     public event EventHandler? LikedTracksLoaded;
 
     public string? CurrentToken => _token;
@@ -172,6 +174,11 @@ public sealed class YandexMusicService : IYandexMusicService
             foreach (var id in ids)
             {
                 _likedTrackIds.Add(id);
+                string cleanId = id.Split(':')[0];
+                if (!string.Equals(cleanId, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    _likedTrackIds.Add(cleanId);
+                }
             }
         }
         LikedTracksLoaded?.Invoke(this, EventArgs.Empty);
@@ -375,17 +382,270 @@ public sealed class YandexMusicService : IYandexMusicService
 
     public async Task<IReadOnlyList<Playlist>> GetUserPlaylistsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        using var response = await SendRequestAsync(HttpMethod.Get, $"users/{userId}/playlists/list", null, cancellationToken).ConfigureAwait(false);
-        if (response == null || !response.IsSuccessStatusCode)
+        var allPlaylists = new List<Playlist>();
+
+        // 1. User's created playlists
+        try
         {
-            return Array.Empty<Playlist>();
+            using var response = await SendRequestAsync(HttpMethod.Get, $"users/{userId}/playlists/list", null, cancellationToken).ConfigureAwait(false);
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var apiResult = JsonSerializer.Deserialize<YandexApiResponse<List<Playlist>>>(json, _jsonOptions);
+                if (apiResult?.Result != null)
+                {
+                    allPlaylists.AddRange(apiResult.Result);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[GetUserPlaylists warning] {ex.Message}");
         }
 
-        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        var apiResult = JsonSerializer.Deserialize<YandexApiResponse<List<Playlist>>>(json, _jsonOptions);
+        // 2. User's liked / saved playlists
+        try
+        {
+            using var likedResponse = await SendRequestAsync(HttpMethod.Get, $"users/{userId}/likes/playlists", null, cancellationToken).ConfigureAwait(false);
+            if (likedResponse != null && likedResponse.IsSuccessStatusCode)
+            {
+                var json = await likedResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resEl) && resEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in resEl.EnumerateArray())
+                    {
+                        JsonElement target = item;
+                        if (item.TryGetProperty("playlist", out var plEl))
+                        {
+                            target = plEl;
+                        }
 
-        return apiResult?.Result ?? (IReadOnlyList<Playlist>)Array.Empty<Playlist>();
+                        var pl = JsonSerializer.Deserialize<Playlist>(target.GetRawText(), _jsonOptions);
+                        if (pl != null && !allPlaylists.Any(existing => existing.Kind == pl.Kind && existing.Uid == pl.Uid))
+                        {
+                            allPlaylists.Add(pl);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[GetLikedPlaylists warning] {ex.Message}");
+        }
+
+        return allPlaylists;
     }
+
+    public async Task<IReadOnlyList<Album>> GetAlbumsAsync(IEnumerable<long> albumIds, CancellationToken cancellationToken = default)
+    {
+        var idList = albumIds.Distinct().ToList();
+        if (idList.Count == 0) return Array.Empty<Album>();
+
+        var result = new List<Album>();
+        const int chunkSize = 50;
+
+        for (int i = 0; i < idList.Count; i += chunkSize)
+        {
+            var chunk = idList.Skip(i).Take(chunkSize);
+            string idsStr = string.Join(",", chunk);
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("album-ids", idsStr)
+            });
+
+            try
+            {
+                using var response = await SendRequestAsync(HttpMethod.Post, "albums", content, cancellationToken).ConfigureAwait(false);
+                if (response != null && response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    var apiResult = JsonSerializer.Deserialize<YandexApiResponse<List<Album>>>(json, _jsonOptions);
+                    if (apiResult?.Result != null)
+                    {
+                        result.AddRange(apiResult.Result);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GetAlbums Warning] {ex.Message}");
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<IReadOnlyList<Album>> GetLikedAlbumsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var albumIds = new List<long>();
+
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"users/{userId}/likes/albums", null, cancellationToken).ConfigureAwait(false);
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resEl) && resEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in resEl.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("album", out var albEl) && albEl.TryGetProperty("id", out var subId) && subId.TryGetInt64(out long sid))
+                        {
+                            albumIds.Add(sid);
+                        }
+                        else if (item.TryGetProperty("id", out var idEl) && idEl.TryGetInt64(out long id))
+                        {
+                            albumIds.Add(id);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[GetLikedAlbums warning] {ex.Message}");
+        }
+
+        lock (_likedAlbumIds)
+        {
+            _likedAlbumIds.Clear();
+            foreach (var id in albumIds)
+            {
+                _likedAlbumIds.Add(id);
+            }
+        }
+
+        if (albumIds.Count == 0)
+        {
+            return Array.Empty<Album>();
+        }
+
+        var fullAlbums = await GetAlbumsAsync(albumIds, cancellationToken).ConfigureAwait(false);
+        var albumDict = fullAlbums.ToDictionary(a => a.Id);
+
+        var result = new List<Album>();
+        foreach (var id in albumIds)
+        {
+            if (albumDict.TryGetValue(id, out var album))
+            {
+                album.IsLiked = true;
+                result.Add(album);
+            }
+        }
+
+        return result;
+    }
+
+    public bool IsAlbumLiked(long albumId)
+    {
+        lock (_likedAlbumIds)
+        {
+            return _likedAlbumIds.Contains(albumId);
+        }
+    }
+
+    public async Task<bool> LikeAlbumAsync(long albumId, CancellationToken cancellationToken = default)
+    {
+        lock (_likedAlbumIds)
+        {
+            _likedAlbumIds.Add(albumId);
+        }
+        AlbumLikeChanged?.Invoke(this, (albumId, true));
+
+        try
+        {
+            string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                lock (_likedAlbumIds) { _likedAlbumIds.Remove(albumId); }
+                AlbumLikeChanged?.Invoke(this, (albumId, false));
+                return false;
+            }
+
+            var formValues = new List<KeyValuePair<string, string>>
+            {
+                new("album-id", albumId.ToString()),
+                new("album-ids", albumId.ToString())
+            };
+            using var content = new FormUrlEncodedContent(formValues);
+            using var response = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/albums/add-multiple", content, cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            using var fallbackContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("album-id", albumId.ToString()) });
+            using var fallbackResponse = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/albums/add", fallbackContent, cancellationToken).ConfigureAwait(false);
+            if (fallbackResponse != null && fallbackResponse.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            lock (_likedAlbumIds) { _likedAlbumIds.Remove(albumId); }
+            AlbumLikeChanged?.Invoke(this, (albumId, false));
+            return false;
+        }
+        catch
+        {
+            lock (_likedAlbumIds) { _likedAlbumIds.Remove(albumId); }
+            AlbumLikeChanged?.Invoke(this, (albumId, false));
+            throw;
+        }
+    }
+
+    public async Task<bool> UnlikeAlbumAsync(long albumId, CancellationToken cancellationToken = default)
+    {
+        lock (_likedAlbumIds)
+        {
+            _likedAlbumIds.Remove(albumId);
+        }
+        AlbumLikeChanged?.Invoke(this, (albumId, false));
+
+        try
+        {
+            string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                lock (_likedAlbumIds) { _likedAlbumIds.Add(albumId); }
+                AlbumLikeChanged?.Invoke(this, (albumId, true));
+                return false;
+            }
+
+            var formValues = new List<KeyValuePair<string, string>>
+            {
+                new("album-id", albumId.ToString()),
+                new("album-ids", albumId.ToString())
+            };
+            using var content = new FormUrlEncodedContent(formValues);
+            using var response = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/albums/remove", content, cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            using var fallbackResponse = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/albums/{albumId}/remove", null, cancellationToken).ConfigureAwait(false);
+            if (fallbackResponse != null && fallbackResponse.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            lock (_likedAlbumIds) { _likedAlbumIds.Add(albumId); }
+            AlbumLikeChanged?.Invoke(this, (albumId, true));
+            return false;
+        }
+        catch
+        {
+            lock (_likedAlbumIds) { _likedAlbumIds.Add(albumId); }
+            AlbumLikeChanged?.Invoke(this, (albumId, true));
+            throw;
+        }
+    }
+
 
     public AudioQualityPreference PreferredQuality { get; set; } = AudioQualityPreference.AacPreferred;
 
@@ -607,6 +867,275 @@ public sealed class YandexMusicService : IYandexMusicService
         }
 
         return new List<LyricLine>();
+    }
+
+    public async Task<IReadOnlyList<Playlist>> GetPersonalPlaylistsAsync(CancellationToken cancellationToken = default)
+    {
+        var playlists = new List<Playlist>();
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, "feed", null, cancellationToken).ConfigureAwait(false);
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resultEl) &&
+                    resultEl.TryGetProperty("generatedPlaylists", out var genEl) &&
+                    genEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in genEl.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("data", out var dataEl))
+                        {
+                            var playlist = JsonSerializer.Deserialize<Playlist>(dataEl.GetRawText(), _jsonOptions);
+                            if (playlist != null)
+                            {
+                                playlists.Add(playlist);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetPersonalPlaylists Warning] {ex.Message}");
+        }
+
+        if (playlists.Count == 0)
+        {
+            try
+            {
+                using var landingResponse = await SendRequestAsync(HttpMethod.Get, "landing3?blocks=personal-playlists", null, cancellationToken).ConfigureAwait(false);
+                if (landingResponse != null && landingResponse.IsSuccessStatusCode)
+                {
+                    var json = await landingResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("result", out var resEl) &&
+                        resEl.TryGetProperty("blocks", out var blocksEl) &&
+                        blocksEl.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var block in blocksEl.EnumerateArray())
+                        {
+                            if (block.TryGetProperty("entities", out var entitiesEl) && entitiesEl.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var entity in entitiesEl.EnumerateArray())
+                                {
+                                    if (entity.TryGetProperty("data", out var dEl))
+                                    {
+                                        JsonElement target = dEl;
+                                        if (dEl.TryGetProperty("data", out var innerEl))
+                                        {
+                                            target = innerEl;
+                                        }
+                                        var pl = JsonSerializer.Deserialize<Playlist>(target.GetRawText(), _jsonOptions);
+                                        if (pl != null)
+                                        {
+                                            playlists.Add(pl);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        return playlists;
+    }
+
+    public async Task<IReadOnlyList<Playlist>> GetEditorialPlaylistsAsync(CancellationToken cancellationToken = default)
+    {
+        var playlists = new List<Playlist>();
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, "landing3?blocks=new-playlists", null, cancellationToken).ConfigureAwait(false);
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resultEl) &&
+                    resultEl.TryGetProperty("blocks", out var blocksEl) &&
+                    blocksEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var block in blocksEl.EnumerateArray())
+                    {
+                        if (block.TryGetProperty("entities", out var entitiesEl) && entitiesEl.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var entity in entitiesEl.EnumerateArray())
+                            {
+                                if (entity.TryGetProperty("data", out var dataEl))
+                                {
+                                    var pl = JsonSerializer.Deserialize<Playlist>(dataEl.GetRawText(), _jsonOptions);
+                                    if (pl != null)
+                                    {
+                                        playlists.Add(pl);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetEditorialPlaylists Warning] {ex.Message}");
+        }
+
+        return playlists;
+    }
+
+    public async Task<IReadOnlyList<Album>> GetNewReleasesAsync(CancellationToken cancellationToken = default)
+    {
+        var albums = new List<Album>();
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, "landing3?blocks=new-releases", null, cancellationToken).ConfigureAwait(false);
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resultEl) &&
+                    resultEl.TryGetProperty("blocks", out var blocksEl) &&
+                    blocksEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var block in blocksEl.EnumerateArray())
+                    {
+                        if (block.TryGetProperty("entities", out var entitiesEl) && entitiesEl.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var entity in entitiesEl.EnumerateArray())
+                            {
+                                if (entity.TryGetProperty("data", out var dataEl))
+                                {
+                                    var album = JsonSerializer.Deserialize<Album>(dataEl.GetRawText(), _jsonOptions);
+                                    if (album != null)
+                                    {
+                                        albums.Add(album);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetNewReleases Warning] {ex.Message}");
+        }
+
+        return albums;
+    }
+
+    public async Task<IReadOnlyList<Track>> GetChartTracksAsync(CancellationToken cancellationToken = default)
+    {
+        var tracks = new List<Track>();
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, "landing3?blocks=chart", null, cancellationToken).ConfigureAwait(false);
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resultEl) &&
+                    resultEl.TryGetProperty("blocks", out var blocksEl) &&
+                    blocksEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var block in blocksEl.EnumerateArray())
+                    {
+                        if (block.TryGetProperty("entities", out var entitiesEl) && entitiesEl.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var entity in entitiesEl.EnumerateArray())
+                            {
+                                if (entity.TryGetProperty("data", out var dataEl) &&
+                                    dataEl.TryGetProperty("track", out var trackEl))
+                                {
+                                    var track = JsonSerializer.Deserialize<Track>(trackEl.GetRawText(), _jsonOptions);
+                                    if (track != null)
+                                    {
+                                        tracks.Add(track);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetChartTracks Warning] {ex.Message}");
+        }
+
+        return tracks;
+    }
+
+    public async Task<Playlist?> GetPlaylistWithTracksAsync(long ownerUid, int kind, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"users/{ownerUid}/playlists/{kind}", null, cancellationToken).ConfigureAwait(false);
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var apiResult = JsonSerializer.Deserialize<YandexApiResponse<Playlist>>(json, _jsonOptions);
+            var playlist = apiResult?.Result;
+
+            if (playlist != null)
+            {
+                var missingIds = playlist.Tracks
+                    .Where(t => t.Track == null && !string.IsNullOrWhiteSpace(t.Id))
+                    .Select(t => t.Id)
+                    .ToList();
+
+                if (missingIds.Count > 0)
+                {
+                    var resolved = await GetTracksAsync(missingIds, cancellationToken).ConfigureAwait(false);
+                    var resolvedMap = resolved.ToDictionary(r => r.Id, StringComparer.OrdinalIgnoreCase);
+                    foreach (var item in playlist.Tracks)
+                    {
+                        if (item.Track == null && resolvedMap.TryGetValue(item.Id, out var found))
+                        {
+                            item.Track = found;
+                        }
+                    }
+                }
+            }
+
+            return playlist;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetPlaylistWithTracks Warning] {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<Album?> GetAlbumWithTracksAsync(long albumId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"albums/{albumId}/with-tracks", null, cancellationToken).ConfigureAwait(false);
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var apiResult = JsonSerializer.Deserialize<YandexApiResponse<Album>>(json, _jsonOptions);
+            return apiResult?.Result;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetAlbumWithTracks Warning] {ex.Message}");
+            return null;
+        }
     }
 
     private async Task<HttpResponseMessage?> SendRequestAsync(

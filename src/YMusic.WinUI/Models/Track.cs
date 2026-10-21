@@ -1,12 +1,25 @@
 #nullable enable
 
 using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
 using YMusic.WinUI.Converters;
 
 namespace YMusic.WinUI.Models;
 
-public sealed class Track
+public sealed partial class Track : ObservableObject
 {
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isCurrent;
+
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isPlaying;
+
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isLiked;
+
     [JsonPropertyName("id")]
     [JsonConverter(typeof(StringOrNumberConverter))]
     public string Id { get; set; } = string.Empty;

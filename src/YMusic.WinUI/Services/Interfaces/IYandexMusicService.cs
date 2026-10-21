@@ -25,6 +25,12 @@ public interface IYandexMusicService
     Task<IReadOnlyList<Track>> GetTracksAsync(IEnumerable<string> trackIds, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Playlist>> GetUserPlaylistsAsync(string userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Album>> GetLikedAlbumsAsync(string userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Album>> GetAlbumsAsync(IEnumerable<long> albumIds, CancellationToken cancellationToken = default);
+    Task<bool> LikeAlbumAsync(long albumId, CancellationToken cancellationToken = default);
+    Task<bool> UnlikeAlbumAsync(long albumId, CancellationToken cancellationToken = default);
+    bool IsAlbumLiked(long albumId);
+    event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
 
     AudioQualityPreference PreferredQuality { get; set; }
 
@@ -35,4 +41,12 @@ public interface IYandexMusicService
     Task SendRotorFeedbackAsync(string eventType, string stationType, string stationTag, string trackId, string? batchId = null, double? totalPlayedSeconds = null, CancellationToken cancellationToken = default);
 
     Task<List<LyricLine>> GetTrackLyricsAsync(string trackId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Playlist>> GetPersonalPlaylistsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Playlist>> GetEditorialPlaylistsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Album>> GetNewReleasesAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Track>> GetChartTracksAsync(CancellationToken cancellationToken = default);
+    Task<Playlist?> GetPlaylistWithTracksAsync(long ownerUid, int kind, CancellationToken cancellationToken = default);
+    Task<Album?> GetAlbumWithTracksAsync(long albumId, CancellationToken cancellationToken = default);
 }
+

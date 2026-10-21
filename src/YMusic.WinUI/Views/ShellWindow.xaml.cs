@@ -30,8 +30,8 @@ public sealed partial class ShellWindow : Window
             DispatcherQueue.TryEnqueue(() =>
             {
                 ViewModel.IsAuthenticated = true;
-                NavView.SelectedItem = NavItemLikes;
-                NavigateToTag("Likes");
+                NavView.SelectedItem = NavItemExplore;
+                NavigateToTag("Explore");
             });
         };
         loginVm.LoggedOut += (_, _) =>
@@ -54,6 +54,8 @@ public sealed partial class ShellWindow : Window
             App.GetService<IAudioPlayerService>()?.SaveCurrentState();
         };
 
+        App.GetService<INavigationService>().Initialize(this);
+
         InitializeNavigation();
     }
 
@@ -63,8 +65,8 @@ public sealed partial class ShellWindow : Window
 
         if (ViewModel.IsAuthenticated)
         {
-            NavView.SelectedItem = NavItemLikes;
-            NavigateToTag("Likes");
+            NavView.SelectedItem = NavItemExplore;
+            NavigateToTag("Explore");
         }
         else
         {
@@ -81,18 +83,33 @@ public sealed partial class ShellWindow : Window
             string itemStr = args.InvokedItem.ToString() ?? string.Empty;
             tag = itemStr switch
             {
+                "Explore" or "Главное" => "Explore",
                 "My Wave" or "Моя волна" => "Wave",
                 "Liked Tracks" => "Likes",
-                "Playlists" => "Playlists",
+                "Playlists" or "Playlists & Albums" => "Playlists",
                 "Account / Sign In" => "Account",
                 _ => null
             };
         }
 
-        if (!string.IsNullOrEmpty(tag))
+        if (string.IsNullOrEmpty(tag))
         {
-            NavigateToTag(tag);
+            return;
         }
+
+        if (tag == "Explore" && ContentFrame.Content is ExplorePage explorePage && explorePage.ViewModel.IsDetailOpen)
+        {
+            explorePage.ViewModel.CloseDetail();
+            return;
+        }
+
+        if (tag == "Playlists" && ContentFrame.Content is PlaylistsPage playlistsPage && playlistsPage.ViewModel.IsDetailOpen)
+        {
+            playlistsPage.ViewModel.CloseDetail();
+            return;
+        }
+
+        NavigateToTag(tag);
     }
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -103,7 +120,7 @@ public sealed partial class ShellWindow : Window
         }
     }
 
-    private void NavigateToTag(string? tag)
+    public void NavigateToTag(string? tag)
     {
         if (string.IsNullOrEmpty(tag))
         {
@@ -112,6 +129,7 @@ public sealed partial class ShellWindow : Window
 
         Type? targetPage = tag switch
         {
+            "Explore" => typeof(ExplorePage),
             "Wave" => typeof(WavePage),
             "Likes" => typeof(LikedTracksPage),
             "Playlists" => typeof(PlaylistsPage),
@@ -123,7 +141,24 @@ public sealed partial class ShellWindow : Window
         {
             try
             {
-                ContentFrame.Navigate(targetPage);
+                NavigationViewItem? navItem = tag switch
+                {
+                    "Explore" => NavItemExplore,
+                    "Wave" => NavItemWave,
+                    "Likes" => NavItemLikes,
+                    "Playlists" => NavItemPlaylists,
+                    "Account" => NavItemAccount,
+                    _ => null
+                };
+                if (navItem != null && !ReferenceEquals(NavView.SelectedItem, navItem))
+                {
+                    NavView.SelectedItem = navItem;
+                }
+
+                if (ContentFrame.CurrentSourcePageType != targetPage)
+                {
+                    ContentFrame.Navigate(targetPage);
+                }
             }
             catch (Exception ex)
             {
@@ -139,4 +174,22 @@ public sealed partial class ShellWindow : Window
             }
         }
     }
+
+    public string? CurrentPageTag => ContentFrame.CurrentSourcePageType switch
+    {
+        Type t when t == typeof(ExplorePage) => "Explore",
+        Type t when t == typeof(WavePage) => "Wave",
+        Type t when t == typeof(LikedTracksPage) => "Likes",
+        Type t when t == typeof(PlaylistsPage) => "Playlists",
+        Type t when t == typeof(LoginPage) => "Account",
+        _ => null
+    };
+
+    public void SelectPlaylistsTab()
+    {
+        NavView.SelectedItem = NavItemPlaylists;
+        NavigateToTag("Playlists");
+    }
+
+    public PlaylistsPage? CurrentPlaylistsPage => ContentFrame.Content as PlaylistsPage;
 }

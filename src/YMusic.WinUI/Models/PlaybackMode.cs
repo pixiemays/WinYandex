@@ -6,5 +6,7 @@ public enum PlaybackMode
     Wave,
     LikedTracks,
     Playlist,
+    Album,
     Custom
 }
+

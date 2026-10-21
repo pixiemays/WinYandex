@@ -12,6 +12,7 @@ public sealed partial class WaveViewModel : BaseViewModel
 {
     private readonly IYandexMusicService _musicService;
     private readonly IAudioPlayerService _audioPlayer;
+    private readonly ITrackPlaybackCoordinator _playbackCoordinator;
 
     private string? _currentBatchId;
     private bool _isWaveActive;
@@ -49,10 +50,16 @@ public sealed partial class WaveViewModel : BaseViewModel
     [ObservableProperty]
     private string _statusText = "Press Play to start your infinite personalized stream";
 
-    public WaveViewModel(IYandexMusicService musicService, IAudioPlayerService audioPlayer)
+    public WaveViewModel(
+        IYandexMusicService musicService,
+        IAudioPlayerService audioPlayer,
+        ITrackPlaybackCoordinator playbackCoordinator)
     {
         _musicService = musicService;
         _audioPlayer = audioPlayer;
+        _playbackCoordinator = playbackCoordinator;
+
+        _playbackCoordinator.Register(UpcomingTracks);
 
         InitializePresets();
         _selectedPreset = Presets[0];

@@ -59,15 +59,10 @@
                                 BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
                                 BorderThickness="2"
                                 Margin="0,0,20,0">
-                            <Grid>
-                                <FontIcon Glyph="&#xE77B;"
-                                          FontSize="36"
-                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center" />
-                                <Image Source="{x:Bind ViewModel.User.AvatarUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
-                                       Stretch="UniformToFill" />
-                            </Grid>
+                            <PersonPicture Width="80"
+                                           Height="80"
+                                           DisplayName="{x:Bind ViewModel.User.DisplayName, Mode=OneWay}"
+                                           ProfilePicture="{x:Bind ViewModel.User.AvatarUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}" />
                         </Border>
 
                         <!-- User Info -->

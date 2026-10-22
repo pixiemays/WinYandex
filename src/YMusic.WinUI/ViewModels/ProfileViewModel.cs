@@ -2,6 +2,9 @@
 
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
+using System.Text.Json;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Windows.ApplicationModel.DataTransfer;
@@ -10,6 +13,14 @@ using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.Views;
 
 namespace YMusic.WinUI.ViewModels;
+
+public sealed class ProfileCacheData
+{
+    public UserProfile? User { get; set; }
+    public int LikedTracksCount { get; set; }
+    public int PlaylistsCount { get; set; }
+    public int PinnedItemsCount { get; set; }
+}
 
 public sealed partial class ProfileViewModel : BaseViewModel
 {
@@ -25,6 +36,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private readonly IAudioCacheService _audioCacheService;
 
     private readonly string _appDataDir;
+    private readonly string _profileCachePath;
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
+    private bool _hasCachedProfile;
     private bool _isInitializingSettings;
 
     [ObservableProperty]
@@ -124,8 +138,11 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
         _appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic");
         AppDataPath = _appDataDir;
+        _profileCachePath = Path.Combine(_appDataDir, "profile_cache.json");
 
-        if (_credentialStorage.HasToken())
+        LoadCachedProfile();
+
+        if (_user == null && _credentialStorage.HasToken())
         {
             _isLoggedIn = true;
             _user = _loginViewModel.CurrentUser;
@@ -140,7 +157,12 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
     public async Task InitializeAsync()
     {
-        SetBusy(true);
+        bool shouldSetBusy = User == null && !_hasCachedProfile;
+        if (shouldSetBusy)
+        {
+            SetBusy(true);
+        }
+
         try
         {
             await RefreshProfileAsync();
@@ -148,7 +170,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
         }
         finally
         {
-            SetBusy(false);
+            if (shouldSetBusy)
+            {
+                SetBusy(false);
+            }
         }
     }
 
@@ -405,38 +430,52 @@ public sealed partial class ProfileViewModel : BaseViewModel
     [RelayCommand]
     public async Task RefreshProfileAsync()
     {
-        string? token = _credentialStorage.GetToken();
-        if (string.IsNullOrWhiteSpace(token))
+        if (!await _refreshLock.WaitAsync(0))
         {
-            RunOnUi(() =>
-            {
-                User = null;
-                IsLoggedIn = false;
-                LikedTracksCount = 0;
-                PlaylistsCount = 0;
-                PinnedItemsCount = _pinnedItemsService.GetPinnedItems().Count;
-            });
+            // Already refreshing in background, avoid duplicate parallel calls
             return;
         }
 
         try
         {
+            string? token = _credentialStorage.GetToken();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                RunOnUi(() =>
+                {
+                    User = null;
+                    IsLoggedIn = false;
+                    LikedTracksCount = 0;
+                    PlaylistsCount = 0;
+                    PinnedItemsCount = _pinnedItemsService.GetPinnedItems().Count;
+                });
+                ClearCachedProfile();
+                return;
+            }
+
             _musicService.SetOAuthToken(token);
             var profile = await _musicService.GetAccountStatusAsync();
             if (profile == null && _loginViewModel.CurrentUser != null)
             {
                 profile = _loginViewModel.CurrentUser;
             }
+            if (profile == null && User != null)
+            {
+                profile = User;
+            }
 
-            int likedCount = 0;
-            int playlistsCount = 0;
+            int likedCount = LikedTracksCount;
+            int playlistsCount = PlaylistsCount;
 
             if (profile != null && !string.IsNullOrWhiteSpace(profile.UserId))
             {
                 try
                 {
                     var likedIds = await _musicService.GetLikedTrackIdsAsync(profile.UserId);
-                    likedCount = likedIds?.Count ?? 0;
+                    if (likedIds != null)
+                    {
+                        likedCount = likedIds.Count;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -446,7 +485,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 try
                 {
                     var playlists = await _musicService.GetUserPlaylistsAsync(profile.UserId);
-                    playlistsCount = playlists?.Count ?? 0;
+                    if (playlists != null)
+                    {
+                        playlistsCount = playlists.Count;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -464,6 +506,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 PlaylistsCount = playlistsCount;
                 PinnedItemsCount = pinnedCount;
             });
+
+            SaveCachedProfile();
         }
         catch (Exception ex)
         {
@@ -472,6 +516,82 @@ public sealed partial class ProfileViewModel : BaseViewModel
             {
                 IsLoggedIn = _credentialStorage.HasToken();
             });
+        }
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    private void LoadCachedProfile()
+    {
+        try
+        {
+            if (File.Exists(_profileCachePath) && _credentialStorage.HasToken())
+            {
+                string json = File.ReadAllText(_profileCachePath);
+                var cached = JsonSerializer.Deserialize<ProfileCacheData>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (cached != null && cached.User != null)
+                {
+                    User = cached.User;
+                    IsLoggedIn = true;
+                    LikedTracksCount = cached.LikedTracksCount;
+                    PlaylistsCount = cached.PlaylistsCount;
+                    PinnedItemsCount = cached.PinnedItemsCount > 0 ? cached.PinnedItemsCount : _pinnedItemsService.GetPinnedItems().Count;
+                    _hasCachedProfile = true;
+                    Debug.WriteLine($"[ProfileViewModel] Loaded cached profile for {User.DisplayName}: likes={LikedTracksCount}, playlists={PlaylistsCount}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ProfileViewModel] Failed to load cached profile: {ex.Message}");
+        }
+    }
+
+    private void SaveCachedProfile()
+    {
+        try
+        {
+            if (User != null && IsLoggedIn)
+            {
+                var data = new ProfileCacheData
+                {
+                    User = User,
+                    LikedTracksCount = LikedTracksCount,
+                    PlaylistsCount = PlaylistsCount,
+                    PinnedItemsCount = PinnedItemsCount
+                };
+                string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+                Directory.CreateDirectory(_appDataDir);
+                File.WriteAllText(_profileCachePath, json);
+                _hasCachedProfile = true;
+                Debug.WriteLine("[ProfileViewModel] Successfully cached profile data to disk.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ProfileViewModel] Failed to save cached profile: {ex.Message}");
+        }
+    }
+
+    private void ClearCachedProfile()
+    {
+        try
+        {
+            if (File.Exists(_profileCachePath))
+            {
+                File.Delete(_profileCachePath);
+            }
+            _hasCachedProfile = false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ProfileViewModel] Failed to delete profile cache: {ex.Message}");
         }
     }
 
@@ -504,6 +624,11 @@ public sealed partial class ProfileViewModel : BaseViewModel
     [RelayCommand]
     public void Logout()
     {
+        ClearCachedProfile();
+        User = null;
+        IsLoggedIn = false;
+        LikedTracksCount = 0;
+        PlaylistsCount = 0;
         _loginViewModel.LogoutCommand.Execute(null);
     }
 

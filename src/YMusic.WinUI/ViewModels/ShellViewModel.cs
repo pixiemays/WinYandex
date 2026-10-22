@@ -86,6 +86,19 @@ public sealed partial class ShellViewModel : BaseViewModel
                 if (profile != null)
                 {
                     _ = _musicService.EnsureLikedTracksLoadedAsync();
+
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var profileVm = App.GetService<ProfileViewModel>();
+                            await profileVm.InitializeAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[ShellViewModel] Profile preloading error: {ex.Message}");
+                        }
+                    });
                 }
             }
             catch (Exception ex)

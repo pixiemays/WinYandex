@@ -60,6 +60,15 @@ public sealed class YandexMusicService : IYandexMusicService
             PropertyNameCaseInsensitive = true,
             NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
+
+        if (_credentialStorage != null)
+        {
+            string? storedToken = _credentialStorage.GetToken();
+            if (!string.IsNullOrWhiteSpace(storedToken))
+            {
+                SetOAuthToken(storedToken);
+            }
+        }
     }
 
     public void SetOAuthToken(string token)
@@ -105,7 +114,42 @@ public sealed class YandexMusicService : IYandexMusicService
                 return (null, $"Missing 'result' field in response: {json}");
             }
 
-            return (UserProfile.FromAccountStatus(apiResult.Result), null);
+            var profile = UserProfile.FromAccountStatus(apiResult.Result);
+
+            string? token = _token;
+            if (string.IsNullOrWhiteSpace(token) && _credentialStorage != null)
+            {
+                token = _credentialStorage.GetToken();
+            }
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                try
+                {
+                    using var infoReq = new HttpRequestMessage(HttpMethod.Get, "https://login.yandex.ru/info?format=json");
+                    infoReq.Headers.Authorization = new AuthenticationHeaderValue("OAuth", token);
+                    using var infoRes = await _httpClient.SendAsync(infoReq, cancellationToken).ConfigureAwait(false);
+                    if (infoRes.IsSuccessStatusCode)
+                    {
+                        var infoJson = await infoRes.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                        using var infoDoc = JsonDocument.Parse(infoJson);
+                        if (infoDoc.RootElement.TryGetProperty("default_avatar_id", out var avatarElem))
+                        {
+                            string? avatarId = avatarElem.GetString();
+                            if (!string.IsNullOrWhiteSpace(avatarId))
+                            {
+                                profile.AvatarUrl = $"https://avatars.yandex.net/get-yapic/{avatarId}/islands-200";
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[YandexMusicService] Failed to load custom avatar from login.yandex.ru: {ex.Message}");
+                }
+            }
+
+            return (profile, null);
         }
         catch (Exception ex)
         {

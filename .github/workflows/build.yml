@@ -30,12 +30,12 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore src/YMusic.WinUI/YMusic.WinUI.csproj
+      run: dotnet restore src/YMusic.WinUI/YMusic.WinUI.csproj -r win-x64
 
     # Fast CI validation on push to main or PR (under 1 minute)
     - name: Fast Build & Verify (CI)
       if: "!startsWith(github.ref, 'refs/tags/v') && github.event_name != 'workflow_dispatch'"
-      run: dotnet build src/YMusic.WinUI/YMusic.WinUI.csproj -c Release --no-restore
+      run: dotnet build src/YMusic.WinUI/YMusic.WinUI.csproj -c Release -r win-x64 --no-restore
 
     # --- RELEASE PIPELINE (Runs only for tags v* or manual workflow_dispatch) ---
     - name: Install Inno Setup

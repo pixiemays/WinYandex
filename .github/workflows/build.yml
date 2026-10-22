@@ -9,6 +9,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -25,16 +29,25 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Install Inno Setup
-      run: choco install innosetup -y --no-progress
-
     - name: Restore dependencies
       run: dotnet restore src/YMusic.WinUI/YMusic.WinUI.csproj
 
-    - name: Build and Publish (win-x64)
-      run: dotnet publish src/YMusic.WinUI/YMusic.WinUI.csproj -c Release /p:PublishProfile=win-x64
+    # Fast CI validation on push to main or PR (under 1 minute)
+    - name: Fast Build & Verify (CI)
+      if: "!startsWith(github.ref, 'refs/tags/v') && github.event_name != 'workflow_dispatch'"
+      run: dotnet build src/YMusic.WinUI/YMusic.WinUI.csproj -c Release --no-restore
+
+    # --- RELEASE PIPELINE (Runs only for tags v* or manual workflow_dispatch) ---
+    - name: Install Inno Setup
+      if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+      run: choco install innosetup -y --no-progress
+
+    - name: Publish Release (win-x64)
+      if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+      run: dotnet publish src/YMusic.WinUI/YMusic.WinUI.csproj -c Release /p:PublishProfile=win-x64 --no-restore
 
     - name: Package Release (Portable ZIP & Inno Setup Installer)
+      if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
       shell: pwsh
       run: |
         $dist = "dist"
@@ -47,8 +60,12 @@ jobs:
             Copy-Item "$binDir/YMusic.WinUI.pri" "$publishDir/YMusic.WinUI.pri" -Force
         }
         
-        # 1. Portable ZIP
-        Compress-Archive -Path "$publishDir/*" -DestinationPath "$dist/WinYandex-win-x64-portable.zip" -CompressionLevel Optimal
+        # 1. Ultra-fast portable ZIP using preinstalled 7z (fallback to Compress-Archive)
+        if (Get-Command 7z -ErrorAction SilentlyContinue) {
+            7z a -tzip -mx=5 "$dist/WinYandex-win-x64-portable.zip" "$publishDir/*"
+        } else {
+            Compress-Archive -Path "$publishDir/*" -DestinationPath "$dist/WinYandex-win-x64-portable.zip" -CompressionLevel Optimal
+        }
         
         # 2. Inno Setup Installer EXE
         $version = if ($env:GITHUB_REF -like "refs/tags/v*") { $env:GITHUB_REF.Substring(11) } else { "0.9.0" }
@@ -59,6 +76,7 @@ jobs:
         & $iscc "/DMyAppVersion=$version" installer\installer.iss
 
     - name: Upload Build Artifacts
+      if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
       uses: actions/upload-artifact@v4
       with:
         name: WinYandex-x64-artifacts

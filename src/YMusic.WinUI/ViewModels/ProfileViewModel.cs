@@ -82,6 +82,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private bool _isMinimizeToTrayEnabled;
 
     [ObservableProperty]
+    private bool _isTrackNotificationsEnabled;
+
+    [ObservableProperty]
     private bool _isFckCensorEnabled;
 
     [ObservableProperty]
@@ -161,6 +164,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
             IsGaplessPreloadEnabled = _settingsService.GaplessPreloadEnabled;
             IsDiscordRpcEnabled = _settingsService.DiscordRpcEnabled;
             IsMinimizeToTrayEnabled = _settingsService.MinimizeToTrayOnClose;
+            IsTrackNotificationsEnabled = _settingsService.TrackNotificationsEnabled;
             IsFckCensorEnabled = _settingsService.FckCensorEnabled;
             IsAudioCacheEnabled = _settingsService.AudioCacheEnabled;
 
@@ -225,6 +229,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
             else if (propName == nameof(ISettingsService.MinimizeToTrayOnClose))
             {
                 IsMinimizeToTrayEnabled = _settingsService.MinimizeToTrayOnClose;
+            }
+            else if (propName == nameof(ISettingsService.TrackNotificationsEnabled))
+            {
+                IsTrackNotificationsEnabled = _settingsService.TrackNotificationsEnabled;
             }
             else if (propName == nameof(ISettingsService.FckCensorEnabled))
             {
@@ -292,6 +300,13 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         if (_isInitializingSettings) return;
         _settingsService.MinimizeToTrayOnClose = value;
+    }
+
+    partial void OnIsTrackNotificationsEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.TrackNotificationsEnabled = value;
+        ShowNotification(value ? "Desktop notifications enabled for track changes." : "Desktop notifications disabled.");
     }
 
     partial void OnIsFckCensorEnabledChanged(bool value)

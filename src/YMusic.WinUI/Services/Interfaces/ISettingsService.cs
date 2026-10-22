@@ -10,6 +10,7 @@ public interface ISettingsService
     bool GaplessPreloadEnabled { get; set; }
     bool DiscordRpcEnabled { get; set; }
     bool MinimizeToTrayOnClose { get; set; }
+    bool TrackNotificationsEnabled { get; set; }
     bool FckCensorEnabled { get; set; }
     string AppTheme { get; set; }
     bool AudioCacheEnabled { get; set; }

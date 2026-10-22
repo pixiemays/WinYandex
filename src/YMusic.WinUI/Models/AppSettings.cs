@@ -19,6 +19,9 @@ public sealed class AppSettings
     [JsonPropertyName("minimizeToTrayOnClose")]
     public bool MinimizeToTrayOnClose { get; set; } = true;
 
+    [JsonPropertyName("trackNotificationsEnabled")]
+    public bool TrackNotificationsEnabled { get; set; } = true;
+
     [JsonPropertyName("fckCensorEnabled")]
     public bool FckCensorEnabled { get; set; } = true;
 

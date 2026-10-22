@@ -110,14 +110,25 @@ public sealed partial class ShellWindow : Window
             });
         };
 
+        var trayService = App.GetService<ITrayNotificationService>();
+        var settingsService = App.GetService<ISettingsService>();
+        trayService.Initialize(this);
+
+        AppWindow.Closing += (sender, args) =>
+        {
+            App.GetService<IAudioPlayerService>()?.SaveCurrentState();
+
+            if (!trayService.IsExplicitExit && settingsService.MinimizeToTrayOnClose)
+            {
+                args.Cancel = true;
+                trayService.MinimizeToTray();
+            }
+        };
+
         Closed += (_, _) =>
         {
             App.GetService<IAudioPlayerService>()?.SaveCurrentState();
-        };
-
-        AppWindow.Closing += (_, _) =>
-        {
-            App.GetService<IAudioPlayerService>()?.SaveCurrentState();
+            trayService.Dispose();
         };
 
         App.GetService<INavigationService>().Initialize(this);

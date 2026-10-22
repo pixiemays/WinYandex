@@ -92,6 +92,20 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public bool TrackNotificationsEnabled
+    {
+        get => _settings.TrackNotificationsEnabled;
+        set
+        {
+            if (_settings.TrackNotificationsEnabled != value)
+            {
+                _settings.TrackNotificationsEnabled = value;
+                Save();
+                NotifyChanged(nameof(TrackNotificationsEnabled));
+            }
+        }
+    }
+
     public bool FckCensorEnabled
     {
         get => _settings.FckCensorEnabled;

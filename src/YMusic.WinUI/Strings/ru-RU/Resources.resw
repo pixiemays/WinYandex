@@ -98,6 +98,7 @@
   <data name="Explore_PopularPlaylists" xml:space="preserve"><value>Популярные плейлисты</value></data>
   <data name="Explore_PlayAll" xml:space="preserve"><value>Слушать всё</value></data>
   <data name="Explore_TracksCount" xml:space="preserve"><value>{0} треков</value></data>
+  <data name="Explore_Subtitle" xml:space="preserve"><value>Персональные миксы, плейлисты редакции, свежие релизы и чарты Яндекса</value></data>
 
   <!-- My Wave -->
   <data name="Wave_Title" xml:space="preserve"><value>Моя волна</value></data>

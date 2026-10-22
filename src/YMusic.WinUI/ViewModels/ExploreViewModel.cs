@@ -28,12 +28,18 @@ public sealed partial class ExploreViewModel : BaseViewModel
 
     public bool IsBrowseVisible => !IsDetailOpen;
 
-    public string HeaderTitle => Loc?["Nav_Explore"] ?? "Главное";
-    public string HeaderSubtitle => Loc?["Explore_Subtitle"] ?? (Loc?.CurrentLanguage == "en" ? "Personal mixes, curated playlists, fresh albums & charts from Yandex" : "Персональные миксы, плейлисты редакции, свежие релизы и чарты Яндекса");
-    public string PersonalPlaylistsTitle => Loc?["Explore_PickedForYou"] ?? (Loc?.CurrentLanguage == "en" ? "Made For You" : "Собрано для вас");
-    public string NewReleasesTitle => Loc?["Explore_NewReleases"] ?? (Loc?.CurrentLanguage == "en" ? "New Releases & Albums" : "Новые релизы и альбомы");
-    public string EditorialPlaylistsTitle => Loc?["Explore_PopularPlaylists"] ?? (Loc?.CurrentLanguage == "en" ? "Popular Playlists" : "Популярные плейлисты");
-    public string ChartTitle => Loc?["Explore_TopChart"] ?? (Loc?.CurrentLanguage == "en" ? "Top Chart" : "Чарт");
+    private string GetLoc(string key, string fallback)
+    {
+        var val = Loc?[key];
+        return (!string.IsNullOrEmpty(val) && val != key) ? val : fallback;
+    }
+
+    public string HeaderTitle => GetLoc("Nav_Explore", "Главное");
+    public string HeaderSubtitle => GetLoc("Explore_Subtitle", Loc?.CurrentLanguage == "en" ? "Personal mixes, curated playlists, fresh albums & charts from Yandex" : "Персональные миксы, плейлисты редакции, свежие релизы и чарты Яндекса");
+    public string PersonalPlaylistsTitle => GetLoc("Explore_PickedForYou", Loc?.CurrentLanguage == "en" ? "Made For You" : "Собрано для вас");
+    public string NewReleasesTitle => GetLoc("Explore_NewReleases", Loc?.CurrentLanguage == "en" ? "New Releases & Albums" : "Новые релизы и альбомы");
+    public string EditorialPlaylistsTitle => GetLoc("Explore_PopularPlaylists", Loc?.CurrentLanguage == "en" ? "Popular Playlists" : "Популярные плейлисты");
+    public string ChartTitle => GetLoc("Explore_TopChart", Loc?.CurrentLanguage == "en" ? "Top Chart" : "Чарт");
 
     protected override void OnLanguageChanged()
     {

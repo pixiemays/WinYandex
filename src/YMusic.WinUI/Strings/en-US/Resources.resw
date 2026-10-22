@@ -98,6 +98,7 @@
   <data name="Explore_PopularPlaylists" xml:space="preserve"><value>Popular Playlists</value></data>
   <data name="Explore_PlayAll" xml:space="preserve"><value>Play All</value></data>
   <data name="Explore_TracksCount" xml:space="preserve"><value>{0} tracks</value></data>
+  <data name="Explore_Subtitle" xml:space="preserve"><value>Personal mixes, curated playlists, fresh albums &amp; charts from Yandex</value></data>
 
   <!-- My Wave -->
   <data name="Wave_Title" xml:space="preserve"><value>My Wave</value></data>

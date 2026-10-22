@@ -31,10 +31,16 @@ public sealed partial class WaveViewModel : BaseViewModel
 
     public string LikeGlyph => IsCurrentTrackLiked ? "\uEB52" : "\uEB51";
 
-    public string LikeTooltip => IsCurrentTrackLiked ? (Loc?["Common_RemoveFavorite"] ?? "Удалить из избранного") : (Loc?["Common_AddFavorite"] ?? "В избранное (Обучать волну)");
+    private string GetLoc(string key, string fallback)
+    {
+        var val = Loc?[key];
+        return (!string.IsNullOrEmpty(val) && val != key) ? val : fallback;
+    }
 
-    public string WaveTitleText => Loc?["Wave_Title"] ?? "Моя волна";
-    public string WaveSubtitleText => Loc?["Wave_Subtitle"] ?? "Бесконечный персональный поток музыки";
+    public string LikeTooltip => IsCurrentTrackLiked ? GetLoc("Common_RemoveFavorite", "Удалить из избранного") : GetLoc("Common_AddFavorite", "В избранное (Обучать волну)");
+
+    public string WaveTitleText => GetLoc("Wave_Title", "Моя волна");
+    public string WaveSubtitleText => GetLoc("Wave_Subtitle", "Бесконечный персональный поток музыки");
 
     [ObservableProperty]
     private Track? _currentTrack;

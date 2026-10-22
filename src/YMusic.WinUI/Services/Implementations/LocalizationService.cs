@@ -105,6 +105,15 @@ public sealed class LocalizationService : ILocalizationService
         ["Nav_Wave"] = ("Моя волна", "My Wave"),
         ["Nav_Likes"] = ("Любимые треки", "Liked Tracks"),
         ["Nav_Playlists"] = ("Плейлисты и альбомы", "Playlists & Albums"),
+        ["Explore_Subtitle"] = ("Персональные миксы, плейлисты редакции, свежие релизы и чарты Яндекса", "Personal mixes, curated playlists, fresh albums & charts from Yandex"),
+        ["Explore_PickedForYou"] = ("Собрано для вас", "Picked for you"),
+        ["Explore_NewReleases"] = ("Новые релизы и альбомы", "New Releases & Albums"),
+        ["Explore_PopularPlaylists"] = ("Популярные плейлисты", "Popular Playlists"),
+        ["Explore_TopChart"] = ("Чарт", "Top Chart"),
+        ["Wave_Title"] = ("Моя волна", "My Wave"),
+        ["Wave_Subtitle"] = ("Бесконечный персональный поток музыки", "Endless personalized music stream"),
+        ["Common_RemoveFavorite"] = ("Удалить из избранного", "Remove from favorites"),
+        ["Common_AddFavorite"] = ("В избранное (Обучать волну)", "Add to favorites (Train Wave)"),
     };
 
     public string GetString(string key, params object[] args)

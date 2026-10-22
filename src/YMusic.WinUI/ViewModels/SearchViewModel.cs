@@ -86,11 +86,17 @@ public sealed partial class SearchViewModel : BaseViewModel
     [ObservableProperty]
     private bool _isLoadingMoreTracks;
 
-    public string AllTabHeader => Loc?["Search_Tab_All"] ?? "Все";
-    public string TracksTabHeader => TracksTotal > 0 ? $"{Loc?["Search_Tab_Tracks"] ?? "Треки"} ({TracksTotal:N0})" : (Loc?["Search_Tab_Tracks"] ?? "Треки");
-    public string ArtistsTabHeader => ArtistsTotal > 0 ? $"{Loc?["Search_Tab_Artists"] ?? "Артисты"} ({ArtistsTotal:N0})" : (Loc?["Search_Tab_Artists"] ?? "Артисты");
-    public string AlbumsTabHeader => AlbumsTotal > 0 ? $"{Loc?["Search_Tab_Albums"] ?? "Альбомы"} ({AlbumsTotal:N0})" : (Loc?["Search_Tab_Albums"] ?? "Альбомы");
-    public string PlaylistsTabHeader => PlaylistsTotal > 0 ? $"{Loc?["Search_Tab_Playlists"] ?? "Плейлисты"} ({PlaylistsTotal:N0})" : (Loc?["Search_Tab_Playlists"] ?? "Плейлисты");
+    private string GetLoc(string key, string fallback)
+    {
+        var val = Loc?[key];
+        return (!string.IsNullOrEmpty(val) && val != key) ? val : fallback;
+    }
+
+    public string AllTabHeader => GetLoc("Search_Tab_All", "Все");
+    public string TracksTabHeader => TracksTotal > 0 ? $"{GetLoc("Search_Tab_Tracks", "Треки")} ({TracksTotal:N0})" : GetLoc("Search_Tab_Tracks", "Треки");
+    public string ArtistsTabHeader => ArtistsTotal > 0 ? $"{GetLoc("Search_Tab_Artists", "Артисты")} ({ArtistsTotal:N0})" : GetLoc("Search_Tab_Artists", "Артисты");
+    public string AlbumsTabHeader => AlbumsTotal > 0 ? $"{GetLoc("Search_Tab_Albums", "Альбомы")} ({AlbumsTotal:N0})" : GetLoc("Search_Tab_Albums", "Альбомы");
+    public string PlaylistsTabHeader => PlaylistsTotal > 0 ? $"{GetLoc("Search_Tab_Playlists", "Плейлисты")} ({PlaylistsTotal:N0})" : GetLoc("Search_Tab_Playlists", "Плейлисты");
 
     protected override void OnLanguageChanged()
     {

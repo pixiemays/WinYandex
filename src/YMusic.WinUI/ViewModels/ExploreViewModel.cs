@@ -30,7 +30,6 @@ public sealed partial class ExploreViewModel : BaseViewModel
 
     public string HeaderTitle => Loc?["Nav_Explore"] ?? "Главное";
     public string HeaderSubtitle => Loc?["Explore_Subtitle"] ?? (Loc?.CurrentLanguage == "en" ? "Personal mixes, curated playlists, fresh albums & charts from Yandex" : "Персональные миксы, плейлисты редакции, свежие релизы и чарты Яндекса");
-    public string RefreshButtonText => Loc?["Explore_Refresh"] ?? (Loc?.CurrentLanguage == "en" ? "Refresh" : "Обновить");
     public string PersonalPlaylistsTitle => Loc?["Explore_PickedForYou"] ?? (Loc?.CurrentLanguage == "en" ? "Made For You" : "Собрано для вас");
     public string NewReleasesTitle => Loc?["Explore_NewReleases"] ?? (Loc?.CurrentLanguage == "en" ? "New Releases & Albums" : "Новые релизы и альбомы");
     public string EditorialPlaylistsTitle => Loc?["Explore_PopularPlaylists"] ?? (Loc?.CurrentLanguage == "en" ? "Popular Playlists" : "Популярные плейлисты");
@@ -40,7 +39,6 @@ public sealed partial class ExploreViewModel : BaseViewModel
     {
         OnPropertyChanged(nameof(HeaderTitle));
         OnPropertyChanged(nameof(HeaderSubtitle));
-        OnPropertyChanged(nameof(RefreshButtonText));
         OnPropertyChanged(nameof(PersonalPlaylistsTitle));
         OnPropertyChanged(nameof(NewReleasesTitle));
         OnPropertyChanged(nameof(EditorialPlaylistsTitle));

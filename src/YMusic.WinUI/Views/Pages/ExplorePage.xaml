@@ -34,29 +34,14 @@
                       Padding="32,24,32,24">
             <StackPanel Spacing="28">
                 <!-- Header -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="{x:Bind ViewModel.HeaderTitle, Mode=OneWay}"
-                                   FontSize="28"
-                                   FontWeight="Bold" />
-                        <TextBlock Text="{x:Bind ViewModel.HeaderSubtitle, Mode=OneWay}"
-                                   FontSize="13"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-                    <Button Grid.Column="1"
-                            Command="{x:Bind ViewModel.LoadExploreDataCommand}"
-                            Height="36"
-                            ToolTipService.ToolTip="{x:Bind ViewModel.RefreshButtonText, Mode=OneWay}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE72C;" FontSize="14" />
-                            <TextBlock Text="{x:Bind ViewModel.RefreshButtonText, Mode=OneWay}" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind ViewModel.HeaderTitle, Mode=OneWay}"
+                               FontSize="28"
+                               FontWeight="Bold" />
+                    <TextBlock Text="{x:Bind ViewModel.HeaderSubtitle, Mode=OneWay}"
+                               FontSize="13"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
 
                 <!-- SECTION 1: Personal Playlists ("Собираем для вас" / Плейлист дня, etc.) -->
                 <StackPanel Spacing="14">

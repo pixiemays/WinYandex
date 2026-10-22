@@ -12,7 +12,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled"
                   Padding="36,28,36,48">
-        <StackPanel MaxWidth="880" HorizontalAlignment="Stretch" Spacing="28">
+        <StackPanel HorizontalAlignment="Stretch" Spacing="28">
 
             <!-- Page Title -->
             <StackPanel Spacing="6">
@@ -277,14 +277,15 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.StreamQualityTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.StreamQualityDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                             <ComboBox Grid.Column="1"
                                       ItemsSource="{x:Bind ViewModel.QualityOptions, Mode=OneWay}"
                                       SelectedIndex="{x:Bind ViewModel.SelectedQualityIndex, Mode=TwoWay}"
-                                      Width="260"
+                                      MinWidth="300"
+                                      HorizontalAlignment="Right"
                                       VerticalAlignment="Center" />
                         </Grid>
                     </Border>
@@ -296,7 +297,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.GaplessTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.GaplessDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
@@ -315,14 +316,15 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.EqualizerTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.EqualizerDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                                 <ComboBox ItemsSource="{x:Bind ViewModel.AvailablePresets}"
                                           SelectedItem="{x:Bind ViewModel.SelectedEqualizerPreset, Mode=TwoWay}"
-                                          Width="150"
+                                          MinWidth="150"
+                                          HorizontalAlignment="Right"
                                           IsEnabled="{x:Bind ViewModel.IsEqualizerEnabled, Mode=OneWay}" />
                                 <Button Command="{x:Bind ViewModel.ResetEqualizerCommand}"
                                         Content="{x:Bind ViewModel.EqualizerResetText, Mode=OneWay}"
@@ -355,7 +357,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.DiscordRpcTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.DiscordRpcDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
@@ -374,7 +376,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.FckCensorTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.FckCensorDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
@@ -393,7 +395,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.MinimizeToTrayTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.MinimizeToTrayDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
@@ -412,7 +414,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.TrackNotificationsTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.TrackNotificationsDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
@@ -431,14 +433,15 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.ThemeTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.ThemeDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                             <ComboBox Grid.Column="1"
                                       ItemsSource="{x:Bind ViewModel.ThemeOptions, Mode=OneWay}"
                                       SelectedIndex="{x:Bind ViewModel.SelectedThemeIndex, Mode=TwoWay}"
-                                      Width="180"
+                                      MinWidth="180"
+                                      HorizontalAlignment="Right"
                                       VerticalAlignment="Center" />
                         </Grid>
                     </Border>
@@ -450,13 +453,14 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.LanguageTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.LanguageDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                             <ComboBox Grid.Column="1"
                                       SelectedIndex="{x:Bind ViewModel.SelectedLanguageIndex, Mode=TwoWay}"
-                                      Width="180"
+                                      MinWidth="180"
+                                      HorizontalAlignment="Right"
                                       VerticalAlignment="Center">
                                 <ComboBoxItem Content="Русский (RU)" />
                                 <ComboBoxItem Content="English (EN)" />
@@ -483,7 +487,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="{x:Bind ViewModel.AudioCacheTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                     <Border Padding="6,1.5" CornerRadius="4" Background="#1A10B981" BorderBrush="#3310B981" BorderThickness="1" VerticalAlignment="Center">
@@ -509,7 +513,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.CacheLimitTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.CacheLimitDesc, Mode=OneWay}"
                                            FontSize="12"
@@ -518,7 +522,8 @@
                             <ComboBox Grid.Column="1"
                                       ItemsSource="{x:Bind ViewModel.CacheLimitOptions, Mode=OneWay}"
                                       SelectedIndex="{x:Bind ViewModel.SelectedCacheLimitIndex, Mode=TwoWay}"
-                                      Width="220"
+                                      MinWidth="240"
+                                      HorizontalAlignment="Right"
                                       VerticalAlignment="Center" />
                         </Grid>
                     </Border>
@@ -530,7 +535,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.LocalStorageTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="{x:Bind ViewModel.StorageOccupiedText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -568,7 +573,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.AppDataFolderTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.AppDataPath, Mode=OneWay}"
                                            FontSize="12"
@@ -596,7 +601,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.SearchHistoryTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.SearchHistoryDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
@@ -606,7 +611,8 @@
                                     Padding="14,8"
                                     CornerRadius="8"
                                     helpers:CursorHelper.UseHandCursor="True"
-                                    VerticalAlignment="Center" />
+                                    VerticalAlignment="Center">
+                            </Button>
                         </Grid>
                     </Border>
                 </StackPanel>
@@ -622,7 +628,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Spacing="6">
+                    <StackPanel Spacing="6" Margin="0,0,16,0">
                         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                             <TextBlock Text="WinYandex Music" FontSize="16" FontWeight="Bold" />
                             <Border Padding="6,2" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">

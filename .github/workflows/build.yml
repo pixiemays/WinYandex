@@ -1,0 +1,49 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore src/YMusic.WinUI/YMusic.WinUI.csproj
+
+    - name: Build and Publish (win-x64)
+      run: dotnet publish src/YMusic.WinUI/YMusic.WinUI.csproj -c Release /p:PublishProfile=win-x64
+
+    - name: Package Portable ZIP
+      shell: pwsh
+      run: |
+        $dist = "dist"
+        New-Item -ItemType Directory -Force -Path $dist | Out-Null
+        Compress-Archive -Path "src/YMusic.WinUI/bin/Release/net8.0-windows10.0.26100.0/win-x64/publish/*" -DestinationPath "$dist/YMusic-win-x64-portable.zip" -CompressionLevel Optimal
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: YMusic-win-x64-portable
+        path: dist/YMusic-win-x64-portable.zip
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/YMusic-win-x64-portable.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

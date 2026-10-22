@@ -113,6 +113,86 @@ public sealed partial class ProfileViewModel : BaseViewModel
     [ObservableProperty]
     private bool _hasNotification;
 
+    public ObservableCollection<string> QualityOptions { get; } = new();
+    public ObservableCollection<string> ThemeOptions { get; } = new();
+    public ObservableCollection<string> CacheLimitOptions { get; } = new();
+
+    private bool IsRussian => Loc?.CurrentLanguage != "en";
+
+    public string TitleText => Loc?["Profile_Title"] ?? (IsRussian ? "Профиль и настройки" : "Profile & Settings");
+    public string SubtitleText => IsRussian ? "Управление аккаунтом Яндекса, воспроизведением и настройками приложения" : "Manage your Yandex account, playback preferences, and application options";
+    public string NotificationTitle => IsRussian ? "Настройки" : "Settings";
+    public string CopyUserIdTooltip => IsRussian ? "Скопировать User ID" : "Copy User ID";
+    public string RefreshButtonText => Loc?["Profile_Refresh"] ?? (IsRussian ? "Обновить" : "Refresh");
+    public string SignOutButtonText => Loc?["Profile_Logout"] ?? (IsRussian ? "Выйти" : "Sign Out");
+    public string LikedTracksStatText => Loc?["Profile_LikedTracks"] ?? (IsRussian ? "Любимые треки" : "Liked Tracks");
+    public string PlaylistsStatText => Loc?["Profile_Playlists"] ?? (IsRussian ? "Плейлисты" : "Playlists");
+    public string PinnedItemsStatText => Loc?["Playlists_Pinned"] ?? (IsRussian ? "Закрепленные" : "Pinned Items");
+
+    public string SignedOutTitleText => IsRussian ? "Вы не авторизованы" : "You are currently signed out";
+    public string SignedOutDescText => IsRussian ? "Войдите с Яндекс ID для синхронизации вашей коллекции, Моей волны, лайков и плейлистов." : "Sign in with your Yandex ID to sync your collection, My Wave recommendations, liked tracks and playlists.";
+    public string SignInButtonText => IsRussian ? "Войти с Яндекс ID" : "Sign In with Yandex ID";
+
+    public string AudioSectionTitle => Loc?["Profile_Section_Audio"] ?? (IsRussian ? "Аудио и воспроизведение" : "Audio & Playback");
+    public string StreamQualityTitle => Loc?["Settings_PreferredQuality"] ?? (IsRussian ? "Предпочитаемое качество" : "Default Streaming Quality");
+    public string StreamQualityDesc => IsRussian ? "Кодек и битрейт для потокового воспроизведения треков" : "Preferred audio codec and bitrate for streaming tracks";
+
+    public string GaplessTitle => Loc?["Settings_Gapless"] ?? (IsRussian ? "Бесшовное воспроизведение и предзагрузка" : "Gapless Playback & Background Preloading");
+    public string GaplessDesc => Loc?["Settings_GaplessDesc"] ?? (IsRussian ? "Предзагрузка следующего трека и текста на 80% для устранения пауз и буферизации" : "Preloads the next track stream and lyrics at 80% progress to eliminate buffering pauses");
+
+    public string EqualizerTitle => Loc?["Settings_Equalizer"] ?? (IsRussian ? "Аудио эквалайзер" : "Audio Equalizer");
+    public string EqualizerDesc => Loc?["Settings_EqualizerDesc"] ?? (IsRussian ? "10-полосный эквалайзер частот звука и акустические профили" : "10-band audio frequency equalizer and acoustic profiles");
+    public string EqualizerResetText => IsRussian ? "Сброс" : "Reset";
+
+    public string SystemSectionTitle => Loc?["Profile_Section_System"] ?? (IsRussian ? "Система и интеграции" : "System & Integrations");
+    public string DiscordRpcTitle => Loc?["Settings_DiscordRpc"] ?? "Discord Rich Presence";
+    public string DiscordRpcDesc => Loc?["Settings_DiscordRpcDesc"] ?? (IsRussian ? "Отображение названия трека, исполнителя и обложки в профиле Discord" : "Show current playing track title, artist name, and album artwork on your Discord profile");
+
+    public string FckCensorTitle => Loc?["Settings_FckCensor"] ?? "FckCensor (разблокировка цензуры)";
+    public string FckCensorDesc => Loc?["Settings_FckCensorDesc"] ?? (IsRussian ? "Автоматически предпочитать оригинальные треки без цензуры вместо заглушенных версий" : "Automatically prefer original explicit and uncensored versions of tracks over sanitized edits");
+
+    public string MinimizeToTrayTitle => Loc?["Settings_MinimizeToTray"] ?? (IsRussian ? "Сворачивать в системный трей Windows" : "Minimize to Windows System Tray");
+    public string MinimizeToTrayDesc => Loc?["Settings_MinimizeToTrayDesc"] ?? (IsRussian ? "При нажатии крестика плеер продолжит играть в фоне и свернется в трей" : "Keep music playing in background and minimize to the taskbar notification tray when window is closed");
+
+    public string TrackNotificationsTitle => Loc?["Settings_TrackNotifications"] ?? (IsRussian ? "Уведомления Windows Toast" : "Windows Toast Notifications");
+    public string TrackNotificationsDesc => Loc?["Settings_TrackNotificationsDesc"] ?? (IsRussian ? "Показывать всплывающие уведомления на рабочем столе при переключении трека" : "Show native desktop banner notifications when track changes while playing in background");
+
+    public string ThemeTitle => Loc?["Settings_Theme"] ?? (IsRussian ? "Тема оформления" : "Application Theme");
+    public string ThemeDesc => IsRussian ? "Выберите визуальное оформление приложения" : "Select your visual appearance preference";
+
+    public string LanguageTitle => "Language / Язык";
+    public string LanguageDesc => IsRussian ? "Мгновенное переключение языка интерфейса без перезапуска" : "Switch interface language instantly / Смена языка интерфейса без перезапуска";
+
+    public string StorageSectionTitle => Loc?["Profile_Section_Storage"] ?? (IsRussian ? "Хранилище и данные" : "Storage & Data");
+    public string AudioCacheTitle => Loc?["Settings_AudioCache"] ?? (IsRussian ? "Дисковый аудио-кэш (LRU)" : "Audio Disk Cache (LRU)");
+    public string InstantReplayText => IsRussian ? "Мгновенный старт" : "Instant Replay";
+    public string AudioCacheDesc => Loc?["Settings_AudioCacheDesc"] ?? (IsRussian ? "Сохранение треков в %LocalAppData%/YMusic/Cache для мгновенного запуска (0 мс) без повторного скачивания" : "Save played tracks offline in %LocalAppData%/YMusic/Cache for instant 0 ms replay without network re-downloading");
+
+    public string CacheLimitTitle => Loc?["Settings_CacheLimit"] ?? (IsRussian ? "Лимит дискового кэша" : "Cache Storage Limit");
+    public string CacheLimitDesc => IsRussian ? "Автоматически удаляет наименее прослушиваемые треки (LRU) при превышении квоты" : "Automatically evicts least recently played tracks (LRU) when local cache exceeds this quota";
+
+    public string LocalStorageTitle => IsRussian ? "Локальный аудио и метаданные кэш" : "Local Audio & Metadata Cache";
+    public string StorageOccupiedText => IsRussian ? "Занято места:" : "Storage occupied:";
+    public string CachedItemsText => IsRussian ? "Кэшировано треков:" : "Cached items:";
+    public string OpenCacheTooltip => IsRussian ? "Открыть папку кэша аудио в Проводнике" : "Open Cache/Audio folder in Explorer";
+    public string OpenCacheButtonText => IsRussian ? "Открыть кэш" : "Open Cache";
+    public string ClearCacheButtonText => Loc?["Settings_ClearCache"] ?? (IsRussian ? "Очистить кэш" : "Clear Cache");
+
+    public string AppDataFolderTitle => Loc?["Settings_OpenAppData"] ?? (IsRussian ? "Папка данных приложения" : "Application Data Folder");
+    public string OpenInExplorerButtonText => IsRussian ? "Открыть в проводнике" : "Open in Explorer";
+
+    public string SearchHistoryTitle => Loc?["Search_History"] ?? (IsRussian ? "История поиска" : "Search History");
+    public string SearchHistoryDesc => IsRussian ? "Очистить недавние поисковые запросы, сохранённые на этом устройстве" : "Clear recent search queries saved on this device";
+    public string ClearHistoryButtonText => Loc?["Search_ClearHistory"] ?? (IsRussian ? "Очистить историю" : "Clear History");
+
+    public string AboutDescText => IsRussian ? "Современный настольный клиент Яндекс Музыки на WinUI 3, Windows App SDK и .NET 8." : "Modern desktop client for Yandex Music built with WinUI 3, Windows App SDK & .NET 8.";
+    public string GitHubRepoButtonText => IsRussian ? "Репозиторий GitHub" : "GitHub Repository";
+
+    public string SwitchOnText => IsRussian ? "Вкл" : "On";
+    public string SwitchOffText => IsRussian ? "Выкл" : "Off";
+    public string SwitchEnabledText => IsRussian ? "Включено" : "Enabled";
+    public string SwitchDisabledText => IsRussian ? "Отключено" : "Disabled";
+
     public ProfileViewModel(
         IYandexMusicService musicService,
         ICredentialStorageService credentialStorage,
@@ -150,6 +230,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _pinnedItemsCount = _pinnedItemsService.GetPinnedItems().Count;
 
         LoadSettingsState();
+        UpdateOptionCollections();
         _settingsService.SettingChanged += OnSettingChanged;
         _equalizerService.EqualizerChanged += OnEqualizerServiceChanged;
         _audioCacheService.CacheUpdated += (_, _) => RunOnUi(CalculateCacheSize);
@@ -320,7 +401,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
             _ => AudioQualityPreference.HighestBitrate
         };
         _settingsService.PreferredQuality = pref;
-        ShowNotification($"Audio quality updated to: {(value == 0 ? "AAC Preferred" : (value == 1 ? "MP3 320k" : "Highest Bitrate"))}");
+        string qualityName = value == 0
+            ? (IsRussian ? "AAC (Рекомендуется)" : "AAC Preferred")
+            : (value == 1 ? "MP3 320k" : (IsRussian ? "Наивысший битрейт" : "Highest Bitrate"));
+        ShowNotification(IsRussian ? $"Качество аудио обновлено: {qualityName}" : $"Audio quality updated to: {qualityName}");
     }
 
     partial void OnIsGaplessPreloadEnabledChanged(bool value)
@@ -345,7 +429,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         if (_isInitializingSettings) return;
         _settingsService.TrackNotificationsEnabled = value;
-        ShowNotification(value ? "Desktop notifications enabled for track changes." : "Desktop notifications disabled.");
+        ShowNotification(value
+            ? (IsRussian ? "Уведомления на рабочем столе о смене трека включены." : "Desktop notifications enabled for track changes.")
+            : (IsRussian ? "Уведомления на рабочем столе отключены." : "Desktop notifications disabled."));
     }
 
     partial void OnIsFckCensorEnabledChanged(bool value)
@@ -353,14 +439,18 @@ public sealed partial class ProfileViewModel : BaseViewModel
         if (_isInitializingSettings) return;
         _settingsService.FckCensorEnabled = value;
         _ = _audioPlayer.ReloadCurrentTrackQualityAsync();
-        ShowNotification(value ? "FckCensor enabled: Uncensored audio active." : "FckCensor disabled.");
+        ShowNotification(value
+            ? (IsRussian ? "FckCensor включен: воспроизводятся нецензурированные версии." : "FckCensor enabled: Uncensored audio active.")
+            : (IsRussian ? "FckCensor выключен." : "FckCensor disabled."));
     }
 
     partial void OnIsAudioCacheEnabledChanged(bool value)
     {
         if (_isInitializingSettings) return;
         _settingsService.AudioCacheEnabled = value;
-        ShowNotification(value ? "Audio Disk Cache enabled." : "Audio Disk Cache disabled.");
+        ShowNotification(value
+            ? (IsRussian ? "Дисковый аудио-кэш включен." : "Audio Disk Cache enabled.")
+            : (IsRussian ? "Дисковый аудио-кэш выключен." : "Audio Disk Cache disabled."));
     }
 
     partial void OnSelectedCacheLimitIndexChanged(int value)
@@ -380,7 +470,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _settingsService.CacheSizeLimitMb = limit;
         _audioCacheService.EnforceCacheLimit();
         CalculateCacheSize();
-        ShowNotification(limit > 0 ? $"Audio cache limit set to {limit} MB." : "Audio cache limit set to Unlimited.");
+        ShowNotification(limit > 0
+            ? (IsRussian ? $"Лимит дискового кэша установлен на {limit} МБ." : $"Audio cache limit set to {limit} MB.")
+            : (IsRussian ? "Лимит дискового кэша отключен (без ограничений)." : "Audio cache limit set to Unlimited."));
     }
 
     partial void OnSelectedThemeIndexChanged(int value)
@@ -412,7 +504,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
             Loc.CurrentLanguage = lang;
         }
 
-        ShowNotification(Loc?["SettingsSavedNotification"] ?? "Настройки сохранены.");
+        ShowNotification(IsRussian ? "Настройки сохранены." : "Settings saved.");
     }
 
     partial void OnIsEqualizerEnabledChanged(bool value)
@@ -600,7 +692,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         _equalizerService.ResetToFlat();
         SelectedEqualizerPreset = "Flat";
-        ShowNotification("Equalizer reset to Flat.");
+        ShowNotification(IsRussian ? "Эквалайзер сброшен в Flat." : "Equalizer reset to Flat.");
     }
 
     [RelayCommand]
@@ -613,7 +705,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
             var dp = new DataPackage();
             dp.SetText(User.UserId);
             Clipboard.SetContent(dp);
-            ShowNotification($"User ID copied: {User.UserId}");
+            ShowNotification(IsRussian ? $"ID пользователя скопирован: {User.UserId}" : $"User ID copied: {User.UserId}");
         }
         catch (Exception ex)
         {
@@ -650,11 +742,11 @@ public sealed partial class ProfileViewModel : BaseViewModel
             }
 
             CalculateCacheSize();
-            ShowNotification("Audio and application cache successfully cleared.");
+            ShowNotification(IsRussian ? "Аудио и системный кэш успешно очищены." : "Audio and application cache successfully cleared.");
         }
         catch (Exception ex)
         {
-            ShowNotification($"Failed to clear cache: {ex.Message}");
+            ShowNotification(IsRussian ? $"Не удалось очистить кэш: {ex.Message}" : $"Failed to clear cache: {ex.Message}");
         }
     }
 
@@ -674,7 +766,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
-            ShowNotification($"Could not open cache folder: {ex.Message}");
+            ShowNotification(IsRussian ? $"Не удалось открыть папку кэша: {ex.Message}" : $"Could not open cache folder: {ex.Message}");
         }
     }
 
@@ -682,7 +774,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public void ClearSearchHistory()
     {
         _searchViewModel.ClearRecentQueries();
-        ShowNotification("Search history cleared.");
+        ShowNotification(IsRussian ? "История поиска очищена." : "Search history cleared.");
     }
 
     [RelayCommand]
@@ -700,7 +792,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
-            ShowNotification($"Could not open folder: {ex.Message}");
+            ShowNotification(IsRussian ? $"Не удалось открыть папку: {ex.Message}" : $"Could not open folder: {ex.Message}");
         }
     }
 
@@ -730,13 +822,148 @@ public sealed partial class ProfileViewModel : BaseViewModel
     [RelayCommand]
     public void NavigateToLogin() => _navigationService.NavigateToTag("Account");
 
+    protected override void OnLanguageChanged()
+    {
+        base.OnLanguageChanged();
+        UpdateOptionCollections();
+
+        OnPropertyChanged(nameof(TitleText));
+        OnPropertyChanged(nameof(SubtitleText));
+        OnPropertyChanged(nameof(NotificationTitle));
+        OnPropertyChanged(nameof(CopyUserIdTooltip));
+        OnPropertyChanged(nameof(RefreshButtonText));
+        OnPropertyChanged(nameof(SignOutButtonText));
+        OnPropertyChanged(nameof(LikedTracksStatText));
+        OnPropertyChanged(nameof(PlaylistsStatText));
+        OnPropertyChanged(nameof(PinnedItemsStatText));
+        OnPropertyChanged(nameof(SignedOutTitleText));
+        OnPropertyChanged(nameof(SignedOutDescText));
+        OnPropertyChanged(nameof(SignInButtonText));
+        OnPropertyChanged(nameof(AudioSectionTitle));
+        OnPropertyChanged(nameof(StreamQualityTitle));
+        OnPropertyChanged(nameof(StreamQualityDesc));
+        OnPropertyChanged(nameof(GaplessTitle));
+        OnPropertyChanged(nameof(GaplessDesc));
+        OnPropertyChanged(nameof(EqualizerTitle));
+        OnPropertyChanged(nameof(EqualizerDesc));
+        OnPropertyChanged(nameof(EqualizerResetText));
+        OnPropertyChanged(nameof(SystemSectionTitle));
+        OnPropertyChanged(nameof(DiscordRpcTitle));
+        OnPropertyChanged(nameof(DiscordRpcDesc));
+        OnPropertyChanged(nameof(FckCensorTitle));
+        OnPropertyChanged(nameof(FckCensorDesc));
+        OnPropertyChanged(nameof(MinimizeToTrayTitle));
+        OnPropertyChanged(nameof(MinimizeToTrayDesc));
+        OnPropertyChanged(nameof(TrackNotificationsTitle));
+        OnPropertyChanged(nameof(TrackNotificationsDesc));
+        OnPropertyChanged(nameof(ThemeTitle));
+        OnPropertyChanged(nameof(ThemeDesc));
+        OnPropertyChanged(nameof(LanguageTitle));
+        OnPropertyChanged(nameof(LanguageDesc));
+        OnPropertyChanged(nameof(StorageSectionTitle));
+        OnPropertyChanged(nameof(AudioCacheTitle));
+        OnPropertyChanged(nameof(InstantReplayText));
+        OnPropertyChanged(nameof(AudioCacheDesc));
+        OnPropertyChanged(nameof(CacheLimitTitle));
+        OnPropertyChanged(nameof(CacheLimitDesc));
+        OnPropertyChanged(nameof(LocalStorageTitle));
+        OnPropertyChanged(nameof(StorageOccupiedText));
+        OnPropertyChanged(nameof(CachedItemsText));
+        OnPropertyChanged(nameof(OpenCacheTooltip));
+        OnPropertyChanged(nameof(OpenCacheButtonText));
+        OnPropertyChanged(nameof(ClearCacheButtonText));
+        OnPropertyChanged(nameof(AppDataFolderTitle));
+        OnPropertyChanged(nameof(OpenInExplorerButtonText));
+        OnPropertyChanged(nameof(SearchHistoryTitle));
+        OnPropertyChanged(nameof(SearchHistoryDesc));
+        OnPropertyChanged(nameof(ClearHistoryButtonText));
+        OnPropertyChanged(nameof(AboutDescText));
+        OnPropertyChanged(nameof(GitHubRepoButtonText));
+        OnPropertyChanged(nameof(SwitchOnText));
+        OnPropertyChanged(nameof(SwitchOffText));
+        OnPropertyChanged(nameof(SwitchEnabledText));
+        OnPropertyChanged(nameof(SwitchDisabledText));
+
+        CalculateCacheSize();
+    }
+
+    private void UpdateOptionCollections()
+    {
+        bool wasInitializing = _isInitializingSettings;
+        _isInitializingSettings = true;
+        try
+        {
+            int qIdx = SelectedQualityIndex;
+            QualityOptions.Clear();
+            if (IsRussian)
+            {
+                QualityOptions.Add("AAC (192–256 kbps) • Рекомендуется");
+                QualityOptions.Add("MP3 (320 kbps) • Постоянный битрейт");
+                QualityOptions.Add("Наивысший доступный битрейт");
+            }
+            else
+            {
+                QualityOptions.Add("AAC (192–256 kbps) • Recommended");
+                QualityOptions.Add("MP3 (320 kbps) • Constant Bitrate");
+                QualityOptions.Add("Highest Bitrate Available");
+            }
+            SelectedQualityIndex = qIdx;
+
+            int tIdx = SelectedThemeIndex;
+            ThemeOptions.Clear();
+            if (IsRussian)
+            {
+                ThemeOptions.Add("Как в системе");
+                ThemeOptions.Add("Тёмная тема");
+                ThemeOptions.Add("Светлая тема");
+            }
+            else
+            {
+                ThemeOptions.Add("System Default");
+                ThemeOptions.Add("Dark Mode");
+                ThemeOptions.Add("Light Mode");
+            }
+            SelectedThemeIndex = tIdx;
+
+            int cIdx = SelectedCacheLimitIndex;
+            CacheLimitOptions.Clear();
+            if (IsRussian)
+            {
+                CacheLimitOptions.Add("512 МБ");
+                CacheLimitOptions.Add("1 ГБ (Рекомендуется)");
+                CacheLimitOptions.Add("2 ГБ");
+                CacheLimitOptions.Add("4 ГБ");
+                CacheLimitOptions.Add("8 ГБ");
+                CacheLimitOptions.Add("16 ГБ");
+                CacheLimitOptions.Add("Без ограничений");
+            }
+            else
+            {
+                CacheLimitOptions.Add("512 MB");
+                CacheLimitOptions.Add("1 GB (Recommended)");
+                CacheLimitOptions.Add("2 GB");
+                CacheLimitOptions.Add("4 GB");
+                CacheLimitOptions.Add("8 GB");
+                CacheLimitOptions.Add("16 GB");
+                CacheLimitOptions.Add("Unlimited");
+            }
+            SelectedCacheLimitIndex = cIdx;
+        }
+        finally
+        {
+            _isInitializingSettings = wasInitializing;
+        }
+    }
+
     private void CalculateCacheSize()
     {
         try
         {
             long audioBytes = _audioCacheService.GetTotalCacheSizeBytes();
             int trackCount = _audioCacheService.GetCachedTrackCount();
-            CachedTracksCountText = trackCount == 1 ? "1 track cached" : $"{trackCount} tracks cached";
+            CachedTracksCountText = IsRussian
+                ? $"{trackCount} трек(ов) в кэше"
+                : (trackCount == 1 ? "1 track cached" : $"{trackCount} tracks cached");
 
             if (!Directory.Exists(_appDataDir))
             {
@@ -752,10 +979,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
             }
 
             string limitStr = _settingsService.CacheSizeLimitMb > 0
-                ? $" / {_settingsService.CacheSizeLimitMb} MB limit"
-                : " (Unlimited)";
+                ? (IsRussian ? $" / лимит {_settingsService.CacheSizeLimitMb} МБ" : $" / {_settingsService.CacheSizeLimitMb} MB limit")
+                : (IsRussian ? " (без лимита)" : " (Unlimited)");
 
-            CacheSizeText = $"{FormatBytes(totalBytes)} ({FormatBytes(audioBytes)} audio{limitStr})";
+            CacheSizeText = $"{FormatBytes(totalBytes)} ({FormatBytes(audioBytes)} {(IsRussian ? "аудио" : "audio")}{limitStr})";
         }
         catch
         {

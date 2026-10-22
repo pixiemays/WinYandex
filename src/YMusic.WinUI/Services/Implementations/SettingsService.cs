@@ -12,7 +12,6 @@ public sealed class SettingsService : ISettingsService
     private readonly string _filePath;
     private readonly object _lock = new();
     private readonly IYandexMusicService _musicService;
-    private readonly IAudioPlayerService _audioPlayerService;
     private AppSettings _settings = new();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -23,10 +22,9 @@ public sealed class SettingsService : ISettingsService
 
     public event EventHandler<string>? SettingChanged;
 
-    public SettingsService(IYandexMusicService musicService, IAudioPlayerService audioPlayerService)
+    public SettingsService(IYandexMusicService musicService)
     {
         _musicService = musicService;
-        _audioPlayerService = audioPlayerService;
 
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         string dir = Path.Combine(appData, "YMusic");
@@ -46,7 +44,6 @@ public sealed class SettingsService : ISettingsService
             {
                 _settings.PreferredQuality = value;
                 _musicService.PreferredQuality = value;
-                _ = _audioPlayerService.ReloadCurrentTrackQualityAsync();
                 Save();
                 NotifyChanged(nameof(PreferredQuality));
             }
@@ -61,7 +58,6 @@ public sealed class SettingsService : ISettingsService
             if (_settings.GaplessPreloadEnabled != value)
             {
                 _settings.GaplessPreloadEnabled = value;
-                _audioPlayerService.IsPreloadingEnabled = value;
                 Save();
                 NotifyChanged(nameof(GaplessPreloadEnabled));
             }
@@ -124,6 +120,20 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public bool AudioCacheEnabled
+    {
+        get => _settings.AudioCacheEnabled;
+        set
+        {
+            if (_settings.AudioCacheEnabled != value)
+            {
+                _settings.AudioCacheEnabled = value;
+                Save();
+                NotifyChanged(nameof(AudioCacheEnabled));
+            }
+        }
+    }
+
     public int CacheSizeLimitMb
     {
         get => _settings.CacheSizeLimitMb;
@@ -166,7 +176,6 @@ public sealed class SettingsService : ISettingsService
         try
         {
             _musicService.PreferredQuality = _settings.PreferredQuality;
-            _audioPlayerService.IsPreloadingEnabled = _settings.GaplessPreloadEnabled;
         }
         catch (Exception ex)
         {

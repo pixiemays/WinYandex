@@ -171,6 +171,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" MaxWidth="360" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0"
                                                    Text="{x:Bind FullTitle}"
@@ -192,6 +193,21 @@
                                             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                 <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="#000000" />
                                                 <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="#000000" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="2"
+                                                Margin="6,0,0,0"
+                                                Visibility="{x:Bind IsCached, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                Padding="4,1"
+                                                CornerRadius="3"
+                                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                BorderThickness="1"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="Saved in offline cache (0 ms)">
+                                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                                <FontIcon Glyph="&#xE896;" FontSize="8" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                                                <TextBlock Text="CACHED" FontSize="8" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                             </StackPanel>
                                         </Border>
                                     </Grid>

@@ -10,22 +10,26 @@ public sealed class TrackPlaybackCoordinator : ITrackPlaybackCoordinator
     private readonly IAudioPlayerService _audioPlayer;
     private readonly IYandexMusicService _musicService;
     private readonly IFckCensorService _fckCensorService;
+    private readonly IAudioCacheService _audioCacheService;
     private readonly List<WeakReference<IEnumerable<Track>>> _trackedCollections = new();
     private readonly object _lock = new();
 
     public TrackPlaybackCoordinator(
         IAudioPlayerService audioPlayer,
         IYandexMusicService musicService,
-        IFckCensorService fckCensorService)
+        IFckCensorService fckCensorService,
+        IAudioCacheService audioCacheService)
     {
         _audioPlayer = audioPlayer;
         _musicService = musicService;
         _fckCensorService = fckCensorService;
+        _audioCacheService = audioCacheService;
         _audioPlayer.CurrentTrackChanged += (_, _) => UpdateAll();
         _audioPlayer.IsPlayingChanged += (_, _) => UpdateAll();
         _musicService.TrackLikeChanged += OnTrackLikeChanged;
         _musicService.LikedTracksLoaded += (_, _) => UpdateAll();
         _fckCensorService.TrackReplacementChanged += (_, _) => UpdateAll();
+        _audioCacheService.CacheUpdated += (_, _) => UpdateAll();
     }
 
     public void Register(IEnumerable<Track> collection)
@@ -83,6 +87,11 @@ public sealed class TrackPlaybackCoordinator : ITrackPlaybackCoordinator
                 if (track.IsReplaced != isReplaced)
                 {
                     track.IsReplaced = isReplaced;
+                }
+                bool isCached = _audioCacheService.IsTrackCached(track.Id);
+                if (track.IsCached != isCached)
+                {
+                    track.IsCached = isCached;
                 }
             }
         }

@@ -12,6 +12,7 @@ public interface ISettingsService
     bool MinimizeToTrayOnClose { get; set; }
     bool FckCensorEnabled { get; set; }
     string AppTheme { get; set; }
+    bool AudioCacheEnabled { get; set; }
     int CacheSizeLimitMb { get; set; }
 
     event EventHandler<string>? SettingChanged;

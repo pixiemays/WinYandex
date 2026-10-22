@@ -55,8 +55,9 @@ public partial class App : Application
         services.AddSingleton<IPlaybackStateStorageService, PlaybackStateStorageService>();
         services.AddSingleton<IYandexMusicService, YandexMusicService>();
         services.AddSingleton<IFckCensorService, FckCensorService>();
-        services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IAudioCacheService, AudioCacheService>();
+        services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
         services.AddSingleton<IEqualizerService, EqualizerService>();
         services.AddSingleton<ITrackPlaybackCoordinator, TrackPlaybackCoordinator>();
         services.AddSingleton<INavigationService, NavigationService>();
@@ -76,7 +77,9 @@ public partial class App : Application
 
         var provider = services.BuildServiceProvider();
         var fckCensor = provider.GetRequiredService<IFckCensorService>();
+        var audioCache = provider.GetRequiredService<IAudioCacheService>();
         Track.IsTrackReplacedChecker = id => fckCensor.IsReplaced(id);
+        Track.IsTrackCachedChecker = id => audioCache.IsTrackCached(id);
         return provider;
     }
 

@@ -13,10 +13,11 @@ public sealed class StreamAudioQuality
 {
     public string Codec { get; set; } = string.Empty;
     public int BitrateInKbps { get; set; }
+    public bool IsCached { get; set; }
 
     public string DisplayText => string.IsNullOrWhiteSpace(Codec)
         ? string.Empty
-        : $"{Codec.ToUpperInvariant()} • {BitrateInKbps} kbps";
+        : $"{Codec.ToUpperInvariant()} • {BitrateInKbps} kbps{(IsCached ? " (Cached)" : string.Empty)}";
 
     public string BadgeText
     {

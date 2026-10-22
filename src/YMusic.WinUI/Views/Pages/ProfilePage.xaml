@@ -447,6 +447,98 @@
                 </StackPanel>
 
                 <StackPanel Spacing="8">
+                    <!-- Audio Disk Cache (LRU) Toggle Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Audio Disk Cache (LRU)" FontSize="14" FontWeight="SemiBold" />
+                                    <Border Padding="6,1.5" CornerRadius="4" Background="#1A10B981" BorderBrush="#3310B981" BorderThickness="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Instant Replay" FontSize="10" FontWeight="SemiBold" Foreground="#10B981" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="Save played tracks offline in %LocalAppData%/YMusic/Cache for instant 0 ms replay without network re-downloading"
+                                           FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1"
+                                          IsOn="{x:Bind ViewModel.IsAudioCacheEnabled, Mode=TwoWay}"
+                                          OnContent="Enabled"
+                                          OffContent="Disabled"
+                                          VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Cache Size Limit Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Cache Storage Limit" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="Automatically evicts least recently played tracks (LRU) when local cache exceeds this quota"
+                                           FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      SelectedIndex="{x:Bind ViewModel.SelectedCacheLimitIndex, Mode=TwoWay}"
+                                      Width="180"
+                                      VerticalAlignment="Center">
+                                <ComboBoxItem Content="512 MB" />
+                                <ComboBoxItem Content="1 GB (Recommended)" />
+                                <ComboBoxItem Content="2 GB" />
+                                <ComboBoxItem Content="4 GB" />
+                                <ComboBoxItem Content="8 GB" />
+                                <ComboBoxItem Content="16 GB" />
+                                <ComboBoxItem Content="Unlimited" />
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+
+                    <!-- Cache Size & Clear Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Local Audio &amp; Metadata Cache" FontSize="14" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Storage occupied:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="{x:Bind ViewModel.CacheSizeText, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Cached items:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="{x:Bind ViewModel.CachedTracksCountText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource AccentFillColorDefaultBrush}" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Command="{x:Bind ViewModel.OpenCacheFolderCommand}"
+                                        Padding="12,8"
+                                        CornerRadius="8"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        ToolTipService.ToolTip="Open Cache/Audio folder in Explorer">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE8DA;" FontSize="12" />
+                                        <TextBlock Text="Open Cache" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{x:Bind ViewModel.ClearCacheCommand}"
+                                        Content="Clear Cache"
+                                        Padding="14,8"
+                                        CornerRadius="8"
+                                        helpers:CursorHelper.UseHandCursor="True" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                     <!-- App Data Directory Card -->
                     <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                         <Grid>
@@ -472,30 +564,6 @@
                                     <TextBlock Text="Open in Explorer" FontSize="13" />
                                 </StackPanel>
                             </Button>
-                        </Grid>
-                    </Border>
-
-                    <!-- Cache Size & Clear Card -->
-                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="Local Audio &amp; Metadata Cache" FontSize="14" FontWeight="SemiBold" />
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Total storage occupied:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    <TextBlock Text="{x:Bind ViewModel.CacheSizeText, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" />
-                                </StackPanel>
-                            </StackPanel>
-                            <Button Grid.Column="1"
-                                    Command="{x:Bind ViewModel.ClearCacheCommand}"
-                                    Content="Clear Cache"
-                                    Padding="14,8"
-                                    CornerRadius="8"
-                                    helpers:CursorHelper.UseHandCursor="True"
-                                    VerticalAlignment="Center" />
                         </Grid>
                     </Border>
 

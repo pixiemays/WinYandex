@@ -25,6 +25,9 @@ public sealed class AppSettings
     [JsonPropertyName("appTheme")]
     public string AppTheme { get; set; } = "Dark"; // "Default", "Light", "Dark"
 
+    [JsonPropertyName("audioCacheEnabled")]
+    public bool AudioCacheEnabled { get; set; } = true;
+
     [JsonPropertyName("cacheSizeLimitMb")]
     public int CacheSizeLimitMb { get; set; } = 1024;
 }

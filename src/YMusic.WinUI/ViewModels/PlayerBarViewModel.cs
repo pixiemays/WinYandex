@@ -312,7 +312,9 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             CurrentQuality = quality;
             if (quality != null)
             {
-                QualityTooltip = $"Preferred: {GetPreferenceDisplayName(SelectedQualityPreference)} • Active: {quality.DisplayText}";
+                QualityBadge = quality.BadgeText;
+                string cacheStatus = quality.IsCached ? " • Local Disk Cache (0 ms)" : string.Empty;
+                QualityTooltip = $"Preferred: {GetPreferenceDisplayName(SelectedQualityPreference)} • Active: {quality.DisplayText}{cacheStatus}";
             }
         });
     }

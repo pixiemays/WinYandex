@@ -27,8 +27,15 @@ public sealed partial class Track : ObservableObject
     [property: JsonIgnore]
     private bool _isReplaced;
 
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isCached;
+
     [JsonIgnore]
     public static Func<string, bool>? IsTrackReplacedChecker { get; set; }
+
+    [JsonIgnore]
+    public static Func<string, bool>? IsTrackCachedChecker { get; set; }
 
     private string _id = string.Empty;
 
@@ -43,6 +50,7 @@ public sealed partial class Track : ObservableObject
             {
                 _id = value;
                 RefreshReplacedStatus();
+                RefreshCachedStatus();
             }
         }
     }
@@ -52,6 +60,14 @@ public sealed partial class Track : ObservableObject
         if (IsTrackReplacedChecker != null && !string.IsNullOrWhiteSpace(_id))
         {
             IsReplaced = IsTrackReplacedChecker(_id);
+        }
+    }
+
+    public void RefreshCachedStatus()
+    {
+        if (IsTrackCachedChecker != null && !string.IsNullOrWhiteSpace(_id))
+        {
+            IsCached = IsTrackCachedChecker(_id);
         }
     }
 

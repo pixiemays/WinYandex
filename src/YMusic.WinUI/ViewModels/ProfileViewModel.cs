@@ -22,6 +22,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private readonly INavigationService _navigationService;
     private readonly LoginViewModel _loginViewModel;
     private readonly SearchViewModel _searchViewModel;
+    private readonly IAudioCacheService _audioCacheService;
 
     private readonly string _appDataDir;
     private bool _isInitializingSettings;
@@ -43,6 +44,15 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
     [ObservableProperty]
     private string _cacheSizeText = "0 KB";
+
+    [ObservableProperty]
+    private string _cachedTracksCountText = "0 tracks cached";
+
+    [ObservableProperty]
+    private bool _isAudioCacheEnabled = true;
+
+    [ObservableProperty]
+    private int _selectedCacheLimitIndex = 1;
 
     [ObservableProperty]
     private string _appDataPath = string.Empty;
@@ -92,7 +102,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
         IPinnedItemsService pinnedItemsService,
         INavigationService navigationService,
         LoginViewModel loginViewModel,
-        SearchViewModel searchViewModel)
+        SearchViewModel searchViewModel,
+        IAudioCacheService audioCacheService)
     {
         _musicService = musicService;
         _credentialStorage = credentialStorage;
@@ -103,6 +114,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _navigationService = navigationService;
         _loginViewModel = loginViewModel;
         _searchViewModel = searchViewModel;
+        _audioCacheService = audioCacheService;
 
         _appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic");
         AppDataPath = _appDataDir;
@@ -117,6 +129,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
         LoadSettingsState();
         _settingsService.SettingChanged += OnSettingChanged;
         _equalizerService.EqualizerChanged += OnEqualizerServiceChanged;
+        _audioCacheService.CacheUpdated += (_, _) => RunOnUi(CalculateCacheSize);
     }
 
     public async Task InitializeAsync()
@@ -149,6 +162,19 @@ public sealed partial class ProfileViewModel : BaseViewModel
             IsDiscordRpcEnabled = _settingsService.DiscordRpcEnabled;
             IsMinimizeToTrayEnabled = _settingsService.MinimizeToTrayOnClose;
             IsFckCensorEnabled = _settingsService.FckCensorEnabled;
+            IsAudioCacheEnabled = _settingsService.AudioCacheEnabled;
+
+            SelectedCacheLimitIndex = _settingsService.CacheSizeLimitMb switch
+            {
+                512 => 0,
+                1024 => 1,
+                2048 => 2,
+                4096 => 3,
+                8192 => 4,
+                16384 => 5,
+                0 => 6,
+                _ => 1
+            };
 
             SelectedThemeIndex = _settingsService.AppTheme switch
             {
@@ -204,6 +230,26 @@ public sealed partial class ProfileViewModel : BaseViewModel
             {
                 IsFckCensorEnabled = _settingsService.FckCensorEnabled;
             }
+            else if (propName == nameof(ISettingsService.AudioCacheEnabled))
+            {
+                IsAudioCacheEnabled = _settingsService.AudioCacheEnabled;
+            }
+            else if (propName == nameof(ISettingsService.CacheSizeLimitMb))
+            {
+                int newIdx = _settingsService.CacheSizeLimitMb switch
+                {
+                    512 => 0,
+                    1024 => 1,
+                    2048 => 2,
+                    4096 => 3,
+                    8192 => 4,
+                    16384 => 5,
+                    0 => 6,
+                    _ => 1
+                };
+                if (SelectedCacheLimitIndex != newIdx) SelectedCacheLimitIndex = newIdx;
+                CalculateCacheSize();
+            }
         });
     }
 
@@ -254,6 +300,33 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _settingsService.FckCensorEnabled = value;
         _ = _audioPlayer.ReloadCurrentTrackQualityAsync();
         ShowNotification(value ? "FckCensor enabled: Uncensored audio active." : "FckCensor disabled.");
+    }
+
+    partial void OnIsAudioCacheEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.AudioCacheEnabled = value;
+        ShowNotification(value ? "Audio Disk Cache enabled." : "Audio Disk Cache disabled.");
+    }
+
+    partial void OnSelectedCacheLimitIndexChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+
+        int limit = value switch
+        {
+            0 => 512,
+            1 => 1024,
+            2 => 2048,
+            3 => 4096,
+            4 => 8192,
+            5 => 16384,
+            _ => 0 // Unlimited
+        };
+        _settingsService.CacheSizeLimitMb = limit;
+        _audioCacheService.EnforceCacheLimit();
+        CalculateCacheSize();
+        ShowNotification(limit > 0 ? $"Audio cache limit set to {limit} MB." : "Audio cache limit set to Unlimited.");
     }
 
     partial void OnSelectedThemeIndexChanged(int value)
@@ -392,23 +465,48 @@ public sealed partial class ProfileViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    public void ClearCache()
+    public async Task ClearCacheAsync()
     {
         try
         {
+            await _audioCacheService.ClearCacheAsync();
+
             string cacheFolder = Path.Combine(_appDataDir, "Cache");
             if (Directory.Exists(cacheFolder))
             {
-                Directory.Delete(cacheFolder, true);
-                Directory.CreateDirectory(cacheFolder);
+                var files = Directory.GetFiles(cacheFolder);
+                foreach (var f in files)
+                {
+                    try { File.Delete(f); } catch { }
+                }
             }
 
             CalculateCacheSize();
-            ShowNotification("Application cache successfully cleared.");
+            ShowNotification("Audio and application cache successfully cleared.");
         }
         catch (Exception ex)
         {
             ShowNotification($"Failed to clear cache: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public void OpenCacheFolder()
+    {
+        try
+        {
+            string cacheFolder = Path.Combine(_appDataDir, "Cache", "Audio");
+            Directory.CreateDirectory(cacheFolder);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"\"{cacheFolder}\"",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            ShowNotification($"Could not open cache folder: {ex.Message}");
         }
     }
 
@@ -468,6 +566,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         try
         {
+            long audioBytes = _audioCacheService.GetTotalCacheSizeBytes();
+            int trackCount = _audioCacheService.GetCachedTrackCount();
+            CachedTracksCountText = trackCount == 1 ? "1 track cached" : $"{trackCount} tracks cached";
+
             if (!Directory.Exists(_appDataDir))
             {
                 CacheSizeText = "0 KB";
@@ -481,7 +583,11 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 totalBytes += file.Length;
             }
 
-            CacheSizeText = FormatBytes(totalBytes);
+            string limitStr = _settingsService.CacheSizeLimitMb > 0
+                ? $" / {_settingsService.CacheSizeLimitMb} MB limit"
+                : " (Unlimited)";
+
+            CacheSizeText = $"{FormatBytes(totalBytes)} ({FormatBytes(audioBytes)} audio{limitStr})";
         }
         catch
         {

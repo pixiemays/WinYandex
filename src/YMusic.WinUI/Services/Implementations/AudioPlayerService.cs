@@ -18,6 +18,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
     private readonly IEqualizerService _equalizerService;
     private readonly IPlaybackStateStorageService _playbackStateStorage;
     private readonly IFckCensorService _fckCensorService;
+    private readonly IAudioCacheService _audioCacheService;
+    private readonly ISettingsService _settingsService;
     private readonly MediaPlayer _mediaPlayer;
     private readonly SystemMediaTransportControls _smtc;
     private readonly System.Timers.Timer _positionTimer;
@@ -186,12 +188,29 @@ public sealed class AudioPlayerService : IAudioPlayerService
         IYandexMusicService yandexMusicService,
         IEqualizerService equalizerService,
         IPlaybackStateStorageService playbackStateStorage,
-        IFckCensorService fckCensorService)
+        IFckCensorService fckCensorService,
+        IAudioCacheService audioCacheService,
+        ISettingsService settingsService)
     {
         _yandexMusicService = yandexMusicService;
         _equalizerService = equalizerService;
         _playbackStateStorage = playbackStateStorage;
         _fckCensorService = fckCensorService;
+        _audioCacheService = audioCacheService;
+        _settingsService = settingsService;
+
+        IsPreloadingEnabled = _settingsService.GaplessPreloadEnabled;
+        _settingsService.SettingChanged += async (_, prop) =>
+        {
+            if (prop == nameof(ISettingsService.GaplessPreloadEnabled))
+            {
+                IsPreloadingEnabled = _settingsService.GaplessPreloadEnabled;
+            }
+            else if (prop == nameof(ISettingsService.PreferredQuality))
+            {
+                await ReloadCurrentTrackQualityAsync().ConfigureAwait(false);
+            }
+        };
 
         _fckCensorService.TrackReplacementChanged += async (_, changedTrackId) =>
         {
@@ -688,7 +707,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         var currentPos = Position;
         var wasPlaying = _isPlaying;
 
-        var (streamUrl, quality) = await ResolveTrackStreamAsync(_currentTrack.Id).ConfigureAwait(false);
+        var (streamUrl, quality) = await ResolveTrackStreamAsync(_currentTrack.Id, forceRefresh: true).ConfigureAwait(false);
         _currentQuality = quality;
         CurrentQualityChanged?.Invoke(this, quality);
 
@@ -801,7 +820,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         }
     }
 
-    private async Task<(string? Url, StreamAudioQuality? Quality)> ResolveTrackStreamAsync(string trackId)
+    private async Task<(string? Url, StreamAudioQuality? Quality)> ResolveTrackStreamAsync(string trackId, bool forceRefresh = false)
     {
         if (_fckCensorService != null && _fckCensorService.IsReplaced(trackId))
         {
@@ -812,7 +831,20 @@ public sealed class AudioPlayerService : IAudioPlayerService
             }
         }
 
-        return await _yandexMusicService.GetTrackStreamInfoAsync(trackId).ConfigureAwait(false);
+        // Instant local playback from LRU Audio Disk Cache (0 ms network latency)
+        if (!forceRefresh && _audioCacheService != null && _audioCacheService.TryGetCachedTrack(trackId, out var cachedPath, out var cachedQuality))
+        {
+            return (cachedPath, cachedQuality);
+        }
+
+        var streamInfo = await _yandexMusicService.GetTrackStreamInfoAsync(trackId).ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(streamInfo.Url) && _audioCacheService != null)
+        {
+            // Non-blocking background caching to disk for subsequent instant replays
+            _audioCacheService.EnqueueDownload(trackId, streamInfo.Url, streamInfo.Quality);
+        }
+
+        return streamInfo;
     }
 
     private async Task LoadAndPlayTrackAsync(Track track, TimeSpan? startPosition = null)
@@ -825,7 +857,14 @@ public sealed class AudioPlayerService : IAudioPlayerService
         string? streamUrl;
         StreamAudioQuality? quality;
 
-        if (_preloadedTrack?.TrackId == track.Id)
+        // Prefer local disk cache if available (e.g. preloaded track finished caching or track previously played)
+        if (_audioCacheService != null && _audioCacheService.TryGetCachedTrack(track.Id, out var cachedPath, out var cachedQuality))
+        {
+            streamUrl = cachedPath;
+            quality = cachedQuality;
+            _preloadedTrack = null;
+        }
+        else if (_preloadedTrack?.TrackId == track.Id)
         {
             streamUrl = _preloadedTrack.Value.StreamUrl;
             quality = _preloadedTrack.Value.Quality;

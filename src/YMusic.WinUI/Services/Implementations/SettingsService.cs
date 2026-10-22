@@ -134,6 +134,20 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public string AppFont
+    {
+        get => _settings.AppFont;
+        set
+        {
+            if (_settings.AppFont != value)
+            {
+                _settings.AppFont = value;
+                Save();
+                NotifyChanged(nameof(AppFont));
+            }
+        }
+    }
+
     public string Language
     {
         get => _settings.Language;

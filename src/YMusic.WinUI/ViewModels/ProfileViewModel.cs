@@ -105,6 +105,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private int _selectedThemeIndex;
 
     [ObservableProperty]
+    private int _selectedFontIndex;
+
+    [ObservableProperty]
     private int _selectedLanguageIndex;
 
     [ObservableProperty]
@@ -115,6 +118,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
     public ObservableCollection<string> QualityOptions { get; } = new();
     public ObservableCollection<string> ThemeOptions { get; } = new();
+    public ObservableCollection<string> FontOptions { get; } = new();
     public ObservableCollection<string> CacheLimitOptions { get; } = new();
 
     private bool IsRussian => Loc?.CurrentLanguage != "en";
@@ -159,6 +163,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
     public string ThemeTitle => Loc?["Settings_Theme"] ?? (IsRussian ? "Тема оформления" : "Application Theme");
     public string ThemeDesc => IsRussian ? "Выберите визуальное оформление приложения" : "Select your visual appearance preference";
+
+    public string FontTitle => IsRussian ? "Шрифт интерфейса" : "UI Typography Font";
+    public string FontDesc => IsRussian ? "Фирменный Yandex Sans, современный Inter или системный Segoe UI" : "Signature Yandex Sans, modern Inter, or system Segoe UI";
 
     public string LanguageTitle => "Language / Язык";
     public string LanguageDesc => IsRussian ? "Мгновенное переключение языка интерфейса без перезапуска" : "Switch interface language instantly / Смена языка интерфейса без перезапуска";
@@ -294,6 +301,13 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 "Light" => 2,
                 "Default" => 0,
                 _ => 1 // Dark default
+            };
+
+            SelectedFontIndex = _settingsService.AppFont switch
+            {
+                "Inter" => 1,
+                "System" => 2,
+                _ => 0 // YandexSans default
             };
 
             SelectedLanguageIndex = _settingsService.Language switch
@@ -491,6 +505,32 @@ public sealed partial class ProfileViewModel : BaseViewModel
         {
             shell.ApplyTheme(theme);
         }
+    }
+
+    partial void OnSelectedFontIndexChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+
+        string font = value switch
+        {
+            1 => "Inter",
+            2 => "System",
+            _ => "YandexSans"
+        };
+        _settingsService.AppFont = font;
+
+        if (App.MainWindow is ShellWindow shell)
+        {
+            shell.ApplyFont(font);
+        }
+
+        string fontName = value switch
+        {
+            1 => "Inter",
+            2 => "Segoe UI",
+            _ => "Yandex Sans"
+        };
+        ShowNotification(IsRussian ? $"Шрифт интерфейса изменён: {fontName}." : $"UI font changed to: {fontName}.");
     }
 
     partial void OnSelectedLanguageIndexChanged(int value)
@@ -858,6 +898,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(TrackNotificationsDesc));
         OnPropertyChanged(nameof(ThemeTitle));
         OnPropertyChanged(nameof(ThemeDesc));
+        OnPropertyChanged(nameof(FontTitle));
+        OnPropertyChanged(nameof(FontDesc));
         OnPropertyChanged(nameof(LanguageTitle));
         OnPropertyChanged(nameof(LanguageDesc));
         OnPropertyChanged(nameof(StorageSectionTitle));
@@ -924,6 +966,22 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 ThemeOptions.Add("Light Mode");
             }
             SelectedThemeIndex = tIdx;
+
+            int fIdx = SelectedFontIndex;
+            FontOptions.Clear();
+            if (IsRussian)
+            {
+                FontOptions.Add("Yandex Sans (Фирменный)");
+                FontOptions.Add("Inter (Современный гротеск)");
+                FontOptions.Add("Segoe UI (Системный)");
+            }
+            else
+            {
+                FontOptions.Add("Yandex Sans (Signature)");
+                FontOptions.Add("Inter (Modern Grotesque)");
+                FontOptions.Add("Segoe UI (System Default)");
+            }
+            SelectedFontIndex = fIdx;
 
             int cIdx = SelectedCacheLimitIndex;
             CacheLimitOptions.Clear();

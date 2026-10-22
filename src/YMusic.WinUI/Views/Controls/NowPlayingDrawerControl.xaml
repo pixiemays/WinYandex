@@ -206,7 +206,6 @@
                                              helpers:CursorHelper.UseHandCursor="True"
                                              ToolTipService.ToolTip="Перейти к альбому">
                                 <TextBlock Text="{x:Bind ViewModel.TrackTitle, Mode=OneWay}"
-                                           FontFamily="Segoe UI Variable Display, Segoe UI"
                                            FontSize="22"
                                            FontWeight="Bold"
                                            Foreground="White"
@@ -487,7 +486,6 @@
                         </Grid>
                         <StackPanel Spacing="6" HorizontalAlignment="Center">
                             <TextBlock Text="Loading lyrics..."
-                                       FontFamily="Segoe UI Variable Display, Segoe UI"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="#E0FFFFFF"
@@ -519,7 +517,6 @@
                         </Border>
                         <StackPanel Spacing="6" HorizontalAlignment="Center">
                             <TextBlock Text="{x:Bind ViewModel.LyricsStatusText, Mode=OneWay}"
-                                       FontFamily="Segoe UI Variable Display, Segoe UI"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="#E0FFFFFF"

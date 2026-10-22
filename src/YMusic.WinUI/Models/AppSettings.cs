@@ -28,6 +28,9 @@ public sealed class AppSettings
     [JsonPropertyName("appTheme")]
     public string AppTheme { get; set; } = "Dark"; // "Default", "Light", "Dark"
 
+    [JsonPropertyName("appFont")]
+    public string AppFont { get; set; } = "YandexSans"; // "YandexSans", "Inter", "System"
+
     [JsonPropertyName("language")]
     public string Language { get; set; } = "ru"; // "ru" or "en"
 

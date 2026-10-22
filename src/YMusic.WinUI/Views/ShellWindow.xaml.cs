@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.ViewModels;
@@ -155,6 +156,7 @@ public sealed partial class ShellWindow : Window
     {
         var settingsService = App.GetService<ISettingsService>();
         ApplyTheme(settingsService.AppTheme);
+        ApplyFont(settingsService.AppFont);
 
         await ViewModel.InitializeAsync();
 
@@ -348,6 +350,30 @@ public sealed partial class ShellWindow : Window
                 "Default" => ElementTheme.Default,
                 _ => ElementTheme.Dark
             };
+        });
+    }
+
+    public void ApplyFont(string font)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            FontFamily newFont = font switch
+            {
+                "Inter" => new FontFamily("ms-appx:///Assets/Fonts/Inter.ttf#Inter"),
+                "System" => new FontFamily("Segoe UI Variable Display, Segoe UI"),
+                _ => new FontFamily("ms-appx:///Assets/Fonts/YSText-Regular.ttf#YS Text")
+            };
+
+            NavView.FontFamily = newFont;
+            ContentFrame.FontFamily = newFont;
+            BottomPlayerBar.FontFamily = newFont;
+            NowPlayingDrawer.FontFamily = newFont;
+
+            try
+            {
+                App.Current.Resources["ContentControlThemeFontFamily"] = newFont;
+            }
+            catch { }
         });
     }
 

@@ -761,7 +761,7 @@
                                             </Border>
                                             <TextBlock Text="{x:Bind Title}" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Text="{x:Bind OwnerName}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{x:Bind TrackCount, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            <TextBlock Text="{x:Bind FormattedTrackCount, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                         </StackPanel>
                                     </Button>
                                 </DataTemplate>

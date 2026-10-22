@@ -116,15 +116,21 @@ public sealed partial class Album : ObservableObject
         : string.Empty;
 
     [JsonIgnore]
-    public string FormattedTrackCount => string.Equals(Type, "single", StringComparison.OrdinalIgnoreCase) ||
-                                         string.Equals(MetaType, "single", StringComparison.OrdinalIgnoreCase)
-        ? "Сингл"
-        : TrackCount switch
+    public string FormattedTrackCount
+    {
+        get
         {
-            1 => "1 трек",
-            2 or 3 or 4 => $"{TrackCount} трека",
-            _ => $"{TrackCount} треков"
-        };
+            if (string.Equals(Type, "single", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(MetaType, "single", StringComparison.OrdinalIgnoreCase))
+            {
+                bool isEn = false;
+                try { isEn = App.Loc?.CurrentLanguage == "en"; } catch { }
+                return isEn ? "Single" : "Сингл";
+            }
+
+            return Helpers.PluralizationHelper.FormatTrackCount(TrackCount);
+        }
+    }
 
     [JsonIgnore]
     public string FormattedYearAndTracks => Year.HasValue ? $"{Year.Value} • {FormattedTrackCount}" : FormattedTrackCount;

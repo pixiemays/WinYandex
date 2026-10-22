@@ -119,7 +119,7 @@
                                                                TextTrimming="CharacterEllipsis"
                                                                MaxLines="2"
                                                                Height="32" />
-                                                    <TextBlock Text="{x:Bind TrackCount, Mode=OneTime}"
+                                                    <TextBlock Text="{x:Bind FormattedTrackCount, Mode=OneTime}"
                                                                FontSize="11"
                                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                                 </StackPanel>
@@ -293,7 +293,7 @@
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                TextTrimming="CharacterEllipsis"
                                                                MaxLines="1" />
-                                                    <TextBlock Text="{x:Bind TrackCount, Mode=OneTime}"
+                                                    <TextBlock Text="{x:Bind FormattedTrackCount, Mode=OneTime}"
                                                                FontSize="11"
                                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                                 </StackPanel>

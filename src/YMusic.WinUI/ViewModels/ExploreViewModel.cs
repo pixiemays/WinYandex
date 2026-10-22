@@ -3,6 +3,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using YMusic.WinUI.Helpers;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 
@@ -185,7 +186,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
         DetailDescription = playlist.Description ?? string.Empty;
         DetailCoverUrl = playlist.CoverUrl;
         DetailTypeBadge = playlist.Owner?.Login?.Contains("daily") == true ? "DAILY MIX" : "PLAYLIST";
-        DetailMeta = $"{playlist.TrackCount} tracks";
+        DetailMeta = playlist.FormattedTrackCount;
         DetailTracks.Clear();
         IsDetailPinned = _pinnedItemsService.IsPlaylistPinned(playlist.Uid, playlist.Kind);
         playlist.IsPinned = IsDetailPinned;
@@ -219,10 +220,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
                 }
 
                 var totalSpan = TimeSpan.FromMilliseconds(totalMs);
-                string durStr = totalSpan.Hours > 0
-                    ? $"{totalSpan.Hours} hr {totalSpan.Minutes} min"
-                    : $"{totalSpan.Minutes} min";
-                DetailMeta = $"{DetailTracks.Count} tracks • {durStr}";
+                DetailMeta = $"{PluralizationHelper.FormatTrackCount(DetailTracks.Count)} • {PluralizationHelper.FormatDuration(totalSpan)}";
 
                 _playbackCoordinator.Sync(DetailTracks);
             });
@@ -249,7 +247,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
         DetailDescription = !string.IsNullOrWhiteSpace(album.Description) ? album.Description : (!string.IsNullOrWhiteSpace(album.Genre) ? $"Genre: {album.Genre}" : string.Empty);
         DetailCoverUrl = album.CoverUrl;
         DetailTypeBadge = "ALBUM";
-        DetailMeta = album.Year.HasValue ? $"{album.Year.Value} • {album.TrackCount} tracks" : $"{album.TrackCount} tracks";
+        DetailMeta = album.FormattedYearAndTracks;
         DetailTracks.Clear();
         IsDetailPinned = _pinnedItemsService.IsAlbumPinned(album.Id);
         album.IsPinned = IsDetailPinned;
@@ -273,11 +271,8 @@ public sealed partial class ExploreViewModel : BaseViewModel
                 }
 
                 var totalSpan = TimeSpan.FromMilliseconds(totalMs);
-                string durStr = totalSpan.Hours > 0
-                    ? $"{totalSpan.Hours} hr {totalSpan.Minutes} min"
-                    : $"{totalSpan.Minutes} min";
                 string yearStr = album.Year.HasValue ? $"{album.Year.Value} • " : string.Empty;
-                DetailMeta = $"{yearStr}{DetailTracks.Count} tracks • {durStr}";
+                DetailMeta = $"{yearStr}{PluralizationHelper.FormatTrackCount(DetailTracks.Count)} • {PluralizationHelper.FormatDuration(totalSpan)}";
 
                 _playbackCoordinator.Sync(DetailTracks);
             });

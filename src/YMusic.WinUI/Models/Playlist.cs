@@ -86,7 +86,7 @@ public sealed partial class Playlist : ObservableObject
         .ToList();
 
     [JsonIgnore]
-    public string FormattedTrackCount => TrackCount == 1 ? "1 track" : $"{TrackCount} tracks";
+    public string FormattedTrackCount => Helpers.PluralizationHelper.FormatTrackCount(TrackCount);
 
     [JsonIgnore]
     public string? CoverUrl => GetCoverUrl(300);

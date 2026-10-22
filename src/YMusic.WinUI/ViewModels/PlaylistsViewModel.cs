@@ -3,6 +3,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using YMusic.WinUI.Helpers;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 
@@ -325,9 +326,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
 
         long totalMs = SelectedPlaylistTracks.Sum(t => t.DurationMs);
         var totalSpan = TimeSpan.FromMilliseconds(totalMs);
-        FormattedDuration = totalSpan.Hours > 0
-            ? $"{totalSpan.Hours} hr {totalSpan.Minutes} min"
-            : $"{totalSpan.Minutes} min";
+        FormattedDuration = PluralizationHelper.FormatDuration(totalSpan);
     }
 
     [RelayCommand]
@@ -372,9 +371,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                 }
 
                 var totalSpan = TimeSpan.FromMilliseconds(totalMs);
-                FormattedDuration = totalSpan.Hours > 0
-                    ? $"{totalSpan.Hours} hr {totalSpan.Minutes} min"
-                    : $"{totalSpan.Minutes} min";
+                FormattedDuration = PluralizationHelper.FormatDuration(totalSpan);
 
                 _playbackCoordinator.Sync(SelectedPlaylistTracks);
 

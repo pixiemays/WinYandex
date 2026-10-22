@@ -3,6 +3,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using YMusic.WinUI.Helpers;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 
@@ -23,7 +24,11 @@ public sealed partial class LikedTracksViewModel : BaseViewModel
     private string _searchFilter = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FormattedTotalTracks))]
     private int _totalTrackCount;
+
+    public string FormattedTotalTracks => PluralizationHelper.FormatTrackCount(TotalTrackCount);
+    public string PageTitle => App.Loc?.GetString("Nav_Likes") ?? "Любимые треки";
 
     [ObservableProperty]
     private Track? _currentlyPlayingTrack;

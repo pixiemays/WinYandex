@@ -58,13 +58,18 @@ public sealed class RotorFeedbackRequest
     public string? BatchId { get; set; }
 }
 
-public sealed class WavePreset
+public sealed partial class WavePreset : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
 {
-    public string Title { get; set; } = string.Empty;
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private string _title = string.Empty;
+
     public string StationType { get; set; } = "user";
     public string StationTag { get; set; } = "onyourwave";
     public string Glyph { get; set; } = "\uE768";
-    public string Description { get; set; } = string.Empty;
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private string _description = string.Empty;
+
     public string GradientStart { get; set; } = "#FF1361";
     public string GradientEnd { get; set; } = "#FFF800";
 }

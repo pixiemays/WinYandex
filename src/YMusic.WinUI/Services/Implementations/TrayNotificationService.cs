@@ -39,6 +39,7 @@ public sealed class TrayNotificationService : ITrayNotificationService
     private readonly IAudioPlayerService _audioPlayer;
     private readonly IYandexMusicService _musicService;
     private readonly ISettingsService _settingsService;
+    private readonly ILocalizationService _loc;
 
     private ShellWindow? _shellWindow;
     private AppWindow? _appWindow;
@@ -63,12 +64,15 @@ public sealed class TrayNotificationService : ITrayNotificationService
     public TrayNotificationService(
         IAudioPlayerService audioPlayer,
         IYandexMusicService musicService,
-        ISettingsService settingsService)
+        ISettingsService settingsService,
+        ILocalizationService loc)
     {
         _audioPlayer = audioPlayer;
         _musicService = musicService;
         _settingsService = settingsService;
+        _loc = loc;
         _subclassProc = SubclassWindowProc;
+        _loc.LanguageChanged += (s, lang) => RequestUpdateTaskbarButtons();
     }
 
     public void Initialize(ShellWindow shellWindow)
@@ -290,7 +294,7 @@ public sealed class TrayNotificationService : ITrayNotificationService
                 dwMask = THUMBBUTTONMASK.THB_ICON | THUMBBUTTONMASK.THB_TOOLTIP | THUMBBUTTONMASK.THB_FLAGS,
                 iId = THUMB_SHUFFLE,
                 hIcon = ValidIcon(hShuffle),
-                szTip = isShuffle ? "Случайный порядок: Вкл" : "Перемешать треки",
+                szTip = isShuffle ? _loc["Thumb_ShuffleOn"] : _loc["Thumb_ShuffleOff"],
                 dwFlags = THUMBBUTTONFLAGS.THBF_ENABLED
             },
             new()
@@ -298,7 +302,7 @@ public sealed class TrayNotificationService : ITrayNotificationService
                 dwMask = THUMBBUTTONMASK.THB_ICON | THUMBBUTTONMASK.THB_TOOLTIP | THUMBBUTTONMASK.THB_FLAGS,
                 iId = THUMB_DISLIKE,
                 hIcon = ValidIcon(hDislike),
-                szTip = "Не нравится (пропустить)",
+                szTip = _loc["Thumb_Dislike"],
                 dwFlags = flags
             },
             new()
@@ -306,7 +310,7 @@ public sealed class TrayNotificationService : ITrayNotificationService
                 dwMask = THUMBBUTTONMASK.THB_ICON | THUMBBUTTONMASK.THB_TOOLTIP | THUMBBUTTONMASK.THB_FLAGS,
                 iId = THUMB_PREV,
                 hIcon = ValidIcon(hPrev),
-                szTip = "Предыдущий трек",
+                szTip = _loc["Tray_Prev"],
                 dwFlags = flags
             },
             new()
@@ -314,7 +318,7 @@ public sealed class TrayNotificationService : ITrayNotificationService
                 dwMask = THUMBBUTTONMASK.THB_ICON | THUMBBUTTONMASK.THB_TOOLTIP | THUMBBUTTONMASK.THB_FLAGS,
                 iId = THUMB_PLAYPAUSE,
                 hIcon = ValidIcon(hPlayPause),
-                szTip = isPlaying ? "Пауза" : "Воспроизведение",
+                szTip = isPlaying ? _loc["Tray_Pause"] : _loc["Tray_Play"],
                 dwFlags = flags
             },
             new()
@@ -322,7 +326,7 @@ public sealed class TrayNotificationService : ITrayNotificationService
                 dwMask = THUMBBUTTONMASK.THB_ICON | THUMBBUTTONMASK.THB_TOOLTIP | THUMBBUTTONMASK.THB_FLAGS,
                 iId = THUMB_NEXT,
                 hIcon = ValidIcon(hNext),
-                szTip = "Следующий трек",
+                szTip = _loc["Tray_Next"],
                 dwFlags = flags
             },
             new()
@@ -330,7 +334,7 @@ public sealed class TrayNotificationService : ITrayNotificationService
                 dwMask = THUMBBUTTONMASK.THB_ICON | THUMBBUTTONMASK.THB_TOOLTIP | THUMBBUTTONMASK.THB_FLAGS,
                 iId = THUMB_LIKE,
                 hIcon = ValidIcon(hLike),
-                szTip = isLiked ? "Удалить из любимых" : "Мне нравится",
+                szTip = isLiked ? _loc["Tray_Liked"] : _loc["Tray_Like"],
                 dwFlags = flags
             },
             new()
@@ -340,9 +344,9 @@ public sealed class TrayNotificationService : ITrayNotificationService
                 hIcon = ValidIcon(hRepeat),
                 szTip = repeatMode switch
                 {
-                    RepeatMode.One => "Повтор: один трек",
-                    RepeatMode.All => "Повтор: весь список",
-                    _ => "Повтор выключен"
+                    RepeatMode.One => _loc["Thumb_RepeatOne"],
+                    RepeatMode.All => _loc["Thumb_RepeatAll"],
+                    _ => _loc["Thumb_RepeatOff"]
                 },
                 dwFlags = THUMBBUTTONFLAGS.THBF_ENABLED
             }
@@ -748,8 +752,8 @@ public sealed class TrayNotificationService : ITrayNotificationService
             {
                 _hasShownMinimizeHint = true;
                 ShowNotification(
-                    "YMusic свернут в трей",
-                    "Нажмите правой кнопкой мыши по значку в трее для управления воспроизведением.");
+                    _loc["Tray_MinimizedTitle"],
+                    _loc["Tray_MinimizedHint"]);
             }
         }
     }
@@ -817,7 +821,7 @@ public sealed class TrayNotificationService : ITrayNotificationService
             // 1. Current Track Header (Disabled)
             string trackTitle = hasTrack
                 ? $"{currentTrack!.FullTitle} — {currentTrack.ArtistNames}"
-                : "Ничего не играет";
+                : _loc["Tray_NothingPlaying"];
 
             if (trackTitle.Length > 44)
             {
@@ -828,28 +832,28 @@ public sealed class TrayNotificationService : ITrayNotificationService
             AppendMenuW(hMenu, MF_SEPARATOR, UIntPtr.Zero, string.Empty);
 
             // 2. Play / Pause
-            string playPauseText = isPlaying ? "⏸  Пауза" : "▶  Воспроизведение";
+            string playPauseText = isPlaying ? $"⏸  {_loc["Tray_Pause"]}" : $"▶  {_loc["Tray_Play"]}";
             AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_PLAYPAUSE, playPauseText);
 
             // 3. Next / Previous Track
-            AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_NEXT, "⏭  Следующий трек");
-            AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_PREV, "⏮  Предыдущий трек");
+            AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_NEXT, $"⏭  {_loc["Tray_Next"]}");
+            AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_PREV, $"⏮  {_loc["Tray_Prev"]}");
 
             // 4. Like / Unlike (if track present)
             if (hasTrack)
             {
-                string likeText = isLiked ? "❤️  Удалить из любимых" : "🤍  Мне нравится";
+                string likeText = isLiked ? $"❤️  {_loc["Tray_Liked"]}" : $"🤍  {_loc["Tray_Like"]}";
                 AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_LIKE, likeText);
             }
 
             AppendMenuW(hMenu, MF_SEPARATOR, UIntPtr.Zero, string.Empty);
 
             // 5. Show Window
-            AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_RESTORE, "🗖  Открыть YMusic");
+            AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_RESTORE, $"🗖  {_loc["Tray_Open"]}");
             AppendMenuW(hMenu, MF_SEPARATOR, UIntPtr.Zero, string.Empty);
 
             // 6. Exit
-            AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_EXIT, "✕  Выход из YMusic");
+            AppendMenuW(hMenu, MF_STRING, (UIntPtr)ID_EXIT, $"✕  {_loc["Tray_Exit"]}");
 
             uint cmd = TrackPopupMenuEx(
                 hMenu,

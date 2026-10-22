@@ -91,6 +91,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private int _selectedThemeIndex;
 
     [ObservableProperty]
+    private int _selectedLanguageIndex;
+
+    [ObservableProperty]
     private string? _notificationMessage;
 
     [ObservableProperty]
@@ -187,6 +190,12 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 _ => 1 // Dark default
             };
 
+            SelectedLanguageIndex = _settingsService.Language switch
+            {
+                "en" => 1,
+                _ => 0 // "ru" default
+            };
+
             IsEqualizerEnabled = _equalizerService.IsEnabled;
 
             AvailablePresets.Clear();
@@ -257,6 +266,11 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 };
                 if (SelectedCacheLimitIndex != newIdx) SelectedCacheLimitIndex = newIdx;
                 CalculateCacheSize();
+            }
+            else if (propName == nameof(ISettingsService.Language))
+            {
+                int langIdx = _settingsService.Language == "en" ? 1 : 0;
+                if (SelectedLanguageIndex != langIdx) SelectedLanguageIndex = langIdx;
             }
         });
     }
@@ -360,6 +374,20 @@ public sealed partial class ProfileViewModel : BaseViewModel
         {
             shell.ApplyTheme(theme);
         }
+    }
+
+    partial void OnSelectedLanguageIndexChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+
+        string lang = value == 1 ? "en" : "ru";
+        _settingsService.Language = lang;
+        if (Loc != null && Loc.CurrentLanguage != lang)
+        {
+            Loc.CurrentLanguage = lang;
+        }
+
+        ShowNotification(Loc?["SettingsSavedNotification"] ?? "Настройки сохранены.");
     }
 
     partial void OnIsEqualizerEnabledChanged(bool value)

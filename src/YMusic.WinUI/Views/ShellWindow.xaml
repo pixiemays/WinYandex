@@ -46,41 +46,41 @@
             <NavigationView.AutoSuggestBox>
                 <AutoSuggestBox x:Name="NavAutoSuggestBox"
                                 QueryIcon="Find"
-                                PlaceholderText="Search catalog..."
+                                PlaceholderText="{x:Bind ViewModel.SearchPlaceholderText, Mode=OneWay}"
                                 QuerySubmitted="NavAutoSuggestBox_QuerySubmitted" />
             </NavigationView.AutoSuggestBox>
 
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="NavItemExplore"
-                                    Content="Explore"
+                                    Content="{x:Bind ViewModel.NavExploreText, Mode=OneWay}"
                                     Tag="Explore">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE80F;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemSearch"
-                                    Content="Search"
+                                    Content="{x:Bind ViewModel.NavSearchText, Mode=OneWay}"
                                     Tag="Search">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE721;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemWave"
-                                    Content="My Wave"
+                                    Content="{x:Bind ViewModel.NavWaveText, Mode=OneWay}"
                                     Tag="Wave">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE768;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemLikes"
-                                    Content="Liked Tracks"
+                                    Content="{x:Bind ViewModel.NavLikesText, Mode=OneWay}"
                                     Tag="Likes">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEB52;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemPlaylists"
-                                    Content="Playlists &amp; Albums"
+                                    Content="{x:Bind ViewModel.NavPlaylistsText, Mode=OneWay}"
                                     Tag="Playlists">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE142;" />

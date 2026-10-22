@@ -28,6 +28,9 @@ public sealed class AppSettings
     [JsonPropertyName("appTheme")]
     public string AppTheme { get; set; } = "Dark"; // "Default", "Light", "Dark"
 
+    [JsonPropertyName("language")]
+    public string Language { get; set; } = "ru"; // "ru" or "en"
+
     [JsonPropertyName("audioCacheEnabled")]
     public bool AudioCacheEnabled { get; set; } = true;
 

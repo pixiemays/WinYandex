@@ -453,6 +453,27 @@
                             </ComboBox>
                         </Grid>
                     </Border>
+
+                    <!-- Language Selection Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Language / Язык" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="Switch interface language instantly / Смена языка интерфейса без перезапуска" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      SelectedIndex="{x:Bind ViewModel.SelectedLanguageIndex, Mode=TwoWay}"
+                                      Width="180"
+                                      VerticalAlignment="Center">
+                                <ComboBoxItem Content="Русский (RU)" />
+                                <ComboBoxItem Content="English (EN)" />
+                            </ComboBox>
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </StackPanel>
 

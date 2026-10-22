@@ -2,12 +2,40 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Dispatching;
+using YMusic.WinUI.Services.Interfaces;
 
 namespace YMusic.WinUI.ViewModels;
 
 public abstract partial class BaseViewModel : ObservableObject
 {
     private DispatcherQueue? _dispatcherQueue;
+
+    public ILocalizationService? Loc => App.Services != null ? App.Loc : null;
+
+    protected BaseViewModel()
+    {
+        try
+        {
+            if (App.Services != null)
+            {
+                App.Loc.LanguageChanged += OnLocalizationLanguageChanged;
+            }
+        }
+        catch { }
+    }
+
+    private void OnLocalizationLanguageChanged(object? sender, string lang)
+    {
+        RunOnUi(() =>
+        {
+            OnPropertyChanged(nameof(Loc));
+            OnLanguageChanged();
+        });
+    }
+
+    protected virtual void OnLanguageChanged()
+    {
+    }
 
     protected DispatcherQueue GetDispatcherQueue()
     {

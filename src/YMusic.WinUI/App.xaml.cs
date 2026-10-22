@@ -19,6 +19,8 @@ public partial class App : Application
 
     public static IServiceProvider Services { get; private set; } = null!;
 
+    public static ILocalizationService Loc => Services.GetRequiredService<ILocalizationService>();
+
     public static T GetService<T>() where T : class
     {
         return Services.GetRequiredService<T>();
@@ -56,6 +58,7 @@ public partial class App : Application
         services.AddSingleton<IYandexMusicService, YandexMusicService>();
         services.AddSingleton<IFckCensorService, FckCensorService>();
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IAudioCacheService, AudioCacheService>();
         services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
         services.AddSingleton<IEqualizerService, EqualizerService>();
@@ -80,6 +83,31 @@ public partial class App : Application
         var provider = services.BuildServiceProvider();
         var fckCensor = provider.GetRequiredService<IFckCensorService>();
         var audioCache = provider.GetRequiredService<IAudioCacheService>();
+        var loc = provider.GetRequiredService<ILocalizationService>();
+        var settings = provider.GetRequiredService<ISettingsService>();
+
+        // Apply saved language setting
+        if (!string.IsNullOrWhiteSpace(settings.Language))
+        {
+            loc.CurrentLanguage = settings.Language;
+        }
+
+        settings.SettingChanged += (s, propName) =>
+        {
+            if (propName == nameof(ISettingsService.Language) && loc.CurrentLanguage != settings.Language)
+            {
+                loc.CurrentLanguage = settings.Language;
+            }
+        };
+
+        loc.LanguageChanged += (s, newLang) =>
+        {
+            if (settings.Language != newLang)
+            {
+                settings.Language = newLang;
+            }
+        };
+
         Track.IsTrackReplacedChecker = id => fckCensor.IsReplaced(id);
         Track.IsTrackCachedChecker = id => audioCache.IsTrackCached(id);
 

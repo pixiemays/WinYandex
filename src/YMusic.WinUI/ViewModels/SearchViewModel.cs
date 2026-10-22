@@ -14,7 +14,7 @@ using YMusic.WinUI.Views.Controls;
 
 namespace YMusic.WinUI.ViewModels;
 
-public sealed partial class SearchViewModel : ObservableObject
+public sealed partial class SearchViewModel : BaseViewModel
 {
     private readonly IYandexMusicService _musicService;
     private readonly IAudioPlayerService _audioPlayer;
@@ -86,11 +86,20 @@ public sealed partial class SearchViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoadingMoreTracks;
 
-    public string AllTabHeader => "All";
-    public string TracksTabHeader => TracksTotal > 0 ? $"Tracks ({TracksTotal:N0})" : "Tracks";
-    public string ArtistsTabHeader => ArtistsTotal > 0 ? $"Artists ({ArtistsTotal:N0})" : "Artists";
-    public string AlbumsTabHeader => AlbumsTotal > 0 ? $"Albums ({AlbumsTotal:N0})" : "Albums";
-    public string PlaylistsTabHeader => PlaylistsTotal > 0 ? $"Playlists ({PlaylistsTotal:N0})" : "Playlists";
+    public string AllTabHeader => Loc?["Search_Tab_All"] ?? "Все";
+    public string TracksTabHeader => TracksTotal > 0 ? $"{Loc?["Search_Tab_Tracks"] ?? "Треки"} ({TracksTotal:N0})" : (Loc?["Search_Tab_Tracks"] ?? "Треки");
+    public string ArtistsTabHeader => ArtistsTotal > 0 ? $"{Loc?["Search_Tab_Artists"] ?? "Артисты"} ({ArtistsTotal:N0})" : (Loc?["Search_Tab_Artists"] ?? "Артисты");
+    public string AlbumsTabHeader => AlbumsTotal > 0 ? $"{Loc?["Search_Tab_Albums"] ?? "Альбомы"} ({AlbumsTotal:N0})" : (Loc?["Search_Tab_Albums"] ?? "Альбомы");
+    public string PlaylistsTabHeader => PlaylistsTotal > 0 ? $"{Loc?["Search_Tab_Playlists"] ?? "Плейлисты"} ({PlaylistsTotal:N0})" : (Loc?["Search_Tab_Playlists"] ?? "Плейлисты");
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(AllTabHeader));
+        OnPropertyChanged(nameof(TracksTabHeader));
+        OnPropertyChanged(nameof(ArtistsTabHeader));
+        OnPropertyChanged(nameof(AlbumsTabHeader));
+        OnPropertyChanged(nameof(PlaylistsTabHeader));
+    }
 
     public bool HasResults => BestResult != null || Tracks.Count > 0 || Artists.Count > 0 || Albums.Count > 0 || Playlists.Count > 0;
     public bool ShowNoResults => HasSearched && !IsSearching && !HasResults && !string.IsNullOrWhiteSpace(Query);
@@ -614,18 +623,5 @@ public sealed partial class SearchViewModel : ObservableObject
             File.WriteAllText(filePath, json);
         }
         catch { }
-    }
-
-    private static void RunOnUi(Action action)
-    {
-        var dispatcher = App.MainDispatcherQueue;
-        if (dispatcher != null && !dispatcher.HasThreadAccess)
-        {
-            dispatcher.TryEnqueue(action.Invoke);
-        }
-        else
-        {
-            action();
-        }
     }
 }

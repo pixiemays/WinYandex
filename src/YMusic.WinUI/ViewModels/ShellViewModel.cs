@@ -21,11 +21,29 @@ public sealed partial class ShellViewModel : BaseViewModel
     private bool _isAuthenticated;
 
     public string AccountNavItemTitle => IsAuthenticated
-        ? (!string.IsNullOrWhiteSpace(CurrentUser?.DisplayName) ? CurrentUser.DisplayName : "Profile & Settings")
-        : "Account / Sign In";
+        ? (!string.IsNullOrWhiteSpace(CurrentUser?.DisplayName) ? CurrentUser.DisplayName : (Loc?["NavProfile"] ?? "Профиль и настройки"))
+        : (Loc?["NavAccount"] ?? "Войти в аккаунт");
+
+    public string NavExploreText => Loc?["NavExplore"] ?? "Главное";
+    public string NavSearchText => Loc?["NavSearch"] ?? "Поиск";
+    public string NavWaveText => Loc?["NavWave"] ?? "Моя волна";
+    public string NavLikesText => Loc?["NavLikes"] ?? "Любимые треки";
+    public string NavPlaylistsText => Loc?["NavPlaylists"] ?? "Плейлисты и альбомы";
+    public string SearchPlaceholderText => Loc?["SearchPlaceholder"] ?? "Поиск треков, артистов, альбомов...";
 
     partial void OnCurrentUserChanged(UserProfile? value) => OnPropertyChanged(nameof(AccountNavItemTitle));
     partial void OnIsAuthenticatedChanged(bool value) => OnPropertyChanged(nameof(AccountNavItemTitle));
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(AccountNavItemTitle));
+        OnPropertyChanged(nameof(NavExploreText));
+        OnPropertyChanged(nameof(NavSearchText));
+        OnPropertyChanged(nameof(NavWaveText));
+        OnPropertyChanged(nameof(NavLikesText));
+        OnPropertyChanged(nameof(NavPlaylistsText));
+        OnPropertyChanged(nameof(SearchPlaceholderText));
+    }
 
     public ShellViewModel(
         PlayerBarViewModel playerBar,

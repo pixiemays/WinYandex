@@ -134,6 +134,20 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public string Language
+    {
+        get => _settings.Language;
+        set
+        {
+            if (_settings.Language != value)
+            {
+                _settings.Language = value;
+                Save();
+                NotifyChanged(nameof(Language));
+            }
+        }
+    }
+
     public bool AudioCacheEnabled
     {
         get => _settings.AudioCacheEnabled;

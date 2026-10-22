@@ -13,6 +13,7 @@ public interface ISettingsService
     bool TrackNotificationsEnabled { get; set; }
     bool FckCensorEnabled { get; set; }
     string AppTheme { get; set; }
+    string Language { get; set; }
     bool AudioCacheEnabled { get; set; }
     int CacheSizeLimitMb { get; set; }
 

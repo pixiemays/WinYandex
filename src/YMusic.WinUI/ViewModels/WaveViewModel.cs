@@ -31,7 +31,10 @@ public sealed partial class WaveViewModel : BaseViewModel
 
     public string LikeGlyph => IsCurrentTrackLiked ? "\uEB52" : "\uEB51";
 
-    public string LikeTooltip => IsCurrentTrackLiked ? "Unlike" : "Like (Train My Wave)";
+    public string LikeTooltip => IsCurrentTrackLiked ? (Loc?["Common_RemoveFavorite"] ?? "Удалить из избранного") : (Loc?["Common_AddFavorite"] ?? "В избранное (Обучать волну)");
+
+    public string WaveTitleText => Loc?["Wave_Title"] ?? "Моя волна";
+    public string WaveSubtitleText => Loc?["Wave_Subtitle"] ?? "Бесконечный персональный поток музыки";
 
     [ObservableProperty]
     private Track? _currentTrack;
@@ -242,6 +245,72 @@ public sealed partial class WaveViewModel : BaseViewModel
             GradientStart = "#7F00FF",
             GradientEnd = "#E100FF"
         });
+
+        RefreshPresetNames();
+    }
+
+    private void RefreshPresetNames()
+    {
+        bool isEn = Loc?.CurrentLanguage == "en";
+        foreach (var p in Presets)
+        {
+            switch (p.StationTag)
+            {
+                case "onyourwave":
+                    p.Title = isEn ? "My Wave" : "Моя волна";
+                    p.Description = isEn ? "Personal stream tailored to your music taste" : "Персональный поток по вашему музыкальному вкусу";
+                    break;
+                case "energetic":
+                    p.Title = isEn ? "Energetic" : "Бодрое";
+                    p.Description = isEn ? "Upbeat drive and high energy rhythms" : "Энергичный бит и танцевальный ритм";
+                    break;
+                case "calm":
+                    p.Title = isEn ? "Calm" : "Спокойное";
+                    p.Description = isEn ? "Relaxing chill, soft ambient and melodic vibes" : "Расслабляющий чилл, мягкий эмбиент и уют";
+                    break;
+                case "work":
+                    p.Title = isEn ? "Focus" : "Работа";
+                    p.Description = isEn ? "Deep focus, concentration and flow without lyrics" : "Концентрация, фокус и продуктивность";
+                    break;
+                case "rock":
+                    p.Title = isEn ? "Rock" : "Рок";
+                    p.Description = isEn ? "Driving guitar riffs, alt and rock classics" : "Драйвовые риффы, альт-рок и классика";
+                    break;
+                case "electronic":
+                    p.Title = isEn ? "Electronic" : "Электроника";
+                    p.Description = isEn ? "Synthesizers, punchy bass and electronic vibes" : "Синтезаторы, плотный бас и электронный вайб";
+                    break;
+                case "hiphop":
+                    p.Title = isEn ? "Hip-Hop" : "Хип-хоп";
+                    p.Description = isEn ? "Groovy beats, punchy flow and top hip-hop" : "Качающий бит, флоу и топ рэп";
+                    break;
+                case "indie":
+                    p.Title = isEn ? "Indie" : "Инди";
+                    p.Description = isEn ? "Atmospheric indie-pop, indie-rock and fresh releases" : "Атмосферный инди-поп, инди-рок и открытия";
+                    break;
+            }
+        }
+        OnPropertyChanged(nameof(SelectedPreset));
+    }
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(WaveTitleText));
+        OnPropertyChanged(nameof(WaveSubtitleText));
+        OnPropertyChanged(nameof(LikeTooltip));
+        RefreshPresetNames();
+        if (!_isWaveActive)
+        {
+            StatusText = Loc?.CurrentLanguage == "en"
+                ? "Press Play to start your infinite personalized stream"
+                : "Нажмите Play для запуска бесконечного персонального потока";
+        }
+        else
+        {
+            StatusText = Loc?.CurrentLanguage == "en"
+                ? $"\"{SelectedPreset.Title}\" wave active"
+                : $"Волна \"{SelectedPreset.Title}\" активна";
+        }
     }
 
     [RelayCommand]

@@ -34,12 +34,54 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private readonly LoginViewModel _loginViewModel;
     private readonly SearchViewModel _searchViewModel;
     private readonly IAudioCacheService _audioCacheService;
+    private readonly IUpdateService _updateService;
 
     private readonly string _appDataDir;
     private readonly string _profileCachePath;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private bool _hasCachedProfile;
     private bool _isInitializingSettings;
+
+    [ObservableProperty]
+    private bool _isCheckingUpdates;
+
+    [ObservableProperty]
+    private bool _isUpdateAvailable;
+
+    [ObservableProperty]
+    private bool _isDownloadingUpdate;
+
+    [ObservableProperty]
+    private double _updateDownloadProgress;
+
+    [ObservableProperty]
+    private string _updateProgressText = string.Empty;
+
+    [ObservableProperty]
+    private string _updateStatusText = string.Empty;
+
+    [ObservableProperty]
+    private string _newVersionTag = string.Empty;
+
+    [ObservableProperty]
+    private string _updateReleaseNotes = string.Empty;
+
+    [ObservableProperty]
+    private UpdateInfo? _availableUpdate;
+
+    public bool CanCheckUpdates => !IsCheckingUpdates && !IsDownloadingUpdate;
+    public bool CanDownloadUpdate => !IsDownloadingUpdate;
+
+    partial void OnIsCheckingUpdatesChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanCheckUpdates));
+    }
+
+    partial void OnIsDownloadingUpdateChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanCheckUpdates));
+        OnPropertyChanged(nameof(CanDownloadUpdate));
+    }
 
     [ObservableProperty]
     private UserProfile? _user;
@@ -200,6 +242,11 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string SwitchEnabledText => IsRussian ? "Включено" : "Enabled";
     public string SwitchDisabledText => IsRussian ? "Отключено" : "Disabled";
 
+    public string CheckUpdatesButtonText => IsRussian ? "Проверить обновления" : "Check for Updates";
+    public string DownloadUpdateButtonText => IsRussian ? "Скачать и обновить" : "Download & Install";
+    public string UpdateSectionTitle => IsRussian ? "Обновления" : "Updates";
+    public string ReleaseNotesTitle => IsRussian ? "Что нового:" : "Release notes:";
+
     public ProfileViewModel(
         IYandexMusicService musicService,
         ICredentialStorageService credentialStorage,
@@ -210,7 +257,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
         INavigationService navigationService,
         LoginViewModel loginViewModel,
         SearchViewModel searchViewModel,
-        IAudioCacheService audioCacheService)
+        IAudioCacheService audioCacheService,
+        IUpdateService updateService)
     {
         _musicService = musicService;
         _credentialStorage = credentialStorage;
@@ -222,9 +270,11 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _loginViewModel = loginViewModel;
         _searchViewModel = searchViewModel;
         _audioCacheService = audioCacheService;
+        _updateService = updateService;
 
         _appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic");
         AppDataPath = _appDataDir;
+        AppVersionText = $"v{_updateService.CurrentVersion}";
         _profileCachePath = Path.Combine(_appDataDir, "profile_cache.json");
 
         LoadCachedProfile();
@@ -837,6 +887,83 @@ public sealed partial class ProfileViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    public async Task CheckForUpdatesAsync()
+    {
+        if (IsCheckingUpdates || IsDownloadingUpdate) return;
+
+        IsCheckingUpdates = true;
+        UpdateStatusText = IsRussian ? "Проверка обновлений..." : "Checking for updates...";
+
+        try
+        {
+            var update = await _updateService.CheckForUpdatesAsync();
+            AvailableUpdate = update;
+            IsUpdateAvailable = update.IsUpdateAvailable;
+
+            if (update.IsUpdateAvailable)
+            {
+                NewVersionTag = $"v{update.LatestVersion}";
+                UpdateReleaseNotes = !string.IsNullOrWhiteSpace(update.ReleaseNotes) ? update.ReleaseNotes : (IsRussian ? "Улучшения стабильности и исправления ошибок." : "Bug fixes and improvements.");
+                UpdateStatusText = IsRussian
+                    ? $"Доступна новая версия: {NewVersionTag}!"
+                    : $"New version available: {NewVersionTag}!";
+            }
+            else
+            {
+                UpdateStatusText = IsRussian
+                    ? $"У вас последняя версия ({update.CurrentVersion})."
+                    : $"You are using the latest version ({update.CurrentVersion}).";
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText = IsRussian
+                ? $"Ошибка проверки: {ex.Message}"
+                : $"Check error: {ex.Message}";
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task DownloadAndInstallUpdateAsync()
+    {
+        if (AvailableUpdate == null || IsDownloadingUpdate) return;
+
+        IsDownloadingUpdate = true;
+        UpdateDownloadProgress = 0;
+        UpdateProgressText = IsRussian ? "Подготовка к скачиванию..." : "Preparing download...";
+
+        var progress = new Progress<(double Percentage, long DownloadedBytes, long TotalBytes)>(report =>
+        {
+            RunOnUi(() =>
+            {
+                UpdateDownloadProgress = report.Percentage;
+                string downloadedMb = (report.DownloadedBytes / 1048576.0).ToString("F1");
+                string totalMb = report.TotalBytes > 0 ? (report.TotalBytes / 1048576.0).ToString("F1") : "?";
+                UpdateProgressText = IsRussian
+                    ? $"Скачивание: {report.Percentage:F0}% ({downloadedMb} из {totalMb} МБ)"
+                    : $"Downloading: {report.Percentage:F0}% ({downloadedMb} of {totalMb} MB)";
+            });
+        });
+
+        try
+        {
+            string installerPath = await _updateService.DownloadUpdateAsync(AvailableUpdate, progress);
+            UpdateProgressText = IsRussian ? "Запуск установщика..." : "Launching installer...";
+            _updateService.InstallAndRestart(installerPath);
+        }
+        catch (Exception ex)
+        {
+            IsDownloadingUpdate = false;
+            UpdateStatusText = IsRussian ? $"Не удалось скачать обновление: {ex.Message}" : $"Failed to download update: {ex.Message}";
+            ShowNotification(UpdateStatusText);
+        }
+    }
+
+    [RelayCommand]
     public void OpenGitHub()
     {
         try
@@ -925,6 +1052,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(SwitchOffText));
         OnPropertyChanged(nameof(SwitchEnabledText));
         OnPropertyChanged(nameof(SwitchDisabledText));
+        OnPropertyChanged(nameof(CheckUpdatesButtonText));
+        OnPropertyChanged(nameof(DownloadUpdateButtonText));
+        OnPropertyChanged(nameof(UpdateSectionTitle));
+        OnPropertyChanged(nameof(ReleaseNotesTitle));
 
         CalculateCacheSize();
     }

@@ -67,6 +67,7 @@ public partial class App : Application
         services.AddSingleton<IPinnedItemsService, PinnedItemsService>();
         services.AddSingleton<ITrayNotificationService, TrayNotificationService>();
         services.AddSingleton<IDiscordRpcService, DiscordRpcService>();
+        services.AddSingleton<IUpdateService, UpdateService>();
 
         // ViewModels
         services.AddSingleton<PlayerBarViewModel>();

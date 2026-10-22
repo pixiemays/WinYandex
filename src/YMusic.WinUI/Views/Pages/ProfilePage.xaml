@@ -639,38 +639,123 @@
             </StackPanel>
 
             <!-- ========================================== -->
-            <!-- 5. ABOUT APP                              -->
+            <!-- 5. ABOUT & UPDATES                        -->
             <!-- ========================================== -->
             <Border Padding="20" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                <StackPanel Spacing="16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Spacing="6" Margin="0,0,16,0">
-                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                            <TextBlock Text="WinYandex Music" FontSize="16" FontWeight="Bold" />
-                            <Border Padding="6,2" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                                <TextBlock Text="{x:Bind ViewModel.AppVersionText}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </Border>
+                        <StackPanel Spacing="6" Margin="0,0,16,0">
+                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <TextBlock Text="WinYandex Music" FontSize="16" FontWeight="Bold" />
+                                <Border Padding="6,2" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                    <TextBlock Text="{x:Bind ViewModel.AppVersionText, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{x:Bind ViewModel.AboutDescText, Mode=OneWay}"
+                                       FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
-                        <TextBlock Text="{x:Bind ViewModel.AboutDescText, Mode=OneWay}"
-                                   FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
 
-                    <Button Grid.Column="1"
-                            Command="{x:Bind ViewModel.OpenGitHubCommand}"
-                            Padding="14,8"
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Command="{x:Bind ViewModel.CheckForUpdatesCommand}"
+                                    IsEnabled="{x:Bind ViewModel.CanCheckUpdates, Mode=OneWay}"
+                                    Padding="14,8"
+                                    CornerRadius="8"
+                                    helpers:CursorHelper.UseHandCursor="True">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing IsActive="{x:Bind ViewModel.IsCheckingUpdates, Mode=OneWay}"
+                                                  Width="14" Height="14"
+                                                  Visibility="{x:Bind ViewModel.IsCheckingUpdates, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                    <FontIcon Glyph="&#xE895;" FontSize="13"
+                                              Visibility="{x:Bind ViewModel.IsCheckingUpdates, Mode=OneWay, Converter={StaticResource InvertedBoolToVisibilityConverter}}" />
+                                    <TextBlock Text="{x:Bind ViewModel.CheckUpdatesButtonText, Mode=OneWay}" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Command="{x:Bind ViewModel.OpenGitHubCommand}"
+                                    Padding="14,8"
+                                    CornerRadius="8"
+                                    helpers:CursorHelper.UseHandCursor="True">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE71B;" FontSize="13" />
+                                    <TextBlock Text="{x:Bind ViewModel.GitHubRepoButtonText, Mode=OneWay}" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Update Status Message -->
+                    <TextBlock Text="{x:Bind ViewModel.UpdateStatusText, Mode=OneWay}"
+                               FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Visibility="{x:Bind ViewModel.UpdateStatusText, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}" />
+
+                    <!-- Update Available Card -->
+                    <Border Visibility="{x:Bind ViewModel.IsUpdateAvailable, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                            Padding="16"
                             CornerRadius="8"
-                            helpers:CursorHelper.UseHandCursor="True"
-                            VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE71B;" FontSize="13" />
-                            <TextBlock Text="{x:Bind ViewModel.GitHubRepoButtonText, Mode=OneWay}" FontSize="13" />
+                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                            Opacity="0.95">
+                        <StackPanel Spacing="10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Spacing="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <FontIcon Glyph="&#xE896;" FontSize="16" Foreground="White" />
+                                        <TextBlock Text="{x:Bind ViewModel.NewVersionTag, Mode=OneWay}"
+                                                   FontWeight="Bold"
+                                                   FontSize="15"
+                                                   Foreground="White" />
+                                    </StackPanel>
+                                    <TextBlock Text="{x:Bind ViewModel.UpdateReleaseNotes, Mode=OneWay}"
+                                               FontSize="12"
+                                               Foreground="White"
+                                               Opacity="0.9"
+                                               MaxLines="3"
+                                               TextWrapping="Wrap"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+
+                                <Button Grid.Column="1"
+                                        Command="{x:Bind ViewModel.DownloadAndInstallUpdateCommand}"
+                                        IsEnabled="{x:Bind ViewModel.CanDownloadUpdate, Mode=OneWay}"
+                                        Background="White"
+                                        Foreground="Black"
+                                        FontWeight="SemiBold"
+                                        Padding="16,8"
+                                        CornerRadius="6"
+                                        VerticalAlignment="Center"
+                                        helpers:CursorHelper.UseHandCursor="True">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE896;" FontSize="13" Foreground="Black" />
+                                        <TextBlock Text="{x:Bind ViewModel.DownloadUpdateButtonText, Mode=OneWay}" FontSize="13" Foreground="Black" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <!-- Download Progress Bar -->
+                            <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.IsDownloadingUpdate, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <ProgressBar Value="{x:Bind ViewModel.UpdateDownloadProgress, Mode=OneWay}"
+                                             Maximum="100"
+                                             Height="6"
+                                             CornerRadius="3"
+                                             Foreground="White" />
+                                <TextBlock Text="{x:Bind ViewModel.UpdateProgressText, Mode=OneWay}"
+                                           FontSize="11"
+                                           Foreground="White"
+                                           Opacity="0.95" />
+                            </StackPanel>
                         </StackPanel>
-                    </Button>
-                </Grid>
+                    </Border>
+                </StackPanel>
             </Border>
 
         </StackPanel>

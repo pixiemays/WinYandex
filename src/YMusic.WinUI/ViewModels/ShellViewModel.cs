@@ -4,12 +4,18 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 
+using CommunityToolkit.Mvvm.Input;
+using System;
+using System.Threading.Tasks;
+
 namespace YMusic.WinUI.ViewModels;
 
 public sealed partial class ShellViewModel : BaseViewModel
 {
     private readonly ICredentialStorageService _credentialStorage;
     private readonly IYandexMusicService _musicService;
+    private readonly IUpdateService _updateService;
+    private readonly INavigationService _navigationService;
 
     [ObservableProperty]
     private PlayerBarViewModel _playerBar;
@@ -20,7 +26,19 @@ public sealed partial class ShellViewModel : BaseViewModel
     [ObservableProperty]
     private bool _isAuthenticated;
 
+    [ObservableProperty]
+    private bool _isUpdateBannerOpen;
+
+    [ObservableProperty]
+    private string _updateBannerMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _updateBannerVersion = string.Empty;
+
     private bool IsRussian => Loc?.CurrentLanguage != "en";
+
+    public string UpdateBannerTitle => IsRussian ? "Доступно обновление" : "Update Available";
+    public string UpdateBannerButtonText => IsRussian ? "Обновить" : "Update";
 
     public string AccountNavItemTitle => IsAuthenticated
         ? (!string.IsNullOrWhiteSpace(CurrentUser?.DisplayName) ? CurrentUser.DisplayName : (IsRussian ? "Профиль и настройки" : "Profile & Settings"))
@@ -45,17 +63,36 @@ public sealed partial class ShellViewModel : BaseViewModel
         OnPropertyChanged(nameof(NavLikesText));
         OnPropertyChanged(nameof(NavPlaylistsText));
         OnPropertyChanged(nameof(SearchPlaceholderText));
+        OnPropertyChanged(nameof(UpdateBannerTitle));
+        OnPropertyChanged(nameof(UpdateBannerButtonText));
     }
 
     public ShellViewModel(
         PlayerBarViewModel playerBar,
         ICredentialStorageService credentialStorage,
-        IYandexMusicService musicService)
+        IYandexMusicService musicService,
+        IUpdateService updateService,
+        INavigationService navigationService)
     {
         _playerBar = playerBar;
         _credentialStorage = credentialStorage;
         _musicService = musicService;
+        _updateService = updateService;
+        _navigationService = navigationService;
         _isAuthenticated = _credentialStorage.HasToken();
+    }
+
+    [RelayCommand]
+    public void OpenUpdates()
+    {
+        IsUpdateBannerOpen = false;
+        _navigationService.NavigateToTag("Account");
+    }
+
+    [RelayCommand]
+    public void DismissUpdateBanner()
+    {
+        IsUpdateBannerOpen = false;
     }
 
     public async Task InitializeAsync()
@@ -113,5 +150,30 @@ public sealed partial class ShellViewModel : BaseViewModel
         {
             RunOnUi(() => IsAuthenticated = false);
         }
+
+        // Check for updates in background (non-blocking)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(2500);
+                var update = await _updateService.CheckForUpdatesAsync();
+                if (update.IsUpdateAvailable)
+                {
+                    RunOnUi(() =>
+                    {
+                        UpdateBannerVersion = $"v{update.LatestVersion}";
+                        UpdateBannerMessage = IsRussian
+                            ? $"Доступна новая версия WinYandex {UpdateBannerVersion}!"
+                            : $"New version WinYandex {UpdateBannerVersion} is available!";
+                        IsUpdateBannerOpen = true;
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ShellViewModel Update check error] {ex.Message}");
+            }
+        });
     }
 }

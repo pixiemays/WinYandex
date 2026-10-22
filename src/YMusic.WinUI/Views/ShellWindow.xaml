@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:YMusic.WinUI.Views.Controls"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
-    Title="Yandex Music"
+    Title="WinYandex"
     mc:Ignorable="d">
 
     <Window.SystemBackdrop>
@@ -26,7 +26,7 @@
 
         <!-- TitleBar -->
         <TitleBar x:Name="AppTitleBar"
-                  Title="Yandex Music">
+                  Title="WinYandex">
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="Assets/AppIcon.ico" />
             </TitleBar.IconSource>
@@ -98,7 +98,31 @@
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
 
-            <Frame x:Name="ContentFrame" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Update Notification Banner -->
+                <InfoBar x:Name="UpdateInfoBar"
+                         IsOpen="{x:Bind ViewModel.IsUpdateBannerOpen, Mode=OneWay}"
+                         Severity="Informational"
+                         Title="{x:Bind ViewModel.UpdateBannerTitle, Mode=OneWay}"
+                         Message="{x:Bind ViewModel.UpdateBannerMessage, Mode=OneWay}"
+                         IsClosable="True"
+                         CloseButtonClick="UpdateInfoBar_CloseButtonClick">
+                    <InfoBar.ActionButton>
+                        <Button Content="{x:Bind ViewModel.UpdateBannerButtonText, Mode=OneWay}"
+                                Command="{x:Bind ViewModel.OpenUpdatesCommand}"
+                                Padding="12,6"
+                                Margin="0,0,8,0"
+                                CornerRadius="4" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+
+                <Frame x:Name="ContentFrame" Grid.Row="1" />
+            </Grid>
         </NavigationView>
 
         <!-- Fixed Bottom Player Bar (Hidden when Now Playing Drawer is open) -->

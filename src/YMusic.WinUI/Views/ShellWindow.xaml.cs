@@ -621,4 +621,9 @@ public sealed partial class ShellWindow : Window
             }
         }
     }
+
+    private void UpdateInfoBar_CloseButtonClick(InfoBar sender, object args)
+    {
+        ViewModel.DismissUpdateBannerCommand.Execute(null);
+    }
 }

@@ -332,15 +332,13 @@
                             <Border Height="28"
                                     Padding="9,2"
                                     CornerRadius="8"
-                                    Background="#2EFD6C"
-                                    BorderBrush="#40FFFFFF"
-                                    BorderThickness="1"
+                                    Background="{ThemeResource AccentFillColorDefaultBrush}"
                                     ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)"
                                     VerticalAlignment="Center"
                                     Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <FontIcon Glyph="&#xE70F;" FontSize="10" Foreground="#000000" />
-                                    <TextBlock Text="FCK" FontSize="11" FontWeight="Bold" Foreground="#000000" VerticalAlignment="Center" />
+                                    <FontIcon Glyph="&#xE70F;" FontSize="10" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                    <TextBlock Text="FCK" FontSize="11" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>

@@ -401,14 +401,12 @@
                                                             Visibility="{x:Bind IsReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                                                             Padding="4,1"
                                                             CornerRadius="3"
-                                                            Background="#2EFD6C"
-                                                            BorderBrush="#40FFFFFF"
-                                                            BorderThickness="1"
+                                                            Background="{ThemeResource AccentFillColorDefaultBrush}"
                                                             VerticalAlignment="Center"
                                                             ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)">
                                                         <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                                            <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="#000000" />
-                                                            <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="#000000" />
+                                                            <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                                            <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                                         </StackPanel>
                                                     </Border>
                                                 </Grid>
@@ -678,14 +676,12 @@
                                                     Visibility="{x:Bind IsReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                                                     Padding="4,1"
                                                     CornerRadius="3"
-                                                    Background="#2EFD6C"
-                                                    BorderBrush="#40FFFFFF"
-                                                    BorderThickness="1"
+                                                    Background="{ThemeResource AccentFillColorDefaultBrush}"
                                                     VerticalAlignment="Center"
                                                     ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)">
                                                 <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                                    <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="#000000" />
-                                                    <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="#000000" />
+                                                    <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                                    <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                                 </StackPanel>
                                             </Border>
                                         </Grid>

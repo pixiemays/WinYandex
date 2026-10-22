@@ -19,5 +19,7 @@ public interface ITrayNotificationService : IDisposable
 
     void MinimizeToTray();
 
+    void InitializeThumbnailButtons();
+
     void ExitApplication();
 }

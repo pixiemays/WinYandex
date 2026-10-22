@@ -63,6 +63,7 @@ public partial class App : Application
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<IPinnedItemsService, PinnedItemsService>();
         services.AddSingleton<ITrayNotificationService, TrayNotificationService>();
+        services.AddSingleton<IDiscordRpcService, DiscordRpcService>();
 
         // ViewModels
         services.AddSingleton<PlayerBarViewModel>();
@@ -81,6 +82,16 @@ public partial class App : Application
         var audioCache = provider.GetRequiredService<IAudioCacheService>();
         Track.IsTrackReplacedChecker = id => fckCensor.IsReplaced(id);
         Track.IsTrackCachedChecker = id => audioCache.IsTrackCached(id);
+
+        AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+        {
+            try
+            {
+                provider.GetService<IDiscordRpcService>()?.Dispose();
+            }
+            catch { }
+        };
+
         return provider;
     }
 
@@ -90,5 +101,7 @@ public partial class App : Application
         _window = MainWindow;
         MainDispatcherQueue = _window.DispatcherQueue;
         _window.Activate();
+        GetService<ITrayNotificationService>()?.InitializeThumbnailButtons();
+        GetService<IDiscordRpcService>()?.Initialize();
     }
 }

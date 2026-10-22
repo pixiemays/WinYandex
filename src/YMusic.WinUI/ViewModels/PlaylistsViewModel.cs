@@ -40,7 +40,30 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(IsDetailPinned))]
     private Album? _selectedAlbum;
 
-    public bool IsDetailPinned => SelectedPlaylist?.IsPinned ?? SelectedAlbum?.IsPinned ?? false;
+    public bool IsDetailPinned =>
+        SelectedPlaylist != null
+            ? _pinnedItemsService.IsPlaylistPinned(SelectedPlaylist.Uid, SelectedPlaylist.Kind)
+            : SelectedAlbum != null
+                ? _pinnedItemsService.IsAlbumPinned(SelectedAlbum.Id)
+                : false;
+
+    partial void OnSelectedPlaylistChanged(Playlist? value)
+    {
+        if (value != null)
+        {
+            value.IsPinned = _pinnedItemsService.IsPlaylistPinned(value.Uid, value.Kind);
+        }
+        OnPropertyChanged(nameof(IsDetailPinned));
+    }
+
+    partial void OnSelectedAlbumChanged(Album? value)
+    {
+        if (value != null)
+        {
+            value.IsPinned = _pinnedItemsService.IsAlbumPinned(value.Id);
+        }
+        OnPropertyChanged(nameof(IsDetailPinned));
+    }
 
     public string DetailTitle => SelectedPlaylist?.Title ?? SelectedAlbum?.Title ?? string.Empty;
     public string DetailSubtitle
@@ -219,7 +242,16 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [RelayCommand]
     public async Task SelectPlaylistAsync(Playlist? playlist)
     {
-        RunOnUi(() => SelectedPlaylist = playlist);
+        if (playlist != null)
+        {
+            playlist.IsPinned = _pinnedItemsService.IsPlaylistPinned(playlist.Uid, playlist.Kind);
+        }
+
+        RunOnUi(() =>
+        {
+            SelectedPlaylist = playlist;
+            OnPropertyChanged(nameof(IsDetailPinned));
+        });
 
         if (playlist == null)
         {
@@ -234,6 +266,10 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         {
             await _musicService.EnsureLikedTracksLoadedAsync().ConfigureAwait(false);
             var fullPlaylist = await _musicService.GetPlaylistWithTracksAsync(playlist.Uid, playlist.Kind).ConfigureAwait(false);
+            if (fullPlaylist != null)
+            {
+                fullPlaylist.IsPinned = _pinnedItemsService.IsPlaylistPinned(fullPlaylist.Uid, fullPlaylist.Kind);
+            }
             var tracks = fullPlaylist?.ResolvedTracks ?? new List<Track>();
 
             if (tracks.Count == 0 && fullPlaylist?.Tracks != null && fullPlaylist.Tracks.Count > 0)
@@ -248,6 +284,12 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
 
             RunOnUi(() =>
             {
+                if (fullPlaylist != null)
+                {
+                    SelectedPlaylist = fullPlaylist;
+                    FormattedTrackCount = fullPlaylist.FormattedTrackCount;
+                    OnPropertyChanged(nameof(IsDetailPinned));
+                }
                 SelectedPlaylistTracks.Clear();
                 foreach (var t in tracks)
                 {
@@ -271,11 +313,13 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     {
         if (playlist == null) return;
 
+        playlist.IsPinned = _pinnedItemsService.IsPlaylistPinned(playlist.Uid, playlist.Kind);
         SelectedPlaylist = playlist;
         SelectedAlbum = null;
         IsDetailOpen = true;
         FormattedTrackCount = playlist.FormattedTrackCount;
         SelectedPlaylistTracks.Clear();
+        OnPropertyChanged(nameof(IsDetailPinned));
 
         await SelectPlaylistAsync(playlist);
 
@@ -291,11 +335,13 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     {
         if (album == null) return;
 
+        album.IsPinned = _pinnedItemsService.IsAlbumPinned(album.Id);
         SelectedAlbum = album;
         SelectedPlaylist = null;
         IsDetailOpen = true;
         FormattedTrackCount = album.FormattedTrackCount;
         SelectedPlaylistTracks.Clear();
+        OnPropertyChanged(nameof(IsDetailPinned));
 
         SetBusy(true);
         ClearError();
@@ -314,6 +360,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                     fullAlbum.IsPinned = _pinnedItemsService.IsAlbumPinned(fullAlbum.Id);
                     SelectedAlbum = fullAlbum;
                     FormattedTrackCount = fullAlbum.FormattedTrackCount;
+                    OnPropertyChanged(nameof(IsDetailPinned));
                 }
 
                 SelectedPlaylistTracks.Clear();
@@ -482,6 +529,10 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         if (playlist == null) return;
         bool isPinned = _pinnedItemsService.TogglePlaylistPin(playlist.Uid, playlist.Kind, playlist.Title, playlist.CoverUrl);
         playlist.IsPinned = isPinned;
+        if (SelectedPlaylist != null && string.Equals(SelectedPlaylist.PinKey, playlist.PinKey, StringComparison.OrdinalIgnoreCase))
+        {
+            SelectedPlaylist.IsPinned = isPinned;
+        }
         ReorderPlaylists();
         OnPropertyChanged(nameof(IsDetailPinned));
     }
@@ -492,6 +543,10 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         if (album == null) return;
         bool isPinned = _pinnedItemsService.ToggleAlbumPin(album.Id, album.Title, album.CoverUrl);
         album.IsPinned = isPinned;
+        if (SelectedAlbum != null && string.Equals(SelectedAlbum.PinKey, album.PinKey, StringComparison.OrdinalIgnoreCase))
+        {
+            SelectedAlbum.IsPinned = isPinned;
+        }
         ReorderAlbums();
         OnPropertyChanged(nameof(IsDetailPinned));
     }
@@ -513,6 +568,15 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     {
         RunOnUi(() =>
         {
+            if (SelectedPlaylist != null)
+            {
+                SelectedPlaylist.IsPinned = _pinnedItemsService.IsPlaylistPinned(SelectedPlaylist.Uid, SelectedPlaylist.Kind);
+            }
+            if (SelectedAlbum != null)
+            {
+                SelectedAlbum.IsPinned = _pinnedItemsService.IsAlbumPinned(SelectedAlbum.Id);
+            }
+
             foreach (var p in Playlists)
             {
                 if (string.Equals(p.PinKey, key, StringComparison.OrdinalIgnoreCase))

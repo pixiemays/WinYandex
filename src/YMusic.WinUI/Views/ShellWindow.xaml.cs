@@ -21,7 +21,15 @@ public sealed partial class ShellWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
-        AppWindow.SetIcon("Assets/AppIcon.ico");
+        string iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+        if (System.IO.File.Exists(iconPath))
+        {
+            AppWindow.SetIcon(iconPath);
+        }
+        else
+        {
+            AppWindow.SetIcon("Assets/AppIcon.ico");
+        }
 
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1180, 780));
 
@@ -113,6 +121,7 @@ public sealed partial class ShellWindow : Window
         var trayService = App.GetService<ITrayNotificationService>();
         var settingsService = App.GetService<ISettingsService>();
         trayService.Initialize(this);
+        Activated += (_, _) => trayService.InitializeThumbnailButtons();
 
         AppWindow.Closing += (sender, args) =>
         {
@@ -236,7 +245,8 @@ public sealed partial class ShellWindow : Window
                     Uid = uid,
                     Kind = kind,
                     Title = pinned?.Title ?? "Playlist",
-                    Cover = pinned?.CoverUrl != null ? new Cover { Uri = pinned.CoverUrl } : null
+                    Cover = pinned?.CoverUrl != null ? new Cover { Uri = pinned.CoverUrl } : null,
+                    IsPinned = true
                 };
                 _ = App.GetService<INavigationService>().NavigateToPlaylistAsync(playlist);
                 return;
@@ -248,7 +258,14 @@ public sealed partial class ShellWindow : Window
             if (parts.Length == 2 && long.TryParse(parts[1], out long albumId))
             {
                 var pinned = _pinnedItemsService.GetPinnedItems().FirstOrDefault(p => p.Key == tag);
-                _ = App.GetService<INavigationService>().NavigateToAlbumByIdAsync(albumId, pinned?.Title);
+                var album = new Album
+                {
+                    Id = albumId,
+                    Title = pinned?.Title ?? string.Empty,
+                    CoverUri = pinned?.CoverUrl,
+                    IsPinned = true
+                };
+                _ = App.GetService<INavigationService>().NavigateToAlbumAsync(album);
                 return;
             }
         }

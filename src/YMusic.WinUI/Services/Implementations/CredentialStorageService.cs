@@ -1,7 +1,10 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Windows.Security.Credentials;
@@ -23,6 +26,11 @@ public sealed class CredentialStorageService : ICredentialStorageService
 
     private readonly string _localSessionPath;
     private readonly string _roamingSessionPath;
+    private readonly string _userProfileSessionPath;
+
+    private const string Win32CredTarget = "YMusic_Desktop_Session_Token";
+    private const uint CRED_TYPE_GENERIC = 1;
+    private const uint CRED_PERSIST_LOCAL_MACHINE = 2;
 
     private sealed class SessionPayload
     {
@@ -48,6 +56,12 @@ public sealed class CredentialStorageService : ICredentialStorageService
         Directory.CreateDirectory(roamingDir);
         _roamingSessionPath = Path.Combine(roamingDir, "session.json");
 
+        // UserProfile directory is OUTSIDE the MSIX container sandbox and survives rebuilds/redeploys
+        string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string profileDir = Path.Combine(userProfile, ".ymusic");
+        Directory.CreateDirectory(profileDir);
+        _userProfileSessionPath = Path.Combine(profileDir, "session.json");
+
         LoadInitialCredentials();
     }
 
@@ -55,17 +69,38 @@ public sealed class CredentialStorageService : ICredentialStorageService
     {
         lock (_lock)
         {
-            // 1. Try local session file
-            if (TryLoadFromFile(_localSessionPath)) return;
-
-            // 2. Try roaming session file
-            if (TryLoadFromFile(_roamingSessionPath))
+            // 1. Try User Profile session file (C:\Users\<username>\.ymusic\session.json)
+            if (TryLoadFromFile(_userProfileSessionPath))
             {
-                SaveToFile(_localSessionPath, _cachedToken, _cachedUserId);
+                SyncLoadedCredentials();
                 return;
             }
 
-            // 3. Try Windows PasswordVault
+            // 2. Try Windows Credential Manager (Win32 API - persists across builds and package resets)
+            var (win32Token, win32UserId) = LoadFromWin32Cred();
+            if (!string.IsNullOrWhiteSpace(win32Token))
+            {
+                _cachedToken = win32Token;
+                _cachedUserId = win32UserId;
+                SyncLoadedCredentials();
+                return;
+            }
+
+            // 3. Try local session file
+            if (TryLoadFromFile(_localSessionPath))
+            {
+                SyncLoadedCredentials();
+                return;
+            }
+
+            // 4. Try roaming session file
+            if (TryLoadFromFile(_roamingSessionPath))
+            {
+                SyncLoadedCredentials();
+                return;
+            }
+
+            // 5. Try Windows PasswordVault
             try
             {
                 var cred = _vault.Retrieve(ResourceName, TokenCredentialName);
@@ -81,14 +116,13 @@ public sealed class CredentialStorageService : ICredentialStorageService
                     }
                     catch { }
 
-                    SaveToFile(_localSessionPath, _cachedToken, _cachedUserId);
-                    SaveToFile(_roamingSessionPath, _cachedToken, _cachedUserId);
+                    SyncLoadedCredentials();
                     return;
                 }
             }
             catch { }
 
-            // 4. Try Environment variables / .env
+            // 6. Try Environment variables / .env
             string envToken = EnvironmentConfig.Get("YANDEX_TOKEN");
             if (string.IsNullOrWhiteSpace(envToken))
             {
@@ -97,10 +131,20 @@ public sealed class CredentialStorageService : ICredentialStorageService
             if (!string.IsNullOrWhiteSpace(envToken))
             {
                 _cachedToken = envToken.Trim();
-                SaveToFile(_localSessionPath, _cachedToken, null);
-                SaveToFile(_roamingSessionPath, _cachedToken, null);
+                SyncLoadedCredentials();
             }
         }
+    }
+
+    private void SyncLoadedCredentials()
+    {
+        if (string.IsNullOrWhiteSpace(_cachedToken)) return;
+
+        SaveToFile(_userProfileSessionPath, _cachedToken, _cachedUserId);
+        SaveToFile(_localSessionPath, _cachedToken, _cachedUserId);
+        SaveToFile(_roamingSessionPath, _cachedToken, _cachedUserId);
+        SaveToWin32Cred(_cachedToken, _cachedUserId);
+        TryUpdateEnvFile(_cachedToken);
     }
 
     private bool TryLoadFromFile(string path)
@@ -174,9 +218,12 @@ public sealed class CredentialStorageService : ICredentialStorageService
                 _cachedUserId = userId.Trim();
             }
 
-            // Persist to disk files (both LocalAppData and ApplicationData)
+            // Persist across all layers: UserProfile, Local, Roaming, Win32 Credential Manager, and .env
+            SaveToFile(_userProfileSessionPath, _cachedToken, _cachedUserId);
             SaveToFile(_localSessionPath, _cachedToken, _cachedUserId);
             SaveToFile(_roamingSessionPath, _cachedToken, _cachedUserId);
+            SaveToWin32Cred(_cachedToken, _cachedUserId);
+            TryUpdateEnvFile(_cachedToken);
 
             // Also persist to PasswordVault as secondary storage
             try
@@ -212,6 +259,12 @@ public sealed class CredentialStorageService : ICredentialStorageService
 
             try
             {
+                if (File.Exists(_userProfileSessionPath)) File.Delete(_userProfileSessionPath);
+            }
+            catch { }
+
+            try
+            {
                 if (File.Exists(_localSessionPath)) File.Delete(_localSessionPath);
             }
             catch { }
@@ -221,6 +274,8 @@ public sealed class CredentialStorageService : ICredentialStorageService
                 if (File.Exists(_roamingSessionPath)) File.Delete(_roamingSessionPath);
             }
             catch { }
+
+            DeleteFromWin32Cred();
 
             try
             {
@@ -264,8 +319,13 @@ public sealed class CredentialStorageService : ICredentialStorageService
         lock (_lock)
         {
             _cachedUserId = userId.Trim();
+            SaveToFile(_userProfileSessionPath, _cachedToken, _cachedUserId);
             SaveToFile(_localSessionPath, _cachedToken, _cachedUserId);
             SaveToFile(_roamingSessionPath, _cachedToken, _cachedUserId);
+            if (!string.IsNullOrWhiteSpace(_cachedToken))
+            {
+                SaveToWin32Cred(_cachedToken, _cachedUserId);
+            }
 
             try
             {
@@ -285,4 +345,148 @@ public sealed class CredentialStorageService : ICredentialStorageService
             }
         }
     }
+
+    #region Win32 Credential Manager & .env Helpers
+
+    private static void SaveToWin32Cred(string token, string? userId)
+    {
+        try
+        {
+            byte[] bytes = System.Text.Encoding.Unicode.GetBytes(token);
+            IntPtr pBlob = Marshal.AllocHGlobal(bytes.Length);
+            try
+            {
+                Marshal.Copy(bytes, 0, pBlob, bytes.Length);
+                var cred = new CREDENTIAL
+                {
+                    Type = CRED_TYPE_GENERIC,
+                    TargetName = Win32CredTarget,
+                    CredentialBlob = pBlob,
+                    CredentialBlobSize = (uint)bytes.Length,
+                    Persist = CRED_PERSIST_LOCAL_MACHINE,
+                    UserName = userId ?? "YMusicUser"
+                };
+                CredWrite(ref cred, 0);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(pBlob);
+            }
+        }
+        catch { }
+    }
+
+    private static (string? Token, string? UserId) LoadFromWin32Cred()
+    {
+        try
+        {
+            if (CredRead(Win32CredTarget, CRED_TYPE_GENERIC, 0, out IntPtr pCred))
+            {
+                try
+                {
+                    var cred = Marshal.PtrToStructure<CREDENTIAL>(pCred);
+                    if (cred.CredentialBlob != IntPtr.Zero && cred.CredentialBlobSize > 0)
+                    {
+                        byte[] bytes = new byte[cred.CredentialBlobSize];
+                        Marshal.Copy(cred.CredentialBlob, bytes, 0, (int)cred.CredentialBlobSize);
+                        string token = System.Text.Encoding.Unicode.GetString(bytes);
+                        return (token, cred.UserName);
+                    }
+                }
+                finally
+                {
+                    CredFree(pCred);
+                }
+            }
+        }
+        catch { }
+        return (null, null);
+    }
+
+    private static void DeleteFromWin32Cred()
+    {
+        try
+        {
+            CredDelete(Win32CredTarget, CRED_TYPE_GENERIC, 0);
+        }
+        catch { }
+    }
+
+    private static void TryUpdateEnvFile(string token)
+    {
+        try
+        {
+            var searchDirs = new List<string>
+            {
+                AppContext.BaseDirectory,
+                Directory.GetCurrentDirectory()
+            };
+
+            string? cur = Directory.GetCurrentDirectory();
+            while (!string.IsNullOrEmpty(cur))
+            {
+                if (!searchDirs.Contains(cur)) searchDirs.Add(cur);
+                var p = Directory.GetParent(cur);
+                if (p == null) break;
+                cur = p.FullName;
+            }
+
+            foreach (var dir in searchDirs)
+            {
+                string envPath = Path.Combine(dir, ".env");
+                if (File.Exists(envPath))
+                {
+                    var lines = File.ReadAllLines(envPath).ToList();
+                    bool updated = false;
+                    for (int i = 0; i < lines.Count; i++)
+                    {
+                        if (lines[i].TrimStart().StartsWith("YANDEX_TOKEN=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            lines[i] = $"YANDEX_TOKEN={token}";
+                            updated = true;
+                            break;
+                        }
+                    }
+                    if (!updated)
+                    {
+                        lines.Add($"YANDEX_TOKEN={token}");
+                    }
+                    File.WriteAllLines(envPath, lines);
+                    break;
+                }
+            }
+        }
+        catch { }
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct CREDENTIAL
+    {
+        public uint Flags;
+        public uint Type;
+        public string TargetName;
+        public string Comment;
+        public System.Runtime.InteropServices.ComTypes.FILETIME LastWritten;
+        public uint CredentialBlobSize;
+        public IntPtr CredentialBlob;
+        public uint Persist;
+        public uint AttributeCount;
+        public IntPtr Attributes;
+        public string TargetAlias;
+        public string UserName;
+    }
+
+    [DllImport("advapi32.dll", EntryPoint = "CredWriteW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool CredWrite([In] ref CREDENTIAL userCredential, [In] uint flags);
+
+    [DllImport("advapi32.dll", EntryPoint = "CredReadW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool CredRead([In] string target, [In] uint type, [In] uint reservedFlag, [Out] out IntPtr credentialPtr);
+
+    [DllImport("advapi32.dll", EntryPoint = "CredDeleteW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool CredDelete([In] string target, [In] uint type, [In] uint flags);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern void CredFree([In] IntPtr credentialPtr);
+
+    #endregion
 }

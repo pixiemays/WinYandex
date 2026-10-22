@@ -25,30 +25,47 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Install Inno Setup
+      run: choco install innosetup -y --no-progress
+
     - name: Restore dependencies
       run: dotnet restore src/YMusic.WinUI/YMusic.WinUI.csproj
 
     - name: Build and Publish (win-x64)
       run: dotnet publish src/YMusic.WinUI/YMusic.WinUI.csproj -c Release /p:PublishProfile=win-x64
 
-    - name: Package Portable ZIP
+    - name: Package Release (Portable ZIP & Inno Setup Installer)
       shell: pwsh
       run: |
         $dist = "dist"
         New-Item -ItemType Directory -Force -Path $dist | Out-Null
+        
+        # 1. Portable ZIP
         Compress-Archive -Path "src/YMusic.WinUI/bin/Release/net8.0-windows10.0.26100.0/win-x64/publish/*" -DestinationPath "$dist/WinYandex-win-x64-portable.zip" -CompressionLevel Optimal
+        
+        # 2. Inno Setup Installer EXE
+        $version = if ($env:GITHUB_REF -like "refs/tags/v*") { $env:GITHUB_REF.Substring(11) } else { "0.9.0" }
+        $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+        if (-not (Test-Path $iscc)) {
+            $iscc = (Get-Command ISCC.exe -ErrorAction Stop).Source
+        }
+        & $iscc "/DMyAppVersion=$version" installer\installer.iss
 
-    - name: Upload Build Artifact
+    - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: WinYandex-win-x64-portable
-        path: dist/WinYandex-win-x64-portable.zip
+        name: WinYandex-x64-artifacts
+        path: |
+          dist/*.exe
+          dist/*.zip
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
       with:
-        files: dist/WinYandex-win-x64-portable.zip
+        files: |
+          dist/*.exe
+          dist/*.zip
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

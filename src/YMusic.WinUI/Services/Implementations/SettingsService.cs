@@ -203,6 +203,11 @@ public sealed class SettingsService : ISettingsService
                     if (loaded != null)
                     {
                         _settings = loaded;
+                        if (string.IsNullOrEmpty(_settings.AppFont) || _settings.AppFont == "YandexSans")
+                        {
+                            _settings.AppFont = "Inter";
+                            Save();
+                        }
                     }
                 }
             }

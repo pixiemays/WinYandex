@@ -123,59 +123,59 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
     private bool IsRussian => Loc?.CurrentLanguage != "en";
 
-    public string TitleText => Loc?["Profile_Title"] ?? (IsRussian ? "Профиль и настройки" : "Profile & Settings");
+    public string TitleText => IsRussian ? "Профиль и настройки" : "Profile & Settings";
     public string SubtitleText => IsRussian ? "Управление аккаунтом Яндекса, воспроизведением и настройками приложения" : "Manage your Yandex account, playback preferences, and application options";
     public string NotificationTitle => IsRussian ? "Настройки" : "Settings";
     public string CopyUserIdTooltip => IsRussian ? "Скопировать User ID" : "Copy User ID";
-    public string RefreshButtonText => Loc?["Profile_Refresh"] ?? (IsRussian ? "Обновить" : "Refresh");
-    public string SignOutButtonText => Loc?["Profile_Logout"] ?? (IsRussian ? "Выйти" : "Sign Out");
-    public string LikedTracksStatText => Loc?["Profile_LikedTracks"] ?? (IsRussian ? "Любимые треки" : "Liked Tracks");
-    public string PlaylistsStatText => Loc?["Profile_Playlists"] ?? (IsRussian ? "Плейлисты" : "Playlists");
-    public string PinnedItemsStatText => Loc?["Playlists_Pinned"] ?? (IsRussian ? "Закрепленные" : "Pinned Items");
+    public string RefreshButtonText => IsRussian ? "Обновить" : "Refresh";
+    public string SignOutButtonText => IsRussian ? "Выйти" : "Sign Out";
+    public string LikedTracksStatText => IsRussian ? "Любимые треки" : "Liked Tracks";
+    public string PlaylistsStatText => IsRussian ? "Плейлисты" : "Playlists";
+    public string PinnedItemsStatText => IsRussian ? "Закрепленные" : "Pinned Items";
 
     public string SignedOutTitleText => IsRussian ? "Вы не авторизованы" : "You are currently signed out";
     public string SignedOutDescText => IsRussian ? "Войдите с Яндекс ID для синхронизации вашей коллекции, Моей волны, лайков и плейлистов." : "Sign in with your Yandex ID to sync your collection, My Wave recommendations, liked tracks and playlists.";
     public string SignInButtonText => IsRussian ? "Войти с Яндекс ID" : "Sign In with Yandex ID";
 
-    public string AudioSectionTitle => Loc?["Profile_Section_Audio"] ?? (IsRussian ? "Аудио и воспроизведение" : "Audio & Playback");
-    public string StreamQualityTitle => Loc?["Settings_PreferredQuality"] ?? (IsRussian ? "Предпочитаемое качество" : "Default Streaming Quality");
+    public string AudioSectionTitle => IsRussian ? "Аудио и воспроизведение" : "Audio & Playback";
+    public string StreamQualityTitle => IsRussian ? "Предпочитаемое качество" : "Default Streaming Quality";
     public string StreamQualityDesc => IsRussian ? "Кодек и битрейт для потокового воспроизведения треков" : "Preferred audio codec and bitrate for streaming tracks";
 
-    public string GaplessTitle => Loc?["Settings_Gapless"] ?? (IsRussian ? "Бесшовное воспроизведение и предзагрузка" : "Gapless Playback & Background Preloading");
-    public string GaplessDesc => Loc?["Settings_GaplessDesc"] ?? (IsRussian ? "Предзагрузка следующего трека и текста на 80% для устранения пауз и буферизации" : "Preloads the next track stream and lyrics at 80% progress to eliminate buffering pauses");
+    public string GaplessTitle => IsRussian ? "Бесшовное воспроизведение и предзагрузка" : "Gapless Playback & Background Preloading";
+    public string GaplessDesc => IsRussian ? "Предзагрузка следующего трека и текста на 80% для устранения пауз и буферизации" : "Preloads the next track stream and lyrics at 80% progress to eliminate buffering pauses";
 
-    public string EqualizerTitle => Loc?["Settings_Equalizer"] ?? (IsRussian ? "Аудио эквалайзер" : "Audio Equalizer");
-    public string EqualizerDesc => Loc?["Settings_EqualizerDesc"] ?? (IsRussian ? "10-полосный эквалайзер частот звука и акустические профили" : "10-band audio frequency equalizer and acoustic profiles");
+    public string EqualizerTitle => IsRussian ? "Аудио эквалайзер" : "Audio Equalizer";
+    public string EqualizerDesc => IsRussian ? "10-полосный эквалайзер частот звука и акустические профили" : "10-band audio frequency equalizer and acoustic profiles";
     public string EqualizerResetText => IsRussian ? "Сброс" : "Reset";
 
-    public string SystemSectionTitle => Loc?["Profile_Section_System"] ?? (IsRussian ? "Система и интеграции" : "System & Integrations");
-    public string DiscordRpcTitle => Loc?["Settings_DiscordRpc"] ?? "Discord Rich Presence";
-    public string DiscordRpcDesc => Loc?["Settings_DiscordRpcDesc"] ?? (IsRussian ? "Отображение названия трека, исполнителя и обложки в профиле Discord" : "Show current playing track title, artist name, and album artwork on your Discord profile");
+    public string SystemSectionTitle => IsRussian ? "Система и интеграции" : "System & Integrations";
+    public string DiscordRpcTitle => "Discord Rich Presence";
+    public string DiscordRpcDesc => IsRussian ? "Отображение названия трека, исполнителя и обложки в профиле Discord" : "Show current playing track title, artist name, and album artwork on your Discord profile";
 
-    public string FckCensorTitle => Loc?["Settings_FckCensor"] ?? "FckCensor (разблокировка цензуры)";
-    public string FckCensorDesc => Loc?["Settings_FckCensorDesc"] ?? (IsRussian ? "Автоматически предпочитать оригинальные треки без цензуры вместо заглушенных версий" : "Automatically prefer original explicit and uncensored versions of tracks over sanitized edits");
+    public string FckCensorTitle => "FckCensor (разблокировка цензуры)";
+    public string FckCensorDesc => IsRussian ? "Автоматически предпочитать оригинальные треки без цензуры вместо заглушенных версий" : "Automatically prefer original explicit and uncensored versions of tracks over sanitized edits";
 
-    public string MinimizeToTrayTitle => Loc?["Settings_MinimizeToTray"] ?? (IsRussian ? "Сворачивать в системный трей Windows" : "Minimize to Windows System Tray");
-    public string MinimizeToTrayDesc => Loc?["Settings_MinimizeToTrayDesc"] ?? (IsRussian ? "При нажатии крестика плеер продолжит играть в фоне и свернется в трей" : "Keep music playing in background and minimize to the taskbar notification tray when window is closed");
+    public string MinimizeToTrayTitle => IsRussian ? "Сворачивать в системный трей Windows" : "Minimize to Windows System Tray";
+    public string MinimizeToTrayDesc => IsRussian ? "При нажатии крестика плеер продолжит играть в фоне и свернется в трей" : "Keep music playing in background and minimize to the taskbar notification tray when window is closed";
 
-    public string TrackNotificationsTitle => Loc?["Settings_TrackNotifications"] ?? (IsRussian ? "Уведомления Windows Toast" : "Windows Toast Notifications");
-    public string TrackNotificationsDesc => Loc?["Settings_TrackNotificationsDesc"] ?? (IsRussian ? "Показывать всплывающие уведомления на рабочем столе при переключении трека" : "Show native desktop banner notifications when track changes while playing in background");
+    public string TrackNotificationsTitle => IsRussian ? "Уведомления Windows Toast" : "Windows Toast Notifications";
+    public string TrackNotificationsDesc => IsRussian ? "Показывать всплывающие уведомления на рабочем столе при переключении трека" : "Show native desktop banner notifications when track changes while playing in background";
 
-    public string ThemeTitle => Loc?["Settings_Theme"] ?? (IsRussian ? "Тема оформления" : "Application Theme");
+    public string ThemeTitle => IsRussian ? "Тема оформления" : "Application Theme";
     public string ThemeDesc => IsRussian ? "Выберите визуальное оформление приложения" : "Select your visual appearance preference";
 
     public string FontTitle => IsRussian ? "Шрифт интерфейса" : "UI Typography Font";
-    public string FontDesc => IsRussian ? "Фирменный Yandex Sans, современный Inter или системный Segoe UI" : "Signature Yandex Sans, modern Inter, or system Segoe UI";
+    public string FontDesc => IsRussian ? "Рекомендуемый Inter, системный Segoe UI или Yandex Sans" : "Recommended Inter, system Segoe UI, or signature Yandex Sans";
 
     public string LanguageTitle => "Language / Язык";
     public string LanguageDesc => IsRussian ? "Мгновенное переключение языка интерфейса без перезапуска" : "Switch interface language instantly / Смена языка интерфейса без перезапуска";
 
-    public string StorageSectionTitle => Loc?["Profile_Section_Storage"] ?? (IsRussian ? "Хранилище и данные" : "Storage & Data");
-    public string AudioCacheTitle => Loc?["Settings_AudioCache"] ?? (IsRussian ? "Дисковый аудио-кэш (LRU)" : "Audio Disk Cache (LRU)");
+    public string StorageSectionTitle => IsRussian ? "Хранилище и данные" : "Storage & Data";
+    public string AudioCacheTitle => IsRussian ? "Дисковый аудио-кэш (LRU)" : "Audio Disk Cache (LRU)";
     public string InstantReplayText => IsRussian ? "Мгновенный старт" : "Instant Replay";
-    public string AudioCacheDesc => Loc?["Settings_AudioCacheDesc"] ?? (IsRussian ? "Сохранение треков в %LocalAppData%/YMusic/Cache для мгновенного запуска (0 мс) без повторного скачивания" : "Save played tracks offline in %LocalAppData%/YMusic/Cache for instant 0 ms replay without network re-downloading");
+    public string AudioCacheDesc => IsRussian ? "Сохранение треков в %LocalAppData%/YMusic/Cache для мгновенного запуска (0 мс) без повторного скачивания" : "Save played tracks offline in %LocalAppData%/YMusic/Cache for instant 0 ms replay without network re-downloading";
 
-    public string CacheLimitTitle => Loc?["Settings_CacheLimit"] ?? (IsRussian ? "Лимит дискового кэша" : "Cache Storage Limit");
+    public string CacheLimitTitle => IsRussian ? "Лимит дискового кэша" : "Cache Storage Limit";
     public string CacheLimitDesc => IsRussian ? "Автоматически удаляет наименее прослушиваемые треки (LRU) при превышении квоты" : "Automatically evicts least recently played tracks (LRU) when local cache exceeds this quota";
 
     public string LocalStorageTitle => IsRussian ? "Локальный аудио и метаданные кэш" : "Local Audio & Metadata Cache";
@@ -183,14 +183,14 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string CachedItemsText => IsRussian ? "Кэшировано треков:" : "Cached items:";
     public string OpenCacheTooltip => IsRussian ? "Открыть папку кэша аудио в Проводнике" : "Open Cache/Audio folder in Explorer";
     public string OpenCacheButtonText => IsRussian ? "Открыть кэш" : "Open Cache";
-    public string ClearCacheButtonText => Loc?["Settings_ClearCache"] ?? (IsRussian ? "Очистить кэш" : "Clear Cache");
+    public string ClearCacheButtonText => IsRussian ? "Очистить кэш" : "Clear Cache";
 
-    public string AppDataFolderTitle => Loc?["Settings_OpenAppData"] ?? (IsRussian ? "Папка данных приложения" : "Application Data Folder");
+    public string AppDataFolderTitle => IsRussian ? "Папка данных приложения" : "Application Data Folder";
     public string OpenInExplorerButtonText => IsRussian ? "Открыть в проводнике" : "Open in Explorer";
 
-    public string SearchHistoryTitle => Loc?["Search_History"] ?? (IsRussian ? "История поиска" : "Search History");
+    public string SearchHistoryTitle => IsRussian ? "История поиска" : "Search History";
     public string SearchHistoryDesc => IsRussian ? "Очистить недавние поисковые запросы, сохранённые на этом устройстве" : "Clear recent search queries saved on this device";
-    public string ClearHistoryButtonText => Loc?["Search_ClearHistory"] ?? (IsRussian ? "Очистить историю" : "Clear History");
+    public string ClearHistoryButtonText => IsRussian ? "Очистить историю" : "Clear History";
 
     public string AboutDescText => IsRussian ? "Современный настольный клиент Яндекс Музыки на WinUI 3, Windows App SDK и .NET 8." : "Modern desktop client for Yandex Music built with WinUI 3, Windows App SDK & .NET 8.";
     public string GitHubRepoButtonText => IsRussian ? "Репозиторий GitHub" : "GitHub Repository";
@@ -305,9 +305,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
             SelectedFontIndex = _settingsService.AppFont switch
             {
-                "Inter" => 1,
-                "System" => 2,
-                _ => 0 // YandexSans default
+                "System" => 1,
+                "YandexSans" => 2,
+                _ => 0 // Inter default
             };
 
             SelectedLanguageIndex = _settingsService.Language switch
@@ -513,9 +513,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
         string font = value switch
         {
-            1 => "Inter",
-            2 => "System",
-            _ => "YandexSans"
+            1 => "System",
+            2 => "YandexSans",
+            _ => "Inter"
         };
         _settingsService.AppFont = font;
 
@@ -526,9 +526,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
         string fontName = value switch
         {
-            1 => "Inter",
-            2 => "Segoe UI",
-            _ => "Yandex Sans"
+            1 => "Segoe UI",
+            2 => "Yandex Sans",
+            _ => "Inter"
         };
         ShowNotification(IsRussian ? $"Шрифт интерфейса изменён: {fontName}." : $"UI font changed to: {fontName}.");
     }
@@ -971,15 +971,15 @@ public sealed partial class ProfileViewModel : BaseViewModel
             FontOptions.Clear();
             if (IsRussian)
             {
-                FontOptions.Add("Yandex Sans (Фирменный)");
-                FontOptions.Add("Inter (Современный гротеск)");
+                FontOptions.Add("Inter (Рекомендуемый, чёткий)");
                 FontOptions.Add("Segoe UI (Системный)");
+                FontOptions.Add("Yandex Sans (Фирменный)");
             }
             else
             {
-                FontOptions.Add("Yandex Sans (Signature)");
-                FontOptions.Add("Inter (Modern Grotesque)");
+                FontOptions.Add("Inter (Recommended, Crisp)");
                 FontOptions.Add("Segoe UI (System Default)");
+                FontOptions.Add("Yandex Sans (Signature)");
             }
             SelectedFontIndex = fIdx;
 

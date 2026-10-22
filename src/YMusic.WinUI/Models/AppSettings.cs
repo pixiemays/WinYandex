@@ -29,7 +29,7 @@ public sealed class AppSettings
     public string AppTheme { get; set; } = "Dark"; // "Default", "Light", "Dark"
 
     [JsonPropertyName("appFont")]
-    public string AppFont { get; set; } = "YandexSans"; // "YandexSans", "Inter", "System"
+    public string AppFont { get; set; } = "Inter"; // "Inter", "System", "YandexSans"
 
     [JsonPropertyName("language")]
     public string Language { get; set; } = "ru"; // "ru" or "en"

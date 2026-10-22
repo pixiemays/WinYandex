@@ -61,8 +61,51 @@ public sealed class LocalizationService : ILocalizationService
             return fallbackValue;
         }
 
+        if (s_builtInFallbacks.TryGetValue(key, out var builtIn))
+        {
+            return _currentLanguage == "en" ? builtIn.En : builtIn.Ru;
+        }
+
         return key;
     }
+
+    private static readonly Dictionary<string, (string Ru, string En)> s_builtInFallbacks = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Profile_LikedTracks"] = ("Любимые треки", "Liked Tracks"),
+        ["Profile_Playlists"] = ("Плейлисты", "Playlists"),
+        ["Profile_Refresh"] = ("Обновить", "Refresh"),
+        ["Profile_Logout"] = ("Выйти из аккаунта", "Sign Out"),
+        ["Profile_Title"] = ("Профиль и настройки", "Profile & Settings"),
+        ["Profile_Section_Audio"] = ("Аудио и воспроизведение", "Audio & Playback"),
+        ["Profile_Section_System"] = ("Система и интеграции", "System & Integrations"),
+        ["Profile_Section_Appearance"] = ("Внешний вид и язык", "Appearance & Language"),
+        ["Profile_Section_Storage"] = ("Хранилище и кэш", "Storage & Cache"),
+        ["Playlists_Pinned"] = ("Закрепленные", "Pinned Items"),
+        ["Settings_Language"] = ("Язык интерфейса", "Interface Language"),
+        ["Settings_Theme"] = ("Тема оформления", "Application Theme"),
+        ["Settings_PreferredQuality"] = ("Предпочитаемое качество", "Preferred Audio Quality"),
+        ["Settings_Gapless"] = ("Бесшовное воспроизведение и предзагрузка", "Gapless Playback & Preloading"),
+        ["Settings_GaplessDesc"] = ("Предзагрузка трека на 80% для устранения пауз", "Preload track at 80% to eliminate pauses"),
+        ["Settings_Equalizer"] = ("10-полосный эквалайзер", "10-Band Equalizer"),
+        ["Settings_EqualizerDesc"] = ("Тонкая настройка частот звука и пресеты", "Fine audio frequency adjustment and presets"),
+        ["Settings_DiscordRpc"] = ("Discord Rich Presence", "Discord Rich Presence"),
+        ["Settings_DiscordRpcDesc"] = ("Отображение текущего трека в Discord", "Display current track in Discord"),
+        ["Settings_MinimizeToTray"] = ("Сворачивать в системный трей", "Minimize to Windows System Tray"),
+        ["Settings_MinimizeToTrayDesc"] = ("Плеер продолжит играть в фоне при закрытии окна", "Keep player running in background when closed"),
+        ["Settings_TrackNotifications"] = ("Уведомления Windows Toast", "Windows Toast Notifications"),
+        ["Settings_TrackNotificationsDesc"] = ("Показывать уведомление при смене трека", "Show notification when track changes"),
+        ["Settings_AudioCache"] = ("Дисковый аудио-кэш", "Audio Disk Cache"),
+        ["Settings_CacheLimit"] = ("Лимит кэша", "Cache Storage Limit"),
+        ["Settings_ClearCache"] = ("Очистить кэш", "Clear Cache"),
+        ["Settings_OpenAppData"] = ("Папка данных приложения", "Application Data Folder"),
+        ["Search_History"] = ("История поиска", "Search History"),
+        ["Search_ClearHistory"] = ("Очистить историю", "Clear History"),
+        ["Nav_Explore"] = ("Главное", "Home"),
+        ["Nav_Search"] = ("Поиск", "Search"),
+        ["Nav_Wave"] = ("Моя волна", "My Wave"),
+        ["Nav_Likes"] = ("Любимые треки", "Liked Tracks"),
+        ["Nav_Playlists"] = ("Плейлисты и альбомы", "Playlists & Albums"),
+    };
 
     public string GetString(string key, params object[] args)
     {

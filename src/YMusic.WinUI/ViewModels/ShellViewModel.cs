@@ -20,16 +20,18 @@ public sealed partial class ShellViewModel : BaseViewModel
     [ObservableProperty]
     private bool _isAuthenticated;
 
-    public string AccountNavItemTitle => IsAuthenticated
-        ? (!string.IsNullOrWhiteSpace(CurrentUser?.DisplayName) ? CurrentUser.DisplayName : (Loc?["NavProfile"] ?? "Профиль и настройки"))
-        : (Loc?["NavAccount"] ?? "Войти в аккаунт");
+    private bool IsRussian => Loc?.CurrentLanguage != "en";
 
-    public string NavExploreText => Loc?["NavExplore"] ?? "Главное";
-    public string NavSearchText => Loc?["NavSearch"] ?? "Поиск";
-    public string NavWaveText => Loc?["NavWave"] ?? "Моя волна";
-    public string NavLikesText => Loc?["NavLikes"] ?? "Любимые треки";
-    public string NavPlaylistsText => Loc?["NavPlaylists"] ?? "Плейлисты и альбомы";
-    public string SearchPlaceholderText => Loc?["SearchPlaceholder"] ?? "Поиск треков, артистов, альбомов...";
+    public string AccountNavItemTitle => IsAuthenticated
+        ? (!string.IsNullOrWhiteSpace(CurrentUser?.DisplayName) ? CurrentUser.DisplayName : (IsRussian ? "Профиль и настройки" : "Profile & Settings"))
+        : (IsRussian ? "Войти в аккаунт" : "Sign In");
+
+    public string NavExploreText => IsRussian ? "Главное" : "Home";
+    public string NavSearchText => IsRussian ? "Поиск" : "Search";
+    public string NavWaveText => IsRussian ? "Моя волна" : "My Wave";
+    public string NavLikesText => IsRussian ? "Любимые треки" : "Liked Tracks";
+    public string NavPlaylistsText => IsRussian ? "Плейлисты и альбомы" : "Playlists & Albums";
+    public string SearchPlaceholderText => IsRussian ? "Поиск треков, артистов, альбомов..." : "Search tracks, artists, albums...";
 
     partial void OnCurrentUserChanged(UserProfile? value) => OnPropertyChanged(nameof(AccountNavItemTitle));
     partial void OnIsAuthenticatedChanged(bool value) => OnPropertyChanged(nameof(AccountNavItemTitle));

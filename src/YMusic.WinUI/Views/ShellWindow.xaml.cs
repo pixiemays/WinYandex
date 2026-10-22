@@ -359,9 +359,9 @@ public sealed partial class ShellWindow : Window
         {
             FontFamily newFont = font switch
             {
-                "Inter" => new FontFamily("ms-appx:///Assets/Fonts/Inter.ttf#Inter"),
                 "System" => new FontFamily("Segoe UI Variable Display, Segoe UI"),
-                _ => new FontFamily("ms-appx:///Assets/Fonts/YSText-Regular.ttf#YS Text")
+                "YandexSans" => new FontFamily("ms-appx:///Assets/Fonts/YSText-Regular.ttf#YS Text"),
+                _ => new FontFamily("ms-appx:///Assets/Fonts/Inter.ttf#Inter")
             };
 
             NavView.FontFamily = newFont;

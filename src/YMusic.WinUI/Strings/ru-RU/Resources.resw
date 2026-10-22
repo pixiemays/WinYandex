@@ -147,6 +147,9 @@
 
   <!-- Profile & Settings -->
   <data name="Profile_Title" xml:space="preserve"><value>Профиль и настройки</value></data>
+  <data name="Profile_LikedTracks" xml:space="preserve"><value>Любимые треки</value></data>
+  <data name="Profile_Playlists" xml:space="preserve"><value>Плейлисты</value></data>
+  <data name="Profile_Refresh" xml:space="preserve"><value>Обновить</value></data>
   <data name="Profile_YandexPlus" xml:space="preserve"><value>Яндекс Плюс активен</value></data>
   <data name="Profile_NoPlus" xml:space="preserve"><value>Яндекс Плюс не активен</value></data>
   <data name="Profile_Logout" xml:space="preserve"><value>Выйти из аккаунта</value></data>

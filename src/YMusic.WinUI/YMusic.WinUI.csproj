@@ -34,16 +34,6 @@
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <ItemGroup Condition="Exists('..\..\.env')">
-    <None Include="..\..\.env" Link=".env">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup Condition="Exists('.env') and !Exists('..\..\.env')">
-    <None Include=".env">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
   <!--
     Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging

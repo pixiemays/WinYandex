@@ -7,6 +7,10 @@ on:
       - 'v*'
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -45,5 +49,6 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: dist/WinYandex-win-x64-portable.zip
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

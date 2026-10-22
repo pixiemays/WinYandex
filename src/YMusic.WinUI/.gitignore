@@ -40,8 +40,9 @@ BundleArtifacts/
 
 # Publish output
 publish/
-*.pubxml
 PublishScripts/
+!Properties/PublishProfiles/
+!Properties/PublishProfiles/*.pubxml
 
 # Code analysis and tooling
 _ReSharper*/

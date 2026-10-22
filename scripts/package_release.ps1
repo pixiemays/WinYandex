@@ -1,4 +1,4 @@
-# YMusic Release Packaging Script
+# WinYandex Release Packaging Script
 param(
     [string]$Version = "0.9.0",
     [switch]$SkipBuild
@@ -11,7 +11,7 @@ $distDir = Join-Path $rootDir "dist"
 $publishDir = Join-Path $projectDir "bin\Release\net8.0-windows10.0.26100.0\win-x64\publish"
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  YMusic Release Packager v$Version" -ForegroundColor Cyan
+Write-Host "  WinYandex Release Packager v$Version" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 if (-not (Test-Path $distDir)) {
@@ -30,7 +30,7 @@ if (-not $SkipBuild) {
 }
 
 Write-Host "[2/3] Creating Portable ZIP archive..." -ForegroundColor Yellow
-$zipOutput = Join-Path $distDir "YMusic-v$Version-win-x64-portable.zip"
+$zipOutput = Join-Path $distDir "WinYandex-v$Version-win-x64-portable.zip"
 if (Test-Path $zipOutput) {
     Remove-Item $zipOutput -Force
 }

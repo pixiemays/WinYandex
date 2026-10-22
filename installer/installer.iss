@@ -1,9 +1,9 @@
-; Script generated for YMusic (WinUI 3 Windows Client)
+; Script generated for WinYandex (WinUI 3 Windows Client)
 ; Requires Inno Setup 6 (https://jrsoftware.org/isdl.php)
 
-#define MyAppName "YMusic"
+#define MyAppName "WinYandex"
 #define MyAppVersion "0.9.0"
-#define MyAppPublisher "YMusic"
+#define MyAppPublisher "WinYandex"
 #define MyAppExeName "YMusic.WinUI.exe"
 
 [Setup]
@@ -14,7 +14,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\dist
-OutputBaseFilename=YMusic-v{#MyAppVersion}-Setup-x64
+OutputBaseFilename=WinYandex-v{#MyAppVersion}-Setup-x64
 SetupIconFile=..\src\YMusic.WinUI\Assets\AppIcon.ico
 UninstallDisplayIcon={app}\Assets\AppIcon.ico
 Compression=lzma2/ultra64

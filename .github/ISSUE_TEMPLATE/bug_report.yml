@@ -1,12 +1,12 @@
 name: Сообщение об ошибке (Bug Report)
-description: Создать отчёт об ошибке или сбое в работе YMusic
+description: Создать отчёт об ошибке или сбое в работе WinYandex
 title: "[BUG] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Спасибо, что помогаете делать YMusic лучше! Пожалуйста, опишите проблему как можно подробнее.
+        Спасибо, что помогаете делать WinYandex лучше! Пожалуйста, опишите проблему как можно подробнее.
   - type: input
     id: version
     attributes:

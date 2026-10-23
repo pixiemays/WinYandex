@@ -28,7 +28,24 @@ public sealed partial class LikedTracksViewModel : BaseViewModel
     private int _totalTrackCount;
 
     public string FormattedTotalTracks => PluralizationHelper.FormatTrackCount(TotalTrackCount);
-    public string PageTitle => App.Loc?.GetString("Nav_Likes") ?? "Любимые треки";
+    public string PageTitle => App.Loc?.GetString("Nav_Likes") ?? (Loc?.CurrentLanguage == "en" ? "Liked Tracks" : "Любимые треки");
+
+    public string PlayAllText => Loc?.CurrentLanguage == "en" ? "Play All" : "Слушать всё";
+    public string ShuffleText => Loc?.CurrentLanguage == "en" ? "Shuffle" : "Перемешать";
+    public string RefreshTooltip => Loc?.CurrentLanguage == "en" ? "Refresh tracks" : "Обновить треки";
+    public string FilterPlaceholder => Loc?.CurrentLanguage == "en" ? "Filter tracks or artists..." : "Поиск по трекам и артистам...";
+    public string ErrorTitle => Loc?.CurrentLanguage == "en" ? "Error Loading Tracks" : "Ошибка при загрузке треков";
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(PageTitle));
+        OnPropertyChanged(nameof(FormattedTotalTracks));
+        OnPropertyChanged(nameof(PlayAllText));
+        OnPropertyChanged(nameof(ShuffleText));
+        OnPropertyChanged(nameof(RefreshTooltip));
+        OnPropertyChanged(nameof(FilterPlaceholder));
+        OnPropertyChanged(nameof(ErrorTitle));
+    }
 
     [ObservableProperty]
     private Track? _currentlyPlayingTrack;

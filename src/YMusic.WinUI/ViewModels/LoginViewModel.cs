@@ -11,6 +11,7 @@ public sealed partial class LoginViewModel : BaseViewModel
 {
     private readonly IYandexMusicService _musicService;
     private readonly ICredentialStorageService _credentialStorage;
+    private readonly IAudioPlayerService _audioPlayer;
 
     [ObservableProperty]
     private string _tokenInput = string.Empty;
@@ -24,10 +25,14 @@ public sealed partial class LoginViewModel : BaseViewModel
     public event EventHandler? LoginSucceeded;
     public event EventHandler? LoggedOut;
 
-    public LoginViewModel(IYandexMusicService musicService, ICredentialStorageService credentialStorage)
+    public LoginViewModel(
+        IYandexMusicService musicService,
+        ICredentialStorageService credentialStorage,
+        IAudioPlayerService audioPlayer)
     {
         _musicService = musicService;
         _credentialStorage = credentialStorage;
+        _audioPlayer = audioPlayer;
 
         _musicService.UnauthorizedResponseReceived += (_, _) =>
         {
@@ -147,6 +152,7 @@ public sealed partial class LoginViewModel : BaseViewModel
     private void Logout()
     {
         _credentialStorage.RemoveToken();
+        _audioPlayer.StopAndClear();
         RunOnUi(() =>
         {
             CurrentUser = null;
@@ -158,11 +164,13 @@ public sealed partial class LoginViewModel : BaseViewModel
     private void HandleUnauthorized()
     {
         _credentialStorage.RemoveToken();
+        _audioPlayer.StopAndClear();
         RunOnUi(() =>
         {
             CurrentUser = null;
             IsLoggedIn = false;
             ErrorMessage = "Session expired. Please log in again.";
+            LoggedOut?.Invoke(this, EventArgs.Empty);
         });
     }
 }

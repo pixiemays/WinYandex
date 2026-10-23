@@ -48,10 +48,10 @@ public sealed class SearchBestResult
 
     public string Subtitle => Type switch
     {
-        "artist" => !string.IsNullOrWhiteSpace(Artist?.GenresString) ? Artist.GenresString : "Artist",
-        "track" => Track?.ArtistNames ?? "Track",
-        "album" => Album?.ArtistNames ?? "Album",
-        "playlist" => Playlist?.OwnerName ?? "Playlist",
+        "artist" => !string.IsNullOrWhiteSpace(Artist?.GenresString) ? Artist.GenresString : (App.Loc?.CurrentLanguage == "en" ? "Artist" : "Артист"),
+        "track" => Track?.ArtistNames ?? (App.Loc?.CurrentLanguage == "en" ? "Track" : "Трек"),
+        "album" => Album?.ArtistNames ?? (App.Loc?.CurrentLanguage == "en" ? "Album" : "Альбом"),
+        "playlist" => Playlist?.OwnerName ?? (App.Loc?.CurrentLanguage == "en" ? "Playlist" : "Плейлист"),
         _ => string.Empty
     };
 
@@ -64,14 +64,23 @@ public sealed class SearchBestResult
         _ => null
     };
 
-    public string TypeBadge => Type switch
-    {
-        "artist" => "ARTIST",
-        "track" => "TRACK",
-        "album" => "ALBUM",
-        "playlist" => "PLAYLIST",
-        _ => Type.ToUpperInvariant()
-    };
+    public string TypeBadge => App.Loc?.CurrentLanguage == "en"
+        ? (Type switch
+        {
+            "artist" => "ARTIST",
+            "track" => "TRACK",
+            "album" => "ALBUM",
+            "playlist" => "PLAYLIST",
+            _ => Type.ToUpperInvariant()
+        })
+        : (Type switch
+        {
+            "artist" => "АРТИСТ",
+            "track" => "ТРЕК",
+            "album" => "АЛЬБОМ",
+            "playlist" => "ПЛЕЙЛИСТ",
+            _ => Type.ToUpperInvariant()
+        });
 }
 
 public sealed class SearchResult

@@ -48,7 +48,7 @@
                     helpers:CursorHelper.UseHandCursor="True"
                     PointerEntered="CoverButton_PointerEntered"
                     PointerExited="CoverButton_PointerExited"
-                    ToolTipService.ToolTip="Развернуть текст и плеер">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.LyricsDrawerTooltip, Mode=OneWay}">
                 <Border Width="52"
                         Height="52"
                         CornerRadius="6"
@@ -120,14 +120,16 @@
                         </StackPanel>
                     </Border>
                 </Grid>
-                <HyperlinkButton Grid.Row="1"
+                <HyperlinkButton x:Name="PlayerArtistButton"
+                                 Grid.Row="1"
                                  Command="{x:Bind ViewModel.OpenCurrentArtistCommand}"
+                                 CommandParameter="{x:Bind PlayerArtistButton}"
                                  Padding="0"
                                  Margin="0,2,0,0"
                                  HorizontalAlignment="Left"
                                  HorizontalContentAlignment="Left"
                                  helpers:CursorHelper.UseHandCursor="True"
-                                 ToolTipService.ToolTip="Об исполнителе">
+                                 ToolTipService.ToolTip="{x:Bind ViewModel.ArtistInfoTooltip, Mode=OneWay}">
                     <TextBlock Text="{x:Bind ViewModel.ArtistNames, Mode=OneWay}"
                                FontSize="12"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -205,6 +207,16 @@
                                 <FontIcon Glyph="&#xE7BA;" Foreground="#FFB900" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
+
+                        <MenuFlyoutSeparator />
+
+                        <!-- Original Repository Credit -->
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.FckCensorRepoMenuText, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.OpenFckCensorRepoCommand}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE8A7;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
                     </MenuFlyout>
                 </Button.Flyout>
                 <FontIcon Glyph="&#xE712;" FontSize="16" />
@@ -233,7 +245,7 @@
                         Background="Transparent"
                         BorderBrush="Transparent"
                         helpers:CursorHelper.UseHandCursor="True"
-                        ToolTipService.ToolTip="Shuffle">
+                        ToolTipService.ToolTip="{x:Bind ViewModel.ShuffleTooltip, Mode=OneWay}">
                     <FontIcon Glyph="&#xE8B1;"
                               FontSize="16"
                               Foreground="{x:Bind ViewModel.IsShuffle, Mode=OneWay, Converter={StaticResource BoolToAccentBrushConverter}}" />
@@ -250,7 +262,7 @@
                         Background="Transparent"
                         BorderBrush="Transparent"
                         helpers:CursorHelper.UseHandCursor="True"
-                        ToolTipService.ToolTip="Previous">
+                        ToolTipService.ToolTip="{x:Bind ViewModel.PreviousTooltip, Mode=OneWay}">
                     <FontIcon Glyph="&#xE892;" FontSize="16" />
                 </Button>
 
@@ -264,7 +276,7 @@
                         CornerRadius="22"
                         Style="{ThemeResource AccentButtonStyle}"
                         helpers:CursorHelper.UseHandCursor="True"
-                        ToolTipService.ToolTip="Play / Pause">
+                        ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseTooltip, Mode=OneWay}">
                     <FontIcon Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}"
                               FontSize="18"
                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
@@ -281,7 +293,7 @@
                         Background="Transparent"
                         BorderBrush="Transparent"
                         helpers:CursorHelper.UseHandCursor="True"
-                        ToolTipService.ToolTip="Next">
+                        ToolTipService.ToolTip="{x:Bind ViewModel.NextTooltip, Mode=OneWay}">
                     <FontIcon Glyph="&#xE893;" FontSize="16" />
                 </Button>
 
@@ -296,7 +308,7 @@
                         Background="Transparent"
                         BorderBrush="Transparent"
                         helpers:CursorHelper.UseHandCursor="True"
-                        ToolTipService.ToolTip="Repeat">
+                        ToolTipService.ToolTip="{x:Bind ViewModel.RepeatTooltip, Mode=OneWay}">
                     <FontIcon Glyph="{x:Bind ViewModel.RepeatGlyph, Mode=OneWay}"
                               FontSize="16"
                               Foreground="{x:Bind ViewModel.RepeatMode, Mode=OneWay, Converter={StaticResource RepeatToAccentBrushConverter}}" />
@@ -354,7 +366,7 @@
                     Background="{x:Bind ViewModel.IsNowPlayingDrawerOpen, Mode=OneWay, Converter={StaticResource BoolToSubtleHighlightBrushConverter}}"
                     BorderBrush="Transparent"
                     helpers:CursorHelper.UseHandCursor="True"
-                    ToolTipService.ToolTip="Lyrics &amp; Now Playing (Esc to close)">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.LyricsDrawerTooltip, Mode=OneWay}">
                 <FontIcon Glyph="&#xEC4F;"
                           FontSize="16"
                           Foreground="{x:Bind ViewModel.IsNowPlayingDrawerOpen, Mode=OneWay, Converter={StaticResource BoolToAccentBrushConverter}}" />
@@ -383,7 +395,7 @@
                         <MenuFlyoutItem Text="MP3 (High Quality, 320 kbps)"
                                         Command="{x:Bind ViewModel.SetAudioQualityPreferenceCommand}"
                                         CommandParameter="Mp3Preferred" />
-                        <MenuFlyoutItem Text="Best Available Bitrate"
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.BestBitrateMenuText, Mode=OneWay}"
                                         Command="{x:Bind ViewModel.SetAudioQualityPreferenceCommand}"
                                         CommandParameter="HighestBitrate" />
                     </MenuFlyout>
@@ -400,7 +412,7 @@
                     Background="Transparent"
                     BorderBrush="Transparent"
                     helpers:CursorHelper.UseHandCursor="True"
-                    ToolTipService.ToolTip="Audio Equalizer">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.AudioEqualizerTooltip, Mode=OneWay}">
                 <FontIcon Glyph="&#xE9E9;"
                           FontSize="16"
                           Foreground="{x:Bind ViewModel.IsEqualizerEnabled, Mode=OneWay, Converter={StaticResource BoolToAccentBrushConverter}}" />
@@ -423,27 +435,27 @@
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <FontIcon Glyph="&#xE9E9;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
-                                    <TextBlock Text="Equalizer" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    <TextBlock Text="{x:Bind ViewModel.EqualizerTitle, Mode=OneWay}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                                     <ToggleSwitch IsOn="{x:Bind ViewModel.IsEqualizerEnabled, Mode=TwoWay}"
-                                                  OnContent="On"
-                                                  OffContent="Off"
+                                                  OnContent="{x:Bind ViewModel.ToggleOnContent, Mode=OneWay}"
+                                                  OffContent="{x:Bind ViewModel.ToggleOffContent, Mode=OneWay}"
                                                   Margin="0" />
 
                                     <Button Command="{x:Bind ViewModel.ResetEqualizerCommand}"
-                                            Content="Reset"
+                                            Content="{x:Bind ViewModel.EqualizerResetText, Mode=OneWay}"
                                             Height="32"
                                             Padding="14,0"
                                             helpers:CursorHelper.UseHandCursor="True"
-                                            ToolTipService.ToolTip="Reset all bands to 0 dB" />
+                                            ToolTipService.ToolTip="{x:Bind ViewModel.EqualizerResetTooltip, Mode=OneWay}" />
                                 </StackPanel>
                             </Grid>
 
                             <!-- Preset Selector Row -->
                             <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                                <TextBlock Text="Preset:"
+                                <TextBlock Text="{x:Bind ViewModel.EqualizerPresetLabel, Mode=OneWay}"
                                            FontSize="13"
                                            FontWeight="Medium"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -529,7 +541,7 @@
                             Background="Transparent"
                             Padding="2,2"
                             helpers:CursorHelper.UseHandCursor="True"
-                            ToolTipService.ToolTip="Нажмите, чтобы ввести процент громкости"
+                            ToolTipService.ToolTip="{x:Bind ViewModel.VolumeInputTooltip, Mode=OneWay}"
                             PointerPressed="VolumePercentageBadge_PointerPressed">
                         <TextBlock x:Name="VolumePercentageLabel"
                                    Text="{x:Bind ViewModel.VolumePercentageText, Mode=OneWay}"

@@ -35,9 +35,22 @@ public sealed class NavigationService : INavigationService
         }
     }
 
-    public async Task NavigateToAlbumAsync(Album album)
+    public async Task NavigateToAlbumAsync(Album album, bool isFromPinned = false)
     {
         if (album == null || _shellWindow == null) return;
+
+        var playlistsVm = App.GetService<PlaylistsViewModel>();
+
+        // If this album is already open and visible on PlaylistsPage, do nothing
+        if (playlistsVm.IsDetailOpen && playlistsVm.SelectedAlbum?.Id == album.Id &&
+            _shellWindow.IsPlaylistsPageActive)
+        {
+            if (isFromPinned)
+            {
+                playlistsVm.IsBackButtonVisible = false;
+            }
+            return;
+        }
 
         var tcs = new TaskCompletionSource();
 
@@ -45,15 +58,29 @@ public sealed class NavigationService : INavigationService
         {
             try
             {
-                var playlistsVm = App.GetService<PlaylistsViewModel>();
-
-                string? currentTag = _shellWindow.CurrentPageTag;
-                if (!string.IsNullOrEmpty(currentTag) && currentTag != "Playlists")
+                if (isFromPinned)
                 {
-                    playlistsVm.PreviousPageTag = currentTag;
+                    playlistsVm.IsBackButtonVisible = false;
+                    playlistsVm.PreviousPageTag = null;
+                    _shellWindow.EnsurePlaylistsPageVisible();
+                }
+                else
+                {
+                    playlistsVm.IsBackButtonVisible = true;
+                    string? currentTag = _shellWindow.CurrentPageTag;
+                    if (!string.IsNullOrEmpty(currentTag) && currentTag != "Playlists")
+                    {
+                        playlistsVm.PreviousPageTag = currentTag;
+                        _shellWindow.ClearNavSelection();
+                        _shellWindow.EnsurePlaylistsPageVisible();
+                    }
+                    else
+                    {
+                        playlistsVm.PreviousPageTag = null;
+                        _shellWindow.SelectPlaylistsTab();
+                    }
                 }
 
-                _shellWindow.SelectPlaylistsTab();
                 playlistsVm.SelectedCategoryIndex = 1; // Albums tab
 
                 _ = playlistsVm.OpenAlbumAsync(album).ContinueWith(_ =>
@@ -94,9 +121,24 @@ public sealed class NavigationService : INavigationService
         await NavigateToAlbumAsync(album);
     }
 
-    public async Task NavigateToPlaylistAsync(Playlist playlist)
+    public async Task NavigateToPlaylistAsync(Playlist playlist, bool isFromPinned = false)
     {
         if (playlist == null || _shellWindow == null) return;
+
+        var playlistsVm = App.GetService<PlaylistsViewModel>();
+
+        // If this playlist is already open and visible on PlaylistsPage, do nothing
+        if (playlistsVm.IsDetailOpen &&
+            playlistsVm.SelectedPlaylist?.Uid == playlist.Uid &&
+            playlistsVm.SelectedPlaylist?.Kind == playlist.Kind &&
+            _shellWindow.IsPlaylistsPageActive)
+        {
+            if (isFromPinned)
+            {
+                playlistsVm.IsBackButtonVisible = false;
+            }
+            return;
+        }
 
         var tcs = new TaskCompletionSource();
 
@@ -104,15 +146,29 @@ public sealed class NavigationService : INavigationService
         {
             try
             {
-                var playlistsVm = App.GetService<PlaylistsViewModel>();
-
-                string? currentTag = _shellWindow.CurrentPageTag;
-                if (!string.IsNullOrEmpty(currentTag) && currentTag != "Playlists")
+                if (isFromPinned)
                 {
-                    playlistsVm.PreviousPageTag = currentTag;
+                    playlistsVm.IsBackButtonVisible = false;
+                    playlistsVm.PreviousPageTag = null;
+                    _shellWindow.EnsurePlaylistsPageVisible();
+                }
+                else
+                {
+                    playlistsVm.IsBackButtonVisible = true;
+                    string? currentTag = _shellWindow.CurrentPageTag;
+                    if (!string.IsNullOrEmpty(currentTag) && currentTag != "Playlists")
+                    {
+                        playlistsVm.PreviousPageTag = currentTag;
+                        _shellWindow.ClearNavSelection();
+                        _shellWindow.EnsurePlaylistsPageVisible();
+                    }
+                    else
+                    {
+                        playlistsVm.PreviousPageTag = null;
+                        _shellWindow.SelectPlaylistsTab();
+                    }
                 }
 
-                _shellWindow.SelectPlaylistsTab();
                 playlistsVm.SelectedCategoryIndex = 0; // Playlists tab
 
                 _ = playlistsVm.OpenPlaylistAsync(playlist).ContinueWith(_ =>

@@ -196,6 +196,17 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
     public string FckCensorTitle => "FckCensor (разблокировка цензуры)";
     public string FckCensorDesc => IsRussian ? "Автоматически предпочитать оригинальные треки без цензуры вместо заглушенных версий" : "Automatically prefer original explicit and uncensored versions of tracks over sanitized edits";
+    public string FckCensorAuthorCreditText => IsRussian ? "Оригинальный проект: Hazzz895 / FckCensor (GitHub)" : "Original project: Hazzz895 / FckCensor (GitHub)";
+
+    [RelayCommand]
+    public async Task OpenFckCensorRepoAsync()
+    {
+        try
+        {
+            await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/Hazzz895/FckCensor"));
+        }
+        catch { }
+    }
 
     public string MinimizeToTrayTitle => IsRussian ? "Сворачивать в системный трей Windows" : "Minimize to Windows System Tray";
     public string MinimizeToTrayDesc => IsRussian ? "При нажатии крестика плеер продолжит играть в фоне и свернется в трей" : "Keep music playing in background and minimize to the taskbar notification tray when window is closed";
@@ -1019,6 +1030,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(DiscordRpcDesc));
         OnPropertyChanged(nameof(FckCensorTitle));
         OnPropertyChanged(nameof(FckCensorDesc));
+        OnPropertyChanged(nameof(FckCensorAuthorCreditText));
         OnPropertyChanged(nameof(MinimizeToTrayTitle));
         OnPropertyChanged(nameof(MinimizeToTrayDesc));
         OnPropertyChanged(nameof(TrackNotificationsTitle));

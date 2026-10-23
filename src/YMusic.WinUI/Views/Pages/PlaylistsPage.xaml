@@ -21,8 +21,11 @@
                       Canvas.ZIndex="10" />
 
         <!-- 1. BROWSE VIEW (Library: Playlists & Liked Albums) -->
-        <Grid Visibility="{x:Bind ViewModel.IsBrowseVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+        <Grid x:Name="BrowseViewRoot"
               Padding="20,18,20,16">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="BrowseTranslateTransform" />
+            </Grid.RenderTransform>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -38,7 +41,7 @@
 
                 <!-- Page Title -->
                 <TextBlock Grid.Column="0"
-                           Text="Library"
+                           Text="{x:Bind ViewModel.PageTitle, Mode=OneWay}"
                            FontSize="28"
                            FontWeight="Bold"
                            VerticalAlignment="Center"
@@ -59,7 +62,7 @@
                             <FontIcon Glyph="&#xE142;"
                                       FontSize="13"
                                       Foreground="{x:Bind ViewModel.IsPlaylistsTab, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}}" />
-                            <TextBlock Text="Playlists"
+                            <TextBlock Text="{x:Bind ViewModel.PlaylistsTabText, Mode=OneWay}"
                                        FontWeight="SemiBold"
                                        FontSize="13"
                                        Foreground="{x:Bind ViewModel.IsPlaylistsTab, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}}" />
@@ -80,7 +83,7 @@
                             <FontIcon Glyph="&#xE93C;"
                                       FontSize="13"
                                       Foreground="{x:Bind ViewModel.IsAlbumsTab, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}}" />
-                            <TextBlock Text="Liked Albums"
+                            <TextBlock Text="{x:Bind ViewModel.LikedAlbumsTabText, Mode=OneWay}"
                                        FontWeight="SemiBold"
                                        FontSize="13"
                                        Foreground="{x:Bind ViewModel.IsAlbumsTab, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}}" />
@@ -96,7 +99,7 @@
                 <Button Grid.Column="2"
                         Command="{x:Bind ViewModel.LoadPlaylistsCommand}"
                         Height="36"
-                        ToolTipService.ToolTip="Refresh Library">
+                        ToolTipService.ToolTip="{x:Bind ViewModel.RefreshTooltip, Mode=OneWay}">
                     <FontIcon Glyph="&#xE72C;" FontSize="14" />
                 </Button>
             </Grid>
@@ -114,7 +117,7 @@
                                 Margin="0,60,0,0"
                                 Visibility="{x:Bind ViewModel.Playlists.Count, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
                         <FontIcon Glyph="&#xE142;" FontSize="48" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="No playlists found"
+                        <TextBlock Text="{x:Bind ViewModel.NoPlaylistsText, Mode=OneWay}"
                                    FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -139,6 +142,14 @@
                                         BorderBrush="Transparent">
                                     <Button.ContextFlyout>
                                         <MenuFlyout>
+                                            <MenuFlyoutItem Text="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeMenuTextConverter}}"
+                                                            Click="TogglePlaylistLikeContext_Click"
+                                                            Tag="{x:Bind}">
+                                                <MenuFlyoutItem.Icon>
+                                                    <FontIcon Glyph="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeGlyphConverter}}"
+                                                              Foreground="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+                                                </MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
                                             <MenuFlyoutItem Text="{x:Bind IsPinned, Mode=OneWay, Converter={StaticResource BoolToPinMenuTextConverter}}"
                                                             Click="TogglePlaylistPinContext_Click"
                                                             Tag="{x:Bind}">
@@ -146,7 +157,7 @@
                                                     <FontIcon Glyph="&#xE840;" />
                                                 </MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
-                                            <MenuFlyoutItem Text="Play"
+                                            <MenuFlyoutItem Text="{x:Bind PlayActionText, Mode=OneWay}"
                                                             Click="DirectPlayPlaylist_Click"
                                                             Tag="{x:Bind}">
                                                 <MenuFlyoutItem.Icon>
@@ -186,7 +197,7 @@
                                                         Visibility="{x:Bind IsPinned, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                                         <FontIcon Glyph="&#xE840;" FontSize="10" Foreground="Black" />
-                                                        <TextBlock Text="Pinned" FontSize="10" FontWeight="Bold" Foreground="Black" />
+                                                        <TextBlock Text="{x:Bind PinnedBadgeText, Mode=OneWay}" FontSize="10" FontWeight="Bold" Foreground="Black" />
                                                     </StackPanel>
                                                 </Border>
 
@@ -263,12 +274,12 @@
                                 Margin="0,60,0,0"
                                 Visibility="{x:Bind ViewModel.LikedAlbums.Count, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
                         <FontIcon Glyph="&#xE93C;" FontSize="48" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="No liked albums yet"
+                        <TextBlock Text="{x:Bind ViewModel.NoLikedAlbumsText, Mode=OneWay}"
                                    FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    HorizontalAlignment="Center" />
-                        <TextBlock Text="Albums you like on Yandex Music will appear here."
+                        <TextBlock Text="{x:Bind ViewModel.NoLikedAlbumsSubtext, Mode=OneWay}"
                                    FontSize="13"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                    HorizontalAlignment="Center" />
@@ -292,6 +303,14 @@
                                         BorderBrush="Transparent">
                                     <Button.ContextFlyout>
                                         <MenuFlyout>
+                                            <MenuFlyoutItem Text="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeMenuTextConverter}}"
+                                                            Click="ToggleAlbumLikeContext_Click"
+                                                            Tag="{x:Bind}">
+                                                <MenuFlyoutItem.Icon>
+                                                    <FontIcon Glyph="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeGlyphConverter}}"
+                                                              Foreground="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+                                                </MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
                                             <MenuFlyoutItem Text="{x:Bind IsPinned, Mode=OneWay, Converter={StaticResource BoolToPinMenuTextConverter}}"
                                                             Click="ToggleAlbumPinContext_Click"
                                                             Tag="{x:Bind}">
@@ -299,7 +318,7 @@
                                                     <FontIcon Glyph="&#xE840;" />
                                                 </MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
-                                            <MenuFlyoutItem Text="Play"
+                                            <MenuFlyoutItem Text="{x:Bind PlayActionText, Mode=OneWay}"
                                                             Click="DirectPlayAlbum_Click"
                                                             Tag="{x:Bind}">
                                                 <MenuFlyoutItem.Icon>
@@ -339,7 +358,7 @@
                                                         Visibility="{x:Bind IsPinned, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                                         <FontIcon Glyph="&#xE840;" FontSize="10" Foreground="Black" />
-                                                        <TextBlock Text="Pinned" FontSize="10" FontWeight="Bold" Foreground="Black" />
+                                                        <TextBlock Text="{x:Bind PinnedBadgeText, Mode=OneWay}" FontSize="10" FontWeight="Bold" Foreground="Black" />
                                                     </StackPanel>
                                                 </Border>
 
@@ -403,8 +422,13 @@
         </Grid>
 
         <!-- 2. DETAIL VIEW (Full-width Playlist or Album tracks) -->
-        <Grid Visibility="{x:Bind ViewModel.IsDetailOpen, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-              Padding="18,14,18,14">
+        <Grid x:Name="DetailViewRoot"
+              Padding="18,14,18,14"
+              Visibility="Collapsed"
+              Opacity="0">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="DetailTranslateTransform" Y="28" />
+            </Grid.RenderTransform>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -413,9 +437,10 @@
 
             <!-- Back Button -->
             <Button Grid.Row="0"
-                    Command="{x:Bind ViewModel.CloseDetailCommand}"
+                    Click="DetailBackButton_Click"
                     Margin="0,0,0,16"
-                    Height="34">
+                    Height="34"
+                    Visibility="{x:Bind ViewModel.IsBackButtonVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="&#xE72B;" FontSize="12" />
                     <TextBlock Text="{x:Bind ViewModel.BackButtonText, Mode=OneWay}" />
@@ -509,6 +534,19 @@
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="&#xE768;" FontSize="13" />
                                 <TextBlock Text="{x:Bind ViewModel.DetailPlayButtonText, Mode=OneWay}" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{x:Bind ViewModel.ToggleCurrentDetailLikeCommand}"
+                                Height="36"
+                                Padding="14,0"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeTooltipConverter}}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeGlyphConverter}}"
+                                          FontSize="13"
+                                          Foreground="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+                                <TextBlock Text="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeButtonTextConverter}}"
+                                           FontWeight="SemiBold" />
                             </StackPanel>
                         </Button>
 
@@ -644,10 +682,19 @@
                                             </StackPanel>
                                         </Border>
                                     </Grid>
-                                    <TextBlock Text="{x:Bind ArtistNames}"
-                                               FontSize="12"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextTrimming="CharacterEllipsis" />
+                                    <HyperlinkButton Click="TrackArtist_Click"
+                                                     Tag="{x:Bind}"
+                                                     Padding="0"
+                                                     Margin="0,2,0,0"
+                                                     HorizontalAlignment="Left"
+                                                     VerticalAlignment="Center"
+                                                     ToolTipService.ToolTip="{x:Bind ArtistNames}">
+                                        <TextBlock Text="{x:Bind ArtistNames}"
+                                                   FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   IsHitTestVisible="False" />
+                                    </HyperlinkButton>
                                 </StackPanel>
 
                                 <!-- Album (Clickable) -->

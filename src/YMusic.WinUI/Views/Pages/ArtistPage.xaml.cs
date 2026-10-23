@@ -60,4 +60,12 @@ public sealed partial class ArtistPage : Page
             _ = ViewModel.OpenAlbumAsync(album);
         }
     }
+
+    private async void TrackArtist_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement anchor && anchor.Tag is Track track)
+        {
+            await YMusic.WinUI.Helpers.ArtistNavigationHelper.NavigateToTrackArtistAsync(anchor, track);
+        }
+    }
 }

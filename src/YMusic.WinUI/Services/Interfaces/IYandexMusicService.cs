@@ -30,7 +30,14 @@ public interface IYandexMusicService
     Task<bool> LikeAlbumAsync(long albumId, CancellationToken cancellationToken = default);
     Task<bool> UnlikeAlbumAsync(long albumId, CancellationToken cancellationToken = default);
     bool IsAlbumLiked(long albumId);
+    Task EnsureLikedAlbumsLoadedAsync(CancellationToken cancellationToken = default);
     event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
+
+    Task<bool> LikePlaylistAsync(long ownerUid, int kind, CancellationToken cancellationToken = default);
+    Task<bool> UnlikePlaylistAsync(long ownerUid, int kind, CancellationToken cancellationToken = default);
+    bool IsPlaylistLiked(long ownerUid, int kind);
+    Task EnsureLikedPlaylistsLoadedAsync(CancellationToken cancellationToken = default);
+    event EventHandler<(long OwnerUid, int Kind, bool IsLiked)>? PlaylistLikeChanged;
 
     Task<bool> LikeArtistAsync(long artistId, CancellationToken cancellationToken = default);
     Task<bool> UnlikeArtistAsync(long artistId, CancellationToken cancellationToken = default);

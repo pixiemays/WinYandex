@@ -41,6 +41,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
     public string NewReleasesTitle => GetLoc("Explore_NewReleases", Loc?.CurrentLanguage == "en" ? "New Releases & Albums" : "Новые релизы и альбомы");
     public string EditorialPlaylistsTitle => GetLoc("Explore_PopularPlaylists", Loc?.CurrentLanguage == "en" ? "Popular Playlists" : "Популярные плейлисты");
     public string ChartTitle => GetLoc("Explore_TopChart", Loc?.CurrentLanguage == "en" ? "Top Chart" : "Чарт");
+    public string ErrorTitle => Loc?.CurrentLanguage == "en" ? "Explore Error" : "Ошибка";
 
     protected override void OnLanguageChanged()
     {
@@ -50,6 +51,20 @@ public sealed partial class ExploreViewModel : BaseViewModel
         OnPropertyChanged(nameof(NewReleasesTitle));
         OnPropertyChanged(nameof(EditorialPlaylistsTitle));
         OnPropertyChanged(nameof(ChartTitle));
+        OnPropertyChanged(nameof(ErrorTitle));
+        OnPropertyChanged(nameof(BackToExploreText));
+        OnPropertyChanged(nameof(PlayAllText));
+        OnPropertyChanged(nameof(ShuffleText));
+        if (ActivePlaylist != null)
+        {
+            DetailTypeBadge = Loc?.CurrentLanguage == "en"
+                ? (ActivePlaylist.Owner?.Login?.Contains("daily") == true ? "DAILY MIX" : "PLAYLIST")
+                : (ActivePlaylist.Owner?.Login?.Contains("daily") == true ? "МОЙ МИКС" : "ПЛЕЙЛИСТ");
+        }
+        else if (ActiveAlbum != null)
+        {
+            DetailTypeBadge = Loc?.CurrentLanguage == "en" ? "ALBUM" : "АЛЬБОМ";
+        }
     }
 
     [ObservableProperty]
@@ -82,6 +97,13 @@ public sealed partial class ExploreViewModel : BaseViewModel
     [ObservableProperty]
     private bool _isDetailPinned;
 
+    [ObservableProperty]
+    private bool _isDetailLiked;
+
+    public string BackToExploreText => Loc?.CurrentLanguage == "en" ? "Back to Explore" : "Назад на Главную";
+    public string PlayAllText => Loc?.CurrentLanguage == "en" ? "Play All" : "Слушать всё";
+    public string ShuffleText => Loc?.CurrentLanguage == "en" ? "Shuffle" : "Перемешать";
+
     public bool HasLoaded { get; private set; }
 
     public ExploreViewModel(
@@ -98,6 +120,8 @@ public sealed partial class ExploreViewModel : BaseViewModel
         _pinnedItemsService = pinnedItemsService;
 
         _pinnedItemsService.PinStateChanged += OnPinStateChanged;
+        _musicService.AlbumLikeChanged += OnAlbumLikeChanged;
+        _musicService.PlaylistLikeChanged += OnPlaylistLikeChanged;
         _playbackCoordinator.Register(DetailTracks);
         _playbackCoordinator.Register(ChartTracks);
     }
@@ -123,8 +147,10 @@ public sealed partial class ExploreViewModel : BaseViewModel
             var editorialTask = _musicService.GetEditorialPlaylistsAsync();
             var albumsTask = _musicService.GetNewReleasesAsync();
             var chartTask = _musicService.GetChartTracksAsync();
+            var ensurePlaylistsTask = _musicService.EnsureLikedPlaylistsLoadedAsync();
+            var ensureAlbumsTask = _musicService.EnsureLikedAlbumsLoadedAsync();
 
-            await Task.WhenAll(personalTask, editorialTask, albumsTask, chartTask).ConfigureAwait(false);
+            await Task.WhenAll(personalTask, editorialTask, albumsTask, chartTask, ensurePlaylistsTask, ensureAlbumsTask).ConfigureAwait(false);
 
             var personal = await personalTask.ConfigureAwait(false);
             var editorial = await editorialTask.ConfigureAwait(false);
@@ -136,18 +162,21 @@ public sealed partial class ExploreViewModel : BaseViewModel
                 PersonalPlaylists.Clear();
                 foreach (var p in personal)
                 {
+                    p.IsLiked = _musicService.IsPlaylistLiked(p.Uid, p.Kind);
                     PersonalPlaylists.Add(p);
                 }
 
                 EditorialPlaylists.Clear();
                 foreach (var p in editorial)
                 {
+                    p.IsLiked = _musicService.IsPlaylistLiked(p.Uid, p.Kind);
                     EditorialPlaylists.Add(p);
                 }
 
                 NewReleases.Clear();
                 foreach (var a in albums)
                 {
+                    a.IsLiked = _musicService.IsAlbumLiked(a.Id);
                     NewReleases.Add(a);
                 }
 
@@ -178,6 +207,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
     public async Task OpenPlaylistAsync(Playlist? playlist)
     {
         if (playlist == null) return;
+        if (IsDetailOpen && ActivePlaylist != null && ActivePlaylist.Uid == playlist.Uid && ActivePlaylist.Kind == playlist.Kind) return;
 
         ActivePlaylist = playlist;
         ActiveAlbum = null;
@@ -185,18 +215,27 @@ public sealed partial class ExploreViewModel : BaseViewModel
         DetailSubtitle = playlist.OwnerName;
         DetailDescription = playlist.Description ?? string.Empty;
         DetailCoverUrl = playlist.CoverUrl;
-        DetailTypeBadge = playlist.Owner?.Login?.Contains("daily") == true ? "DAILY MIX" : "PLAYLIST";
+        DetailTypeBadge = Loc?.CurrentLanguage == "en"
+            ? (playlist.Owner?.Login?.Contains("daily") == true ? "DAILY MIX" : "PLAYLIST")
+            : (playlist.Owner?.Login?.Contains("daily") == true ? "МОЙ МИКС" : "ПЛЕЙЛИСТ");
         DetailMeta = playlist.FormattedTrackCount;
-        DetailTracks.Clear();
         IsDetailPinned = _pinnedItemsService.IsPlaylistPinned(playlist.Uid, playlist.Kind);
         playlist.IsPinned = IsDetailPinned;
+        playlist.IsLiked = _musicService.IsPlaylistLiked(playlist.Uid, playlist.Kind);
+        IsDetailLiked = playlist.IsLiked;
         IsDetailOpen = true;
         IsLoadingDetail = true;
 
         try
         {
             await _musicService.EnsureLikedTracksLoadedAsync().ConfigureAwait(false);
+            await _musicService.EnsureLikedPlaylistsLoadedAsync().ConfigureAwait(false);
             var fullPlaylist = await _musicService.GetPlaylistWithTracksAsync(playlist.Uid, playlist.Kind).ConfigureAwait(false);
+            if (fullPlaylist != null)
+            {
+                fullPlaylist.IsPinned = _pinnedItemsService.IsPlaylistPinned(fullPlaylist.Uid, fullPlaylist.Kind);
+                fullPlaylist.IsLiked = _musicService.IsPlaylistLiked(fullPlaylist.Uid, fullPlaylist.Kind);
+            }
             var tracks = fullPlaylist?.ResolvedTracks ?? new List<Track>();
 
             if (tracks.Count == 0 && fullPlaylist?.Tracks != null && fullPlaylist.Tracks.Count > 0)
@@ -211,6 +250,11 @@ public sealed partial class ExploreViewModel : BaseViewModel
 
             RunOnUi(() =>
             {
+                if (fullPlaylist != null)
+                {
+                    ActivePlaylist = fullPlaylist;
+                    IsDetailLiked = fullPlaylist.IsLiked;
+                }
                 DetailTracks.Clear();
                 long totalMs = 0;
                 foreach (var t in tracks)
@@ -239,6 +283,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
     public async Task OpenAlbumAsync(Album? album)
     {
         if (album == null) return;
+        if (IsDetailOpen && ActiveAlbum != null && ActiveAlbum.Id == album.Id) return;
 
         ActiveAlbum = album;
         ActivePlaylist = null;
@@ -246,22 +291,34 @@ public sealed partial class ExploreViewModel : BaseViewModel
         DetailSubtitle = album.ArtistNames;
         DetailDescription = !string.IsNullOrWhiteSpace(album.Description) ? album.Description : (!string.IsNullOrWhiteSpace(album.Genre) ? $"Genre: {album.Genre}" : string.Empty);
         DetailCoverUrl = album.CoverUrl;
-        DetailTypeBadge = "ALBUM";
+        DetailTypeBadge = Loc?.CurrentLanguage == "en" ? "ALBUM" : "АЛЬБОМ";
         DetailMeta = album.FormattedYearAndTracks;
-        DetailTracks.Clear();
         IsDetailPinned = _pinnedItemsService.IsAlbumPinned(album.Id);
         album.IsPinned = IsDetailPinned;
+        album.IsLiked = _musicService.IsAlbumLiked(album.Id);
+        IsDetailLiked = album.IsLiked;
         IsDetailOpen = true;
         IsLoadingDetail = true;
 
         try
         {
             await _musicService.EnsureLikedTracksLoadedAsync().ConfigureAwait(false);
+            await _musicService.EnsureLikedAlbumsLoadedAsync().ConfigureAwait(false);
             var fullAlbum = await _musicService.GetAlbumWithTracksAsync(album.Id).ConfigureAwait(false);
+            if (fullAlbum != null)
+            {
+                fullAlbum.IsPinned = _pinnedItemsService.IsAlbumPinned(fullAlbum.Id);
+                fullAlbum.IsLiked = _musicService.IsAlbumLiked(fullAlbum.Id);
+            }
             var tracks = fullAlbum?.AllTracks ?? new List<Track>();
 
             RunOnUi(() =>
             {
+                if (fullAlbum != null)
+                {
+                    ActiveAlbum = fullAlbum;
+                    IsDetailLiked = fullAlbum.IsLiked;
+                }
                 DetailTracks.Clear();
                 long totalMs = 0;
                 foreach (var t in tracks)
@@ -423,6 +480,115 @@ public sealed partial class ExploreViewModel : BaseViewModel
             IsDetailPinned = _pinnedItemsService.ToggleAlbumPin(ActiveAlbum.Id, ActiveAlbum.Title, ActiveAlbum.CoverUrl);
             ActiveAlbum.IsPinned = IsDetailPinned;
         }
+    }
+
+    [RelayCommand]
+    public async Task TogglePlaylistLikeAsync(Playlist? playlist)
+    {
+        if (playlist == null) return;
+        bool willLike = !playlist.IsLiked;
+        playlist.IsLiked = willLike;
+        if (ActivePlaylist != null && ActivePlaylist.Uid == playlist.Uid && ActivePlaylist.Kind == playlist.Kind)
+        {
+            IsDetailLiked = willLike;
+        }
+
+        try
+        {
+            if (willLike)
+            {
+                await _musicService.LikePlaylistAsync(playlist.Uid, playlist.Kind).ConfigureAwait(false);
+            }
+            else
+            {
+                await _musicService.UnlikePlaylistAsync(playlist.Uid, playlist.Kind).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Explore TogglePlaylistLike Error] {ex.Message}");
+            playlist.IsLiked = !willLike;
+            if (ActivePlaylist != null && ActivePlaylist.Uid == playlist.Uid && ActivePlaylist.Kind == playlist.Kind)
+            {
+                IsDetailLiked = !willLike;
+            }
+        }
+    }
+
+    [RelayCommand]
+    public async Task ToggleAlbumLikeAsync(Album? album)
+    {
+        if (album == null) return;
+        bool willLike = !album.IsLiked;
+        album.IsLiked = willLike;
+        if (ActiveAlbum?.Id == album.Id)
+        {
+            IsDetailLiked = willLike;
+        }
+
+        try
+        {
+            if (willLike)
+            {
+                await _musicService.LikeAlbumAsync(album.Id).ConfigureAwait(false);
+            }
+            else
+            {
+                await _musicService.UnlikeAlbumAsync(album.Id).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Explore ToggleAlbumLike Error] {ex.Message}");
+            album.IsLiked = !willLike;
+            if (ActiveAlbum?.Id == album.Id)
+            {
+                IsDetailLiked = !willLike;
+            }
+        }
+    }
+
+    [RelayCommand]
+    public async Task ToggleDetailLikeAsync()
+    {
+        if (ActivePlaylist != null)
+        {
+            await TogglePlaylistLikeAsync(ActivePlaylist).ConfigureAwait(false);
+        }
+        else if (ActiveAlbum != null)
+        {
+            await ToggleAlbumLikeAsync(ActiveAlbum).ConfigureAwait(false);
+        }
+    }
+
+    private void OnAlbumLikeChanged(object? sender, (long AlbumId, bool IsLiked) e)
+    {
+        RunOnUi(() =>
+        {
+            if (ActiveAlbum?.Id == e.AlbumId)
+            {
+                ActiveAlbum.IsLiked = e.IsLiked;
+                IsDetailLiked = e.IsLiked;
+            }
+            var inNew = NewReleases.FirstOrDefault(a => a.Id == e.AlbumId);
+            if (inNew != null) inNew.IsLiked = e.IsLiked;
+        });
+    }
+
+    private void OnPlaylistLikeChanged(object? sender, (long OwnerUid, int Kind, bool IsLiked) e)
+    {
+        RunOnUi(() =>
+        {
+            if (ActivePlaylist != null && ActivePlaylist.Uid == e.OwnerUid && ActivePlaylist.Kind == e.Kind)
+            {
+                ActivePlaylist.IsLiked = e.IsLiked;
+                IsDetailLiked = e.IsLiked;
+            }
+            var inPers = PersonalPlaylists.FirstOrDefault(p => p.Uid == e.OwnerUid && p.Kind == e.Kind);
+            if (inPers != null) inPers.IsLiked = e.IsLiked;
+            var inEdit = EditorialPlaylists.FirstOrDefault(p => p.Uid == e.OwnerUid && p.Kind == e.Kind);
+            if (inEdit != null) inEdit.IsLiked = e.IsLiked;
+        });
     }
 
     private void OnPinStateChanged(object? sender, string key)

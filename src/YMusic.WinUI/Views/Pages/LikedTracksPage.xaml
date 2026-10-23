@@ -43,7 +43,7 @@
                             Height="36">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xE768;" FontSize="14" />
-                            <TextBlock Text="Play All" />
+                            <TextBlock Text="{x:Bind ViewModel.PlayAllText, Mode=OneWay}" />
                         </StackPanel>
                     </Button>
 
@@ -51,13 +51,13 @@
                             Height="36">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xE8B1;" FontSize="14" />
-                            <TextBlock Text="Shuffle" />
+                            <TextBlock Text="{x:Bind ViewModel.ShuffleText, Mode=OneWay}" />
                         </StackPanel>
                     </Button>
 
                     <Button Command="{x:Bind ViewModel.LoadTracksCommand}"
                             Height="36"
-                            ToolTipService.ToolTip="Refresh tracks">
+                            ToolTipService.ToolTip="{x:Bind ViewModel.RefreshTooltip, Mode=OneWay}">
                         <FontIcon Glyph="&#xE72C;" FontSize="14" />
                     </Button>
                 </StackPanel>
@@ -68,7 +68,7 @@
                             Width="260"
                             Height="36"
                             VerticalAlignment="Bottom"
-                            PlaceholderText="Filter tracks or artists..."
+                            PlaceholderText="{x:Bind ViewModel.FilterPlaceholder, Mode=OneWay}"
                             QueryIcon="Find"
                             Text="{x:Bind ViewModel.SearchFilter, Mode=TwoWay}" />
         </Grid>
@@ -85,7 +85,7 @@
             <!-- Error message if any -->
             <InfoBar IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
                      Severity="Error"
-                     Title="Error Loading Tracks"
+                     Title="{x:Bind ViewModel.ErrorTitle, Mode=OneWay}"
                      Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
                      VerticalAlignment="Top" />
 
@@ -204,11 +204,19 @@
                                             </StackPanel>
                                         </Border>
                                     </Grid>
-                                    <TextBlock Text="{x:Bind ArtistNames}"
-                                               FontSize="12"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextTrimming="CharacterEllipsis"
-                                               Margin="0,2,0,0" />
+                                    <HyperlinkButton Click="TrackArtist_Click"
+                                                     Tag="{x:Bind}"
+                                                     Padding="0"
+                                                     Margin="0,2,0,0"
+                                                     HorizontalAlignment="Left"
+                                                     VerticalAlignment="Center"
+                                                     ToolTipService.ToolTip="{x:Bind ArtistNames}">
+                                        <TextBlock Text="{x:Bind ArtistNames}"
+                                                   FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   IsHitTestVisible="False" />
+                                    </HyperlinkButton>
                                 </StackPanel>
 
                                 <!-- Album (Clickable) -->

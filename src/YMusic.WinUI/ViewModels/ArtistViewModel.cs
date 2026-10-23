@@ -213,6 +213,27 @@ public sealed partial class ArtistViewModel : BaseViewModel
             var directAlbums = await directAlbumsTask;
             var alsoAlbums = await alsoAlbumsTask;
 
+            // FckCensor: Fetch inserted / re-uploaded tracks for censored artist profiles
+            var fckCensor = App.GetService<YMusic.WinUI.Services.Interfaces.IFckCensorService>();
+            var insertions = fckCensor?.GetArtistInsertions(artistId);
+            List<Track>? insertedTracks = null;
+            if (insertions != null && insertions.Tracks.Count > 0)
+            {
+                try
+                {
+                    var ids = insertions.Tracks.Select(t => t.ReleaseId).Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+                    if (ids.Count > 0)
+                    {
+                        var fetched = await _musicService.GetTracksAsync(ids).ConfigureAwait(false);
+                        insertedTracks = fetched.ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[FckCensor Artist Insertions Warning] {ex.Message}");
+                }
+            }
+
             RunOnUi(() =>
             {
                 PopularTracks.Clear();
@@ -261,6 +282,23 @@ public sealed partial class ArtistViewModel : BaseViewModel
                     {
                         PopularTracks.Add(track);
                     }
+
+                    // Apply FckCensor artist insertions (banned/re-uploaded tracks)
+                    if (insertions != null && insertedTracks != null && insertedTracks.Count > 0)
+                    {
+                        var trackMap = insertedTracks.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
+                        foreach (var ins in insertions.Tracks)
+                        {
+                            if (trackMap.TryGetValue(ins.ReleaseId, out var trackToInsert) && !PopularTracks.Any(t => t.Id == trackToInsert.Id))
+                            {
+                                int idx = ins.Index >= 0
+                                    ? Math.Clamp(ins.Index, 0, PopularTracks.Count)
+                                    : Math.Clamp(PopularTracks.Count + 1 + ins.Index, 0, PopularTracks.Count);
+                                PopularTracks.Insert(idx, trackToInsert);
+                            }
+                        }
+                    }
+
                     _playbackCoordinator.Sync(PopularTracks);
                 }
 

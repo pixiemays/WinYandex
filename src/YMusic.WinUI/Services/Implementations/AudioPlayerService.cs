@@ -319,6 +319,12 @@ public sealed class AudioPlayerService : IAudioPlayerService
         {
             try
             {
+                if (_currentTrack == null && _queue.Count == 0)
+                {
+                    _playbackStateStorage.ClearPlaybackState();
+                    return;
+                }
+
                 var state = new PlaybackSessionState
                 {
                     Volume = _volume,
@@ -596,6 +602,71 @@ public sealed class AudioPlayerService : IAudioPlayerService
         else
         {
             Play();
+        }
+    }
+
+    public void StopAndClear()
+    {
+        lock (_saveLock)
+        {
+            try
+            {
+                _positionTimer.Stop();
+
+                if (_currentInputNode != null)
+                {
+                    _currentInputNode.Stop();
+                    if (_deviceOutput != null)
+                    {
+                        try { _currentInputNode.RemoveOutgoingConnection(_deviceOutput); } catch { }
+                    }
+                    _currentInputNode.MediaSourceCompleted -= OnInputNodeMediaCompleted;
+                    _currentInputNode.Dispose();
+                    _currentInputNode = null;
+                }
+
+                if (_audioGraph != null)
+                {
+                    try { _audioGraph.Stop(); } catch { }
+                }
+
+                try
+                {
+                    _mediaPlayer.Pause();
+                    _mediaPlayer.Source = null;
+                }
+                catch { }
+
+                _currentTrack = null;
+                _currentQuality = null;
+                _preloadedTrack = null;
+                _isPlaying = false;
+                _queue.Clear();
+                _playOrder.Clear();
+                _orderIndex = -1;
+                _restoredPosition = TimeSpan.Zero;
+
+                try
+                {
+                    _smtc.PlaybackStatus = MediaPlaybackStatus.Stopped;
+                    _smtc.DisplayUpdater.ClearAll();
+                    _smtc.DisplayUpdater.Update();
+                }
+                catch { }
+
+                _playbackStateStorage.ClearPlaybackState();
+
+                CurrentTrackChanged?.Invoke(this, null);
+                CurrentQualityChanged?.Invoke(this, null);
+                IsPlayingChanged?.Invoke(this, false);
+                PositionChanged?.Invoke(this, TimeSpan.Zero);
+                DurationChanged?.Invoke(this, TimeSpan.Zero);
+                QueueChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AudioPlayerService] StopAndClear error: {ex.Message}");
+            }
         }
     }
 

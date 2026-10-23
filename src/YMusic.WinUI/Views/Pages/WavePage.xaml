@@ -26,15 +26,10 @@
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                 <StackPanel Spacing="16" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                        <Border Width="48" Height="48"
-                                CornerRadius="24"
-                                Background="{ThemeResource AccentFillColorDefaultBrush}">
-                            <FontIcon Glyph="{x:Bind ViewModel.SelectedPreset.Glyph, Mode=OneWay}"
-                                      FontSize="22"
-                                      Foreground="White"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center" />
-                        </Border>
+                        <FontIcon Glyph="{x:Bind ViewModel.SelectedPreset.Glyph, Mode=OneWay}"
+                                  FontSize="30"
+                                  Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                  VerticalAlignment="Center" />
 
                         <StackPanel Spacing="2">
                             <TextBlock Text="{x:Bind ViewModel.SelectedPreset.Title, Mode=OneWay}"
@@ -60,7 +55,7 @@
                                 HorizontalContentAlignment="Center"
                                 VerticalContentAlignment="Center"
                                 CornerRadius="26"
-                                ToolTipService.ToolTip="Play / Pause">
+                                ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseTooltip, Mode=OneWay}">
                             <FontIcon Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}"
                                       FontSize="22" />
                         </Button>
@@ -72,7 +67,7 @@
                                 HorizontalContentAlignment="Center"
                                 VerticalContentAlignment="Center"
                                 CornerRadius="21"
-                                ToolTipService.ToolTip="Next Track">
+                                ToolTipService.ToolTip="{x:Bind ViewModel.NextTrackTooltip, Mode=OneWay}">
                             <FontIcon Glyph="&#xE893;" FontSize="16" />
                         </Button>
 
@@ -96,7 +91,7 @@
                                 HorizontalContentAlignment="Center"
                                 VerticalContentAlignment="Center"
                                 CornerRadius="21"
-                                ToolTipService.ToolTip="Dislike &amp; Skip">
+                                ToolTipService.ToolTip="{x:Bind ViewModel.DislikeTooltip, Mode=OneWay}">
                             <FontIcon Glyph="&#xE1E0;" FontSize="16" />
                         </Button>
                     </StackPanel>
@@ -105,7 +100,7 @@
 
             <!-- 2. MOOD & ACTIVITY PRESETS -->
             <StackPanel Spacing="12">
-                <TextBlock Text="Mood &amp; Activity"
+                <TextBlock Text="{x:Bind ViewModel.MoodAndActivityTitle, Mode=OneWay}"
                            FontSize="18"
                            FontWeight="SemiBold" />
 
@@ -142,8 +137,8 @@
                                 <FontIcon Glyph="&#xE93E;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="My Wave" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="Personal stream tailored to your music taste" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[0].Title, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[0].Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                             </StackPanel>
                         </Grid>
                     </Button>
@@ -169,8 +164,8 @@
                                 <FontIcon Glyph="&#xE735;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="Energetic" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="Upbeat drive and high energy rhythms" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[1].Title, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[1].Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                             </StackPanel>
                         </Grid>
                     </Button>
@@ -196,8 +191,8 @@
                                 <FontIcon Glyph="&#xE945;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="Calm" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="Relaxing chill, soft ambient and melodic vibes" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[2].Title, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[2].Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                             </StackPanel>
                         </Grid>
                     </Button>
@@ -223,8 +218,8 @@
                                 <FontIcon Glyph="&#xE82D;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="Focus" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="Deep focus, concentration and flow without lyrics" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[3].Title, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[3].Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                             </StackPanel>
                         </Grid>
                     </Button>
@@ -250,8 +245,8 @@
                                 <FontIcon Glyph="&#xE8D6;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="Rock" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="Driving guitar riffs, alt and rock classics" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[4].Title, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[4].Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                             </StackPanel>
                         </Grid>
                     </Button>
@@ -277,8 +272,8 @@
                                 <FontIcon Glyph="&#xE8EC;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="Electronic" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="Synthesizers, punchy bass and electronic vibes" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[5].Title, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[5].Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                             </StackPanel>
                         </Grid>
                     </Button>
@@ -304,8 +299,8 @@
                                 <FontIcon Glyph="&#xE720;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="Hip-Hop" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="Groovy beats, punchy flow and top hip-hop" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[6].Title, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[6].Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                             </StackPanel>
                         </Grid>
                     </Button>
@@ -331,8 +326,8 @@
                                 <FontIcon Glyph="&#xE790;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="Indie" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="Atmospheric indie-pop, indie-rock and fresh releases" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[7].Title, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.Presets[7].Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                             </StackPanel>
                         </Grid>
                     </Button>
@@ -342,7 +337,7 @@
             <!-- 3. UPCOMING TRACKS IN WAVE -->
             <StackPanel Spacing="12"
                         Visibility="{x:Bind ViewModel.IsWaveActiveState, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                <TextBlock Text="Up Next in My Wave"
+                <TextBlock Text="{x:Bind ViewModel.UpNextTitle, Mode=OneWay}"
                            FontSize="18"
                            FontWeight="SemiBold" />
 

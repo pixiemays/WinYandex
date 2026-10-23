@@ -53,6 +53,12 @@ public sealed partial class Album : ObservableObject
     [JsonIgnore]
     public string PinKey => $"album:{Id}";
 
+    [JsonIgnore]
+    public string PinnedBadgeText => App.Loc?.CurrentLanguage == "en" ? "Pinned" : "Закреплено";
+
+    [JsonIgnore]
+    public string PlayActionText => App.Loc?.CurrentLanguage == "en" ? "Play" : "Слушать";
+
     [JsonPropertyName("id")]
     [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
     public long Id { get; set; }
@@ -83,8 +89,24 @@ public sealed partial class Album : ObservableObject
         }
     }
 
+    [JsonIgnore]
+    public static Func<long, YMusic.WinUI.Services.Interfaces.AlbumSpoof?>? AlbumSpoofGetter { get; set; }
+
     [JsonPropertyName("coverUri")]
-    public string? CoverUri { get; set; }
+    public string? CoverUri
+    {
+        get
+        {
+            var spoof = AlbumSpoofGetter?.Invoke(Id);
+            if (!string.IsNullOrEmpty(spoof?.CoverUri))
+            {
+                return spoof.CoverUri;
+            }
+            return _coverUri;
+        }
+        set => _coverUri = value;
+    }
+    private string? _coverUri;
 
     [JsonPropertyName("artists")]
     public List<Artist> Artists { get; set; } = new();

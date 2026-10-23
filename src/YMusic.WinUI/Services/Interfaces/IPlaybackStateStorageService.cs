@@ -8,4 +8,5 @@ public interface IPlaybackStateStorageService
 {
     PlaybackSessionState? LoadPlaybackState();
     void SavePlaybackState(PlaybackSessionState state);
+    void ClearPlaybackState();
 }

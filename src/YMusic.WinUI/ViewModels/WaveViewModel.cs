@@ -42,6 +42,12 @@ public sealed partial class WaveViewModel : BaseViewModel
     public string WaveTitleText => GetLoc("Wave_Title", "Моя волна");
     public string WaveSubtitleText => GetLoc("Wave_Subtitle", "Бесконечный персональный поток музыки");
 
+    public string MoodAndActivityTitle => Loc?.CurrentLanguage == "en" ? "Mood & Activity" : "Настроение и занятия";
+    public string UpNextTitle => Loc?.CurrentLanguage == "en" ? "Up Next in My Wave" : "Следующие треки в Моей волне";
+    public string PlayPauseTooltip => Loc?.CurrentLanguage == "en" ? "Play / Pause" : "Воспроизведение / Пауза";
+    public string NextTrackTooltip => Loc?.CurrentLanguage == "en" ? "Next Track" : "Следующий трек";
+    public string DislikeTooltip => Loc?.CurrentLanguage == "en" ? "Dislike & Skip" : "Не нравится (пропустить)";
+
     [ObservableProperty]
     private Track? _currentTrack;
 
@@ -57,7 +63,9 @@ public sealed partial class WaveViewModel : BaseViewModel
     private bool _isWaveActiveState;
 
     [ObservableProperty]
-    private string _statusText = "Press Play to start your infinite personalized stream";
+    private string _statusText = (App.Loc?.CurrentLanguage == "en")
+        ? "Press Play to start your infinite personalized stream"
+        : "Нажмите Play для запуска бесконечного персонального потока";
 
     public WaveViewModel(
         IYandexMusicService musicService,
@@ -123,7 +131,9 @@ public sealed partial class WaveViewModel : BaseViewModel
         {
             IsWaveActiveState = false;
             UpcomingTracks.Clear();
-            StatusText = "Press Play to start your infinite personalized stream";
+            StatusText = Loc?.CurrentLanguage == "en"
+                ? "Press Play to start your infinite personalized stream"
+                : "Нажмите Play для запуска бесконечного персонального потока";
             OnPropertyChanged(nameof(IsWavePlaying));
             OnPropertyChanged(nameof(PlayPauseGlyph));
         });
@@ -140,7 +150,9 @@ public sealed partial class WaveViewModel : BaseViewModel
             _isWaveActive = false;
             IsWaveActiveState = false;
             UpcomingTracks.Clear();
-            StatusText = "Press Play to start your infinite personalized stream";
+            StatusText = Loc?.CurrentLanguage == "en"
+                ? "Press Play to start your infinite personalized stream"
+                : "Нажмите Play для запуска бесконечного персонального потока";
         }
         else
         {
@@ -155,7 +167,9 @@ public sealed partial class WaveViewModel : BaseViewModel
                     UpcomingTracks.Add(t);
                 }
             }
-            StatusText = $"\"{SelectedPreset.Title}\" wave active";
+            StatusText = Loc?.CurrentLanguage == "en"
+                ? $"\"{SelectedPreset.Title}\" wave active"
+                : $"Волна «{SelectedPreset.Title}» активна";
         }
 
         OnPropertyChanged(nameof(IsWavePlaying));
@@ -303,6 +317,11 @@ public sealed partial class WaveViewModel : BaseViewModel
     {
         OnPropertyChanged(nameof(WaveTitleText));
         OnPropertyChanged(nameof(WaveSubtitleText));
+        OnPropertyChanged(nameof(MoodAndActivityTitle));
+        OnPropertyChanged(nameof(UpNextTitle));
+        OnPropertyChanged(nameof(PlayPauseTooltip));
+        OnPropertyChanged(nameof(NextTrackTooltip));
+        OnPropertyChanged(nameof(DislikeTooltip));
         OnPropertyChanged(nameof(LikeTooltip));
         RefreshPresetNames();
         if (!_isWaveActive)
@@ -315,7 +334,7 @@ public sealed partial class WaveViewModel : BaseViewModel
         {
             StatusText = Loc?.CurrentLanguage == "en"
                 ? $"\"{SelectedPreset.Title}\" wave active"
-                : $"Волна \"{SelectedPreset.Title}\" активна";
+                : $"Волна «{SelectedPreset.Title}» активна";
         }
     }
 
@@ -327,7 +346,9 @@ public sealed partial class WaveViewModel : BaseViewModel
 
         SetBusy(true);
         ClearError();
-        StatusText = $"Tuning tracks for \"{targetPreset.Title}\"...";
+        StatusText = Loc?.CurrentLanguage == "en"
+            ? $"Tuning tracks for \"{targetPreset.Title}\"..."
+            : $"Подбираем треки для «{targetPreset.Title}»...";
 
         try
         {
@@ -364,7 +385,9 @@ public sealed partial class WaveViewModel : BaseViewModel
                     UpcomingTracks.Add(t);
                 }
                 IsWaveActiveState = true;
-                StatusText = $"\"{targetPreset.Title}\" wave active";
+                StatusText = Loc?.CurrentLanguage == "en"
+                    ? $"\"{targetPreset.Title}\" wave active"
+                    : $"Волна «{targetPreset.Title}» активна";
                 OnPropertyChanged(nameof(IsWavePlaying));
                 OnPropertyChanged(nameof(PlayPauseGlyph));
             });

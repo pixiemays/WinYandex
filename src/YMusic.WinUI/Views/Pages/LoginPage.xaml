@@ -86,14 +86,19 @@
                             BorderThickness="1"
                             CornerRadius="8"
                             Padding="12,8">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <FontIcon Glyph="&#xE72E;" FontSize="15" Foreground="#2ECC71" VerticalAlignment="Center" />
-                            <TextBlock Text="Приложение не видит и не сохраняет ваш пароль. Авторизация происходит на официальном сайте Яндекса."
+                        <Grid ColumnSpacing="10" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" Glyph="&#xE72E;" FontSize="15" Foreground="#2ECC71" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Приложение не видит и не сохраняет ваш пароль. Авторизация происходит на официальном сайте Яндекса."
                                        FontSize="11"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap"
                                        VerticalAlignment="Center" />
-                        </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- Divider with OR text -->
@@ -168,18 +173,26 @@
 
                             <!-- Steps -->
                             <StackPanel Spacing="8" Margin="4,2,0,2">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Border Width="20" Height="20" CornerRadius="10" Background="{ThemeResource AccentFillColorDefaultBrush}">
+                                <Grid ColumnSpacing="8" VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="20" Height="20" CornerRadius="10" Background="{ThemeResource AccentFillColorDefaultBrush}">
                                         <TextBlock Text="1" FontSize="11" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
-                                    <TextBlock Text="В браузере нажмите «Войти» или «Разрешить доступ»" FontSize="12" VerticalAlignment="Center" />
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Border Width="20" Height="20" CornerRadius="10" Background="{ThemeResource AccentFillColorDefaultBrush}">
+                                    <TextBlock Grid.Column="1" Text="В браузере нажмите «Войти» или «Разрешить доступ»" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                </Grid>
+                                <Grid ColumnSpacing="8" VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="20" Height="20" CornerRadius="10" Background="{ThemeResource AccentFillColorDefaultBrush}">
                                         <TextBlock Text="2" FontSize="11" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
-                                    <TextBlock Text="Скопируйте адресную строку (Ctrl+C) — приложение само перехватит ссылку!" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" />
-                                </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="Скопируйте адресную строку (Ctrl+C) — приложение само перехватит ссылку!" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                </Grid>
                             </StackPanel>
                         </StackPanel>
                     </Border>

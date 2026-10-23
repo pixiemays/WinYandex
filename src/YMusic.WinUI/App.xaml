@@ -24,6 +24,9 @@
             <converters:SecondsToTimeConverter x:Key="SecondsToTimeConverter" />
             <converters:BoolToLikeBrushConverter x:Key="BoolToLikeBrushConverter" />
             <converters:BoolToLikeGlyphConverter x:Key="BoolToLikeGlyphConverter" />
+            <converters:BoolToLikeButtonTextConverter x:Key="BoolToLikeButtonTextConverter" />
+            <converters:BoolToLikeTooltipConverter x:Key="BoolToLikeTooltipConverter" />
+            <converters:BoolToLikeMenuTextConverter x:Key="BoolToLikeMenuTextConverter" />
             <converters:BoolToTrackTitleBrushConverter x:Key="BoolToTrackTitleBrushConverter" />
             <converters:BoolToTrackHighlightBrushConverter x:Key="BoolToTrackHighlightBrushConverter" />
             <converters:BoolToPillBackgroundConverter x:Key="BoolToPillBackgroundConverter" />

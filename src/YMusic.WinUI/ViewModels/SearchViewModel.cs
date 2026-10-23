@@ -33,10 +33,42 @@ public sealed partial class SearchViewModel : BaseViewModel
     public ObservableCollection<Album> Albums { get; } = new();
     public ObservableCollection<Playlist> Playlists { get; } = new();
     public ObservableCollection<string> RecentQueries { get; } = new();
-    public ObservableCollection<string> SuggestionChips { get; } = new()
+    public ObservableCollection<string> SuggestionChips { get; } = new();
+
+    public string PageTitle => GetLoc("Search_Title", Loc?.CurrentLanguage == "en" ? "Search" : "Поиск");
+    public string SearchPlaceholder => Loc?.CurrentLanguage == "en" 
+        ? "What do you want to listen to? (Tracks, artists, albums, playlists)" 
+        : "Что хотите послушать? (Треки, артисты, альбомы, плейлисты)";
+    public string ClearSearchTooltip => Loc?.CurrentLanguage == "en" ? "Clear search" : "Очистить поиск";
+    public string RecentSearchesTitle => GetLoc("Search_History", Loc?.CurrentLanguage == "en" ? "Recent Searches" : "История поиска");
+    public string ClearHistoryText => GetLoc("Search_ClearHistory", Loc?.CurrentLanguage == "en" ? "Clear history" : "Очистить историю");
+    public string PopularGenresTitle => GetLoc("Search_PopularGenres", Loc?.CurrentLanguage == "en" ? "Explore Popular Genres & Tags" : "Популярные жанры и теги");
+    public string NoResultsTitle => Loc?.CurrentLanguage == "en" ? "No results found" : "Ничего не нашлось";
+    public string NoResultsSubtitle => Loc?.CurrentLanguage == "en" ? "Please check your spelling or try searching with different keywords." : "Проверьте написание или попробуйте изменить поисковый запрос.";
+    public string BestResultTitle => Loc?.CurrentLanguage == "en" ? "Best Result" : "Лучший результат";
+    public string SongsTitle => Loc?.CurrentLanguage == "en" ? "Songs" : "Треки";
+    public string SeeAllSongsText => Loc?.CurrentLanguage == "en" ? "See all songs >" : "Смотреть все треки >";
+    public string ArtistsTitle => Loc?.CurrentLanguage == "en" ? "Artists" : "Артисты";
+    public string SeeAllArtistsText => Loc?.CurrentLanguage == "en" ? "See all artists >" : "Смотреть всех артистов >";
+    public string ArtistSubtitleText => Loc?.CurrentLanguage == "en" ? "Artist" : "Артист";
+    public string AlbumsTitle => Loc?.CurrentLanguage == "en" ? "Albums" : "Альбомы";
+    public string SeeAllAlbumsText => Loc?.CurrentLanguage == "en" ? "See all albums >" : "Смотреть все альбомы >";
+    public string PlaylistsTitle => Loc?.CurrentLanguage == "en" ? "Playlists" : "Плейлисты";
+    public string SeeAllPlaylistsText => Loc?.CurrentLanguage == "en" ? "See all playlists >" : "Смотреть все плейлисты >";
+    public string LoadMoreTracksText => Loc?.CurrentLanguage == "en" ? "Load More Tracks" : "Загрузить больше треков";
+
+    private void UpdateSuggestionChips()
     {
-        "Rock", "Pop", "Hip-Hop", "Electronic", "Metal", "Indie", "Soundtracks", "Jazz", "Classical", "Lo-Fi", "Phonk", "Anime"
-    };
+        SuggestionChips.Clear();
+        bool isEn = Loc?.CurrentLanguage == "en";
+        var genres = isEn
+            ? new[] { "Rock", "Pop", "Hip-Hop", "Electronic", "Metal", "Indie", "Soundtracks", "Jazz", "Classical", "Lo-Fi", "Phonk", "Anime" }
+            : new[] { "Рок", "Поп", "Хип-хоп", "Электроника", "Метал", "Инди", "Саундтреки", "Джаз", "Классика", "Лоу-фай", "Фонк", "Аниме" };
+        foreach (var g in genres)
+        {
+            SuggestionChips.Add(g);
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowSuggestions))]
@@ -100,11 +132,31 @@ public sealed partial class SearchViewModel : BaseViewModel
 
     protected override void OnLanguageChanged()
     {
+        OnPropertyChanged(nameof(PageTitle));
+        OnPropertyChanged(nameof(SearchPlaceholder));
+        OnPropertyChanged(nameof(ClearSearchTooltip));
+        OnPropertyChanged(nameof(RecentSearchesTitle));
+        OnPropertyChanged(nameof(ClearHistoryText));
+        OnPropertyChanged(nameof(PopularGenresTitle));
         OnPropertyChanged(nameof(AllTabHeader));
         OnPropertyChanged(nameof(TracksTabHeader));
         OnPropertyChanged(nameof(ArtistsTabHeader));
         OnPropertyChanged(nameof(AlbumsTabHeader));
         OnPropertyChanged(nameof(PlaylistsTabHeader));
+        OnPropertyChanged(nameof(NoResultsTitle));
+        OnPropertyChanged(nameof(NoResultsSubtitle));
+        OnPropertyChanged(nameof(BestResultTitle));
+        OnPropertyChanged(nameof(SongsTitle));
+        OnPropertyChanged(nameof(SeeAllSongsText));
+        OnPropertyChanged(nameof(ArtistsTitle));
+        OnPropertyChanged(nameof(SeeAllArtistsText));
+        OnPropertyChanged(nameof(ArtistSubtitleText));
+        OnPropertyChanged(nameof(AlbumsTitle));
+        OnPropertyChanged(nameof(SeeAllAlbumsText));
+        OnPropertyChanged(nameof(PlaylistsTitle));
+        OnPropertyChanged(nameof(SeeAllPlaylistsText));
+        OnPropertyChanged(nameof(LoadMoreTracksText));
+        UpdateSuggestionChips();
     }
 
     public bool HasResults => BestResult != null || Tracks.Count > 0 || Artists.Count > 0 || Albums.Count > 0 || Playlists.Count > 0;
@@ -125,6 +177,7 @@ public sealed partial class SearchViewModel : BaseViewModel
         _trackCoordinator.Register(TopTracks);
 
         LoadRecentQueries();
+        UpdateSuggestionChips();
 
         var dispatcher = App.MainDispatcherQueue;
         if (dispatcher != null)

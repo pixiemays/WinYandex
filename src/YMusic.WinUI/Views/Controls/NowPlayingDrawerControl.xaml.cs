@@ -4,6 +4,7 @@ using System;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.ViewModels;
 
@@ -14,6 +15,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
     public PlayerBarViewModel ViewModel => App.GetService<PlayerBarViewModel>();
     public UIElement TitleBarDragRegion => HeaderBarGrid;
 
+    private Storyboard? _currentTransition;
     private bool _isProgrammaticScrolling;
     private DispatcherQueueTimer? _programmaticScrollResetTimer;
     private DispatcherQueueTimer? _smoothCenterTimer;
@@ -21,20 +23,41 @@ public sealed partial class NowPlayingDrawerControl : UserControl
     public NowPlayingDrawerControl()
     {
         InitializeComponent();
-        Visibility = ViewModel.IsNowPlayingDrawerOpen ? Visibility.Visible : Visibility.Collapsed;
+
+        if (ViewModel.IsNowPlayingDrawerOpen)
+        {
+            Visibility = Visibility.Visible;
+            IsHitTestVisible = true;
+            RootDrawerGrid.Opacity = 1.0;
+            DrawerTranslateTransform.Y = 0.0;
+            CoverScaleTransform.ScaleX = 1.0;
+            CoverScaleTransform.ScaleY = 1.0;
+        }
+        else
+        {
+            Visibility = Visibility.Collapsed;
+            IsHitTestVisible = false;
+            RootDrawerGrid.Opacity = 0.0;
+            DrawerTranslateTransform.Y = 50.0;
+            CoverScaleTransform.ScaleX = 0.94;
+            CoverScaleTransform.ScaleY = 0.94;
+        }
+
         ViewModel.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(PlayerBarViewModel.IsNowPlayingDrawerOpen))
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    Visibility = ViewModel.IsNowPlayingDrawerOpen ? Visibility.Visible : Visibility.Collapsed;
                     if (ViewModel.IsNowPlayingDrawerOpen)
                     {
-                        UpdateFullscreenIcon();
-                        if (ViewModel.ActiveLyricLine != null)
+                        AnimateOpen();
+                    }
+                    else
+                    {
+                        if (Visibility == Visibility.Visible)
                         {
-                            ScrollLyricIntoCenter(ViewModel.ActiveLyricLine);
+                            AnimateClose();
                         }
                     }
                 });
@@ -264,5 +287,153 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         if (FullscreenIcon == null) return;
         bool isFull = App.MainWindow?.IsFullScreen == true;
         FullscreenIcon.Glyph = isFull ? "\uE1D9" : "\uE740"; // Exit vs Enter Fullscreen
+    }
+
+    public void AnimateOpen()
+    {
+        _currentTransition?.Stop();
+        _currentTransition = null;
+
+        Visibility = Visibility.Visible;
+        IsHitTestVisible = true;
+
+        UpdateFullscreenIcon();
+        if (ViewModel.ActiveLyricLine != null)
+        {
+            ScrollLyricIntoCenter(ViewModel.ActiveLyricLine);
+        }
+
+        var sb = new Storyboard();
+
+        // 1. Root Slide Up (50 -> 0)
+        var slideAnim = new DoubleAnimation
+        {
+            From = DrawerTranslateTransform.Y != 0 ? DrawerTranslateTransform.Y : 50.0,
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(300),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(slideAnim, DrawerTranslateTransform);
+        Storyboard.SetTargetProperty(slideAnim, "Y");
+        sb.Children.Add(slideAnim);
+
+        // 2. Root Fade In (0 -> 1)
+        var fadeAnim = new DoubleAnimation
+        {
+            From = RootDrawerGrid.Opacity < 1.0 ? RootDrawerGrid.Opacity : 0.0,
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(260),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(fadeAnim, RootDrawerGrid);
+        Storyboard.SetTargetProperty(fadeAnim, "Opacity");
+        sb.Children.Add(fadeAnim);
+
+        // 3. Cover Scale In (0.94 -> 1.0)
+        var scaleXAnim = new DoubleAnimation
+        {
+            From = CoverScaleTransform.ScaleX != 1.0 ? CoverScaleTransform.ScaleX : 0.94,
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(320),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(scaleXAnim, CoverScaleTransform);
+        Storyboard.SetTargetProperty(scaleXAnim, "ScaleX");
+        sb.Children.Add(scaleXAnim);
+
+        var scaleYAnim = new DoubleAnimation
+        {
+            From = CoverScaleTransform.ScaleY != 1.0 ? CoverScaleTransform.ScaleY : 0.94,
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(320),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(scaleYAnim, CoverScaleTransform);
+        Storyboard.SetTargetProperty(scaleYAnim, "ScaleY");
+        sb.Children.Add(scaleYAnim);
+
+        sb.Completed += (s, e) =>
+        {
+            _currentTransition = null;
+            RootDrawerGrid.Opacity = 1.0;
+            DrawerTranslateTransform.Y = 0.0;
+            CoverScaleTransform.ScaleX = 1.0;
+            CoverScaleTransform.ScaleY = 1.0;
+        };
+
+        _currentTransition = sb;
+        sb.Begin();
+    }
+
+    public void AnimateClose(Action? onCompleted = null)
+    {
+        _currentTransition?.Stop();
+        _currentTransition = null;
+
+        IsHitTestVisible = false;
+
+        var sb = new Storyboard();
+
+        // 1. Root Slide Down (current Y -> 50)
+        var slideAnim = new DoubleAnimation
+        {
+            From = DrawerTranslateTransform.Y,
+            To = 50.0,
+            Duration = TimeSpan.FromMilliseconds(220),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(slideAnim, DrawerTranslateTransform);
+        Storyboard.SetTargetProperty(slideAnim, "Y");
+        sb.Children.Add(slideAnim);
+
+        // 2. Root Fade Out (current Opacity -> 0)
+        var fadeAnim = new DoubleAnimation
+        {
+            From = RootDrawerGrid.Opacity,
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(190),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(fadeAnim, RootDrawerGrid);
+        Storyboard.SetTargetProperty(fadeAnim, "Opacity");
+        sb.Children.Add(fadeAnim);
+
+        // 3. Cover Scale Out (current Scale -> 0.94)
+        var scaleXAnim = new DoubleAnimation
+        {
+            From = CoverScaleTransform.ScaleX,
+            To = 0.94,
+            Duration = TimeSpan.FromMilliseconds(220),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(scaleXAnim, CoverScaleTransform);
+        Storyboard.SetTargetProperty(scaleXAnim, "ScaleX");
+        sb.Children.Add(scaleXAnim);
+
+        var scaleYAnim = new DoubleAnimation
+        {
+            From = CoverScaleTransform.ScaleY,
+            To = 0.94,
+            Duration = TimeSpan.FromMilliseconds(220),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(scaleYAnim, CoverScaleTransform);
+        Storyboard.SetTargetProperty(scaleYAnim, "ScaleY");
+        sb.Children.Add(scaleYAnim);
+
+        sb.Completed += (s, e) =>
+        {
+            _currentTransition = null;
+            Visibility = Visibility.Collapsed;
+            IsHitTestVisible = true;
+            RootDrawerGrid.Opacity = 1.0;
+            DrawerTranslateTransform.Y = 0.0;
+            CoverScaleTransform.ScaleX = 1.0;
+            CoverScaleTransform.ScaleY = 1.0;
+            onCompleted?.Invoke();
+        };
+
+        _currentTransition = sb;
+        sb.Begin();
     }
 }

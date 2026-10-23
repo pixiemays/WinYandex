@@ -35,6 +35,9 @@ public sealed partial class Track : ObservableObject
     public static Func<string, bool>? IsTrackReplacedChecker { get; set; }
 
     [JsonIgnore]
+    public static Func<string, YMusic.WinUI.Services.Interfaces.TrackSpoof?>? TrackSpoofGetter { get; set; }
+
+    [JsonIgnore]
     public static Func<string, bool>? IsTrackCachedChecker { get; set; }
 
     private string _id = string.Empty;
@@ -61,6 +64,22 @@ public sealed partial class Track : ObservableObject
         {
             IsReplaced = IsTrackReplacedChecker(_id);
         }
+
+        if (TrackSpoofGetter != null && !string.IsNullOrWhiteSpace(_id))
+        {
+            var spoof = TrackSpoofGetter(_id);
+            if (spoof != null)
+            {
+                if (!string.IsNullOrWhiteSpace(spoof.Title) && Title != spoof.Title)
+                {
+                    Title = spoof.Title;
+                }
+                if (!string.IsNullOrWhiteSpace(spoof.CoverUri) && CoverUri != spoof.CoverUri)
+                {
+                    CoverUri = spoof.CoverUri;
+                }
+            }
+        }
     }
 
     public void RefreshCachedStatus()
@@ -78,7 +97,12 @@ public sealed partial class Track : ObservableObject
     public string? Version { get; set; }
 
     [JsonPropertyName("available")]
-    public bool Available { get; set; } = true;
+    public bool Available
+    {
+        get => _available || IsReplaced;
+        set => _available = value;
+    }
+    private bool _available = true;
 
     [JsonPropertyName("durationMs")]
     public long DurationMs { get; set; }

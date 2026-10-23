@@ -376,9 +376,20 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4" Margin="0,0,16,0">
+                            <StackPanel Spacing="6" Margin="0,0,16,0">
                                 <TextBlock Text="{x:Bind ViewModel.FckCensorTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
                                 <TextBlock Text="{x:Bind ViewModel.FckCensorDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <HyperlinkButton Command="{x:Bind ViewModel.OpenFckCensorRepoCommand}"
+                                                 Padding="0"
+                                                 Margin="0,2,0,0"
+                                                 helpers:CursorHelper.UseHandCursor="True">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <FontIcon Glyph="&#xE8A7;" FontSize="11" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                                        <TextBlock Text="{x:Bind ViewModel.FckCensorAuthorCreditText, Mode=OneWay}"
+                                                   FontSize="12"
+                                                   Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                                    </StackPanel>
+                                </HyperlinkButton>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1"
                                           IsOn="{x:Bind ViewModel.IsFckCensorEnabled, Mode=TwoWay}"

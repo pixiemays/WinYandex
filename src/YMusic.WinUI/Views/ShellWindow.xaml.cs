@@ -69,6 +69,15 @@ public sealed partial class ShellWindow : Window
         }
 
         UpdateTitleBarButtonColors(false);
+        UpdatePlayerBarVisibility();
+
+        ViewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(ShellViewModel.IsAuthenticated))
+            {
+                DispatcherQueue.TryEnqueue(UpdatePlayerBarVisibility);
+            }
+        };
 
         ViewModel.PlayerBar.PropertyChanged += (s, e) =>
         {
@@ -77,12 +86,9 @@ public sealed partial class ShellWindow : Window
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     bool isOpen = ViewModel.PlayerBar.IsNowPlayingDrawerOpen;
-                    BottomPlayerBar.Visibility = isOpen
-                        ? Visibility.Collapsed
-                        : Visibility.Visible;
-                    AppTitleBar.Visibility = isOpen
-                        ? Visibility.Collapsed
-                        : Visibility.Visible;
+                    UpdatePlayerBarVisibility();
+                    AppTitleBar.Opacity = isOpen ? 0.0 : 1.0;
+                    AppTitleBar.IsHitTestVisible = !isOpen;
 
                     if (isOpen)
                     {
@@ -104,6 +110,8 @@ public sealed partial class ShellWindow : Window
             {
                 ViewModel.IsAuthenticated = true;
                 ViewModel.CurrentUser = loginVm.CurrentUser;
+                UpdatePlayerBarVisibility();
+                RefreshPinnedMenuItems();
                 NavView.SelectedItem = NavItemExplore;
                 NavigateToTag("Explore");
             });
@@ -114,6 +122,8 @@ public sealed partial class ShellWindow : Window
             {
                 ViewModel.IsAuthenticated = false;
                 ViewModel.CurrentUser = null;
+                UpdatePlayerBarVisibility();
+                RefreshPinnedMenuItems();
                 NavView.SelectedItem = NavItemAccount;
                 NavigateToTag("Account");
             });
@@ -145,6 +155,7 @@ public sealed partial class ShellWindow : Window
 
         _pinnedItemsService = App.GetService<IPinnedItemsService>();
         _pinnedItemsService.PinStateChanged += (_, _) => DispatcherQueue.TryEnqueue(RefreshPinnedMenuItems);
+        App.Loc.LanguageChanged += (_, _) => DispatcherQueue.TryEnqueue(RefreshPinnedMenuItems);
         NavView.PaneOpened += (_, _) => RefreshPinnedMenuItems();
         NavView.PaneClosed += (_, _) => RefreshPinnedMenuItems();
         RefreshPinnedMenuItems();
@@ -250,7 +261,7 @@ public sealed partial class ShellWindow : Window
                     Cover = pinned?.CoverUrl != null ? new Cover { Uri = pinned.CoverUrl } : null,
                     IsPinned = true
                 };
-                _ = App.GetService<INavigationService>().NavigateToPlaylistAsync(playlist);
+                _ = App.GetService<INavigationService>().NavigateToPlaylistAsync(playlist, isFromPinned: true);
                 return;
             }
         }
@@ -267,7 +278,7 @@ public sealed partial class ShellWindow : Window
                     CoverUri = pinned?.CoverUrl,
                     IsPinned = true
                 };
-                _ = App.GetService<INavigationService>().NavigateToAlbumAsync(album);
+                _ = App.GetService<INavigationService>().NavigateToAlbumAsync(album, isFromPinned: true);
                 return;
             }
         }
@@ -425,7 +436,28 @@ public sealed partial class ShellWindow : Window
         NavigateToTag("Playlists");
     }
 
+    public void ClearNavSelection()
+    {
+        NavView.SelectedItem = null;
+    }
+
+    public bool IsPlaylistsPageActive => ContentFrame.CurrentSourcePageType == typeof(PlaylistsPage);
+
+    public void EnsurePlaylistsPageVisible()
+    {
+        if (ContentFrame.CurrentSourcePageType != typeof(PlaylistsPage))
+        {
+            ContentFrame.Navigate(typeof(PlaylistsPage));
+        }
+    }
+
     public PlaylistsPage? CurrentPlaylistsPage => ContentFrame.Content as PlaylistsPage;
+
+    private void UpdatePlayerBarVisibility()
+    {
+        bool show = ViewModel.IsAuthenticated;
+        BottomPlayerBar.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     private void RefreshPinnedMenuItems()
     {
@@ -435,13 +467,15 @@ public sealed partial class ShellWindow : Window
         }
         _pinnedNavItems.Clear();
 
+        if (!ViewModel.IsAuthenticated) return;
+
         var pinned = _pinnedItemsService.GetPinnedItems();
         if (pinned.Count == 0) return;
 
         var separator = new NavigationViewItemSeparator();
         var header = new NavigationViewItemHeader
         {
-            Content = "Pinned",
+            Content = App.Loc?.CurrentLanguage == "en" ? "Pinned" : "Закреплено",
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             FontSize = 11,
             Opacity = 0.7
@@ -470,7 +504,7 @@ public sealed partial class ShellWindow : Window
             var flyout = new MenuFlyout();
             var unpinItem = new MenuFlyoutItem
             {
-                Text = "Unpin",
+                Text = App.Loc?.CurrentLanguage == "en" ? "Unpin" : "Открепить",
                 Icon = new FontIcon { Glyph = "\uE77A" },
                 Tag = record
             };

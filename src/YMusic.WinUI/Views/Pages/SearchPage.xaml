@@ -20,7 +20,7 @@
 
                 <!-- 1. Search Header & Large Input Bar -->
                 <StackPanel Spacing="16">
-                    <TextBlock Text="Search"
+                    <TextBlock Text="{x:Bind ViewModel.PageTitle, Mode=OneWay}"
                                FontSize="32"
                                FontWeight="Bold" />
 
@@ -49,7 +49,7 @@
                             <TextBox x:Name="SearchInputBox"
                                      Grid.Column="1"
                                      Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     PlaceholderText="What do you want to listen to? (Tracks, artists, albums, playlists)"
+                                     PlaceholderText="{x:Bind ViewModel.SearchPlaceholder, Mode=OneWay}"
                                      FontSize="15"
                                      BorderThickness="0"
                                      Background="Transparent"
@@ -71,7 +71,7 @@
                                         Background="Transparent"
                                         BorderBrush="Transparent"
                                         helpers:CursorHelper.UseHandCursor="True"
-                                        ToolTipService.ToolTip="Clear search">
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.ClearSearchTooltip, Mode=OneWay}">
                                     <FontIcon Glyph="&#xE711;" FontSize="12" />
                                 </Button>
                             </StackPanel>
@@ -87,11 +87,11 @@
                     <StackPanel Spacing="12"
                                 Visibility="{x:Bind ViewModel.RecentQueries.Count, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}">
                         <Grid>
-                            <TextBlock Text="Recent Searches"
+                            <TextBlock Text="{x:Bind ViewModel.RecentSearchesTitle, Mode=OneWay}"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center" />
-                            <HyperlinkButton Content="Clear history"
+                            <HyperlinkButton Content="{x:Bind ViewModel.ClearHistoryText, Mode=OneWay}"
                                              Command="{x:Bind ViewModel.ClearRecentQueriesCommand}"
                                              HorizontalAlignment="Right"
                                              helpers:CursorHelper.UseHandCursor="True"
@@ -130,7 +130,7 @@
 
                     <!-- Popular Suggestion Chips -->
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Explore Popular Genres &amp; Tags"
+                        <TextBlock Text="{x:Bind ViewModel.PopularGenresTitle, Mode=OneWay}"
                                    FontSize="18"
                                    FontWeight="SemiBold" />
                         
@@ -243,8 +243,8 @@
                         <Border Width="80" Height="80" CornerRadius="40" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" HorizontalAlignment="Center">
                             <FontIcon Glyph="&#xE721;" FontSize="32" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Text="No results found" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" />
-                        <TextBlock Text="Please check your spelling or try searching with different keywords."
+                        <TextBlock Text="{x:Bind ViewModel.NoResultsTitle, Mode=OneWay}" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Bind ViewModel.NoResultsSubtitle, Mode=OneWay}"
                                    FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                     </StackPanel>
 
@@ -263,7 +263,7 @@
                             <StackPanel Grid.Column="0"
                                         Spacing="12"
                                         Visibility="{x:Bind ViewModel.BestResult, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}">
-                                <TextBlock Text="Best Result"
+                                <TextBlock Text="{x:Bind ViewModel.BestResultTitle, Mode=OneWay}"
                                            FontSize="20"
                                            FontWeight="Bold" />
 
@@ -351,14 +351,14 @@
                                         Spacing="12"
                                         Visibility="{x:Bind ViewModel.Tracks.Count, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}">
                                 <Grid>
-                                    <TextBlock Text="Songs"
+                                    <TextBlock Text="{x:Bind ViewModel.SongsTitle, Mode=OneWay}"
                                                FontSize="20"
                                                FontWeight="Bold"
                                                VerticalAlignment="Center" />
                                     <HyperlinkButton Click="SeeAllTracks_Click"
                                                      HorizontalAlignment="Right"
                                                      helpers:CursorHelper.UseHandCursor="True">
-                                        <TextBlock Text="See all songs &gt;" FontSize="13" FontWeight="SemiBold" />
+                                        <TextBlock Text="{x:Bind ViewModel.SeeAllSongsText, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
                                     </HyperlinkButton>
                                 </Grid>
 
@@ -430,10 +430,19 @@
                                                                 </StackPanel>
                                                             </Border>
                                                         </Grid>
-                                                        <TextBlock Text="{x:Bind ArtistNames}"
-                                                                   FontSize="12"
-                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <HyperlinkButton Click="TrackArtist_Click"
+                                                                         Tag="{x:Bind}"
+                                                                         Padding="0"
+                                                                         Margin="0,2,0,0"
+                                                                         HorizontalAlignment="Left"
+                                                                         VerticalAlignment="Center"
+                                                                         ToolTipService.ToolTip="{x:Bind ArtistNames}">
+                                                            <TextBlock Text="{x:Bind ArtistNames}"
+                                                                       FontSize="12"
+                                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       IsHitTestVisible="False" />
+                                                        </HyperlinkButton>
                                                     </StackPanel>
 
                                                     <!-- Duration -->
@@ -462,9 +471,9 @@
                         <StackPanel Spacing="14"
                                     Visibility="{x:Bind ViewModel.Artists.Count, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}">
                             <Grid>
-                                <TextBlock Text="Artists" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ViewModel.ArtistsTitle, Mode=OneWay}" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
                                 <HyperlinkButton Click="SeeAllArtists_Click" HorizontalAlignment="Right" helpers:CursorHelper.UseHandCursor="True">
-                                    <TextBlock Text="See all artists &gt;" FontSize="13" FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind ViewModel.SeeAllArtistsText, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
                                 </HyperlinkButton>
                             </Grid>
 
@@ -487,7 +496,7 @@
                                                         <Image Source="{x:Bind AvatarUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
                                                     </Border>
                                                     <TextBlock Text="{x:Bind Name}" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" TextAlignment="Center" />
-                                                    <TextBlock Text="Artist" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="{x:Bind SubtitleText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                                 </StackPanel>
                                             </Button>
                                         </DataTemplate>
@@ -500,9 +509,9 @@
                         <StackPanel Spacing="14"
                                     Visibility="{x:Bind ViewModel.Albums.Count, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}">
                             <Grid>
-                                <TextBlock Text="Albums" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ViewModel.AlbumsTitle, Mode=OneWay}" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
                                 <HyperlinkButton Click="SeeAllAlbums_Click" HorizontalAlignment="Right" helpers:CursorHelper.UseHandCursor="True">
-                                    <TextBlock Text="See all albums &gt;" FontSize="13" FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind ViewModel.SeeAllAlbumsText, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
                                 </HyperlinkButton>
                             </Grid>
 
@@ -538,9 +547,9 @@
                         <StackPanel Spacing="14"
                                     Visibility="{x:Bind ViewModel.Playlists.Count, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}">
                             <Grid>
-                                <TextBlock Text="Playlists" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ViewModel.PlaylistsTitle, Mode=OneWay}" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
                                 <HyperlinkButton Click="SeeAllPlaylists_Click" HorizontalAlignment="Right" helpers:CursorHelper.UseHandCursor="True">
-                                    <TextBlock Text="See all playlists &gt;" FontSize="13" FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind ViewModel.SeeAllPlaylistsText, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
                                 </HyperlinkButton>
                             </Grid>
 
@@ -637,7 +646,15 @@
                                                         </StackPanel>
                                                     </Border>
                                                 </Grid>
-                                                <TextBlock Text="{x:Bind ArtistNames}" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                <HyperlinkButton Click="TrackArtist_Click"
+                                                                 Tag="{x:Bind}"
+                                                                 Padding="0"
+                                                                 Margin="0,2,0,0"
+                                                                 HorizontalAlignment="Left"
+                                                                 VerticalAlignment="Center"
+                                                                 ToolTipService.ToolTip="{x:Bind ArtistNames}">
+                                                    <TextBlock Text="{x:Bind ArtistNames}" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" IsHitTestVisible="False" />
+                                                </HyperlinkButton>
                                             </StackPanel>
 
                                             <!-- Album -->
@@ -672,7 +689,7 @@
                                 <ProgressRing IsActive="{x:Bind ViewModel.IsLoadingMoreTracks, Mode=OneWay}"
                                               Width="16" Height="16"
                                               Visibility="{x:Bind ViewModel.IsLoadingMoreTracks, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
-                                <TextBlock Text="Load More Tracks" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.LoadMoreTracksText, Mode=OneWay}" FontWeight="SemiBold" />
                             </StackPanel>
                         </Button>
                     </StackPanel>

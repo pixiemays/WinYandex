@@ -68,4 +68,22 @@ public sealed class PlaybackStateStorageService : IPlaybackStateStorageService
             }
         }
     }
+
+    public void ClearPlaybackState()
+    {
+        lock (_lock)
+        {
+            try
+            {
+                if (File.Exists(_filePath))
+                {
+                    File.Delete(_filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PlaybackStateStorage] Failed to clear state: {ex.Message}");
+            }
+        }
+    }
 }

@@ -24,8 +24,11 @@ public sealed class YandexMusicService : IYandexMusicService
     private readonly ICredentialStorageService? _credentialStorage;
     private readonly HashSet<string> _likedTrackIds = new();
     private readonly HashSet<long> _likedAlbumIds = new();
+    private readonly HashSet<string> _likedPlaylistKeys = new();
     private readonly HashSet<long> _likedArtistIds = new();
     private readonly ConcurrentDictionary<string, List<LyricLine>> _lyricsCache = new();
+    private readonly ConcurrentDictionary<long, (Album Album, DateTime CachedAt)> _albumWithTracksCache = new();
+    private readonly ConcurrentDictionary<string, (Playlist Playlist, DateTime CachedAt)> _playlistWithTracksCache = new();
     private static readonly HttpClient _lrclibHttpClient = new HttpClient
     {
         Timeout = TimeSpan.FromSeconds(2.5),
@@ -40,6 +43,7 @@ public sealed class YandexMusicService : IYandexMusicService
     public event EventHandler? UnauthorizedResponseReceived;
     public event EventHandler<(string TrackId, bool IsLiked)>? TrackLikeChanged;
     public event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
+    public event EventHandler<(long OwnerUid, int Kind, bool IsLiked)>? PlaylistLikeChanged;
     public event EventHandler<(long ArtistId, bool IsLiked)>? ArtistLikeChanged;
     public event EventHandler? LikedTracksLoaded;
 
@@ -81,6 +85,13 @@ public sealed class YandexMusicService : IYandexMusicService
         else
         {
             _httpClient.DefaultRequestHeaders.Authorization = null;
+            _albumWithTracksCache.Clear();
+            _playlistWithTracksCache.Clear();
+            _lyricsCache.Clear();
+            lock (_likedTrackIds) { _likedTrackIds.Clear(); }
+            lock (_likedAlbumIds) { _likedAlbumIds.Clear(); }
+            lock (_likedPlaylistKeys) { _likedPlaylistKeys.Clear(); }
+            lock (_likedArtistIds) { _likedArtistIds.Clear(); }
         }
     }
 
@@ -481,9 +492,23 @@ public sealed class YandexMusicService : IYandexMusicService
                         }
 
                         var pl = JsonSerializer.Deserialize<Playlist>(target.GetRawText(), _jsonOptions);
-                        if (pl != null && !allPlaylists.Any(existing => existing.Kind == pl.Kind && existing.Uid == pl.Uid))
+                        if (pl != null)
                         {
-                            allPlaylists.Add(pl);
+                            pl.IsLiked = true;
+                            lock (_likedPlaylistKeys)
+                            {
+                                _likedPlaylistKeys.Add(pl.PlaylistKey);
+                            }
+
+                            var existing = allPlaylists.FirstOrDefault(e => e.Kind == pl.Kind && e.Uid == pl.Uid);
+                            if (existing != null)
+                            {
+                                existing.IsLiked = true;
+                            }
+                            else
+                            {
+                                allPlaylists.Add(pl);
+                            }
                         }
                     }
                 }
@@ -492,6 +517,11 @@ public sealed class YandexMusicService : IYandexMusicService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[GetLikedPlaylists warning] {ex.Message}");
+        }
+
+        foreach (var playlist in allPlaylists)
+        {
+            playlist.IsLiked = IsPlaylistLiked(playlist.Uid, playlist.Kind);
         }
 
         return allPlaylists;
@@ -705,6 +735,217 @@ public sealed class YandexMusicService : IYandexMusicService
         }
     }
 
+    public async Task EnsureLikedAlbumsLoadedAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_likedAlbumIds)
+        {
+            if (_likedAlbumIds.Count > 0) return;
+        }
+
+        string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(userId)) return;
+
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"users/{userId}/likes/albums", null, cancellationToken).ConfigureAwait(false);
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resEl) && resEl.ValueKind == JsonValueKind.Array)
+                {
+                    lock (_likedAlbumIds)
+                    {
+                        foreach (var item in resEl.EnumerateArray())
+                        {
+                            if (item.TryGetProperty("album", out var albEl) && albEl.TryGetProperty("id", out var subId) && subId.TryGetInt64(out long sid))
+                            {
+                                _likedAlbumIds.Add(sid);
+                            }
+                            else if (item.TryGetProperty("id", out var idEl) && idEl.TryGetInt64(out long id))
+                            {
+                                _likedAlbumIds.Add(id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[EnsureLikedAlbumsLoaded warning] {ex.Message}");
+        }
+    }
+
+    public bool IsPlaylistLiked(long ownerUid, int kind)
+    {
+        lock (_likedPlaylistKeys)
+        {
+            return _likedPlaylistKeys.Contains($"{ownerUid}:{kind}");
+        }
+    }
+
+    public async Task EnsureLikedPlaylistsLoadedAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_likedPlaylistKeys)
+        {
+            if (_likedPlaylistKeys.Count > 0) return;
+        }
+
+        string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(userId)) return;
+
+        try
+        {
+            using var likedResponse = await SendRequestAsync(HttpMethod.Get, $"users/{userId}/likes/playlists", null, cancellationToken).ConfigureAwait(false);
+            if (likedResponse != null && likedResponse.IsSuccessStatusCode)
+            {
+                var json = await likedResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("result", out var resEl) && resEl.ValueKind == JsonValueKind.Array)
+                {
+                    lock (_likedPlaylistKeys)
+                    {
+                        foreach (var item in resEl.EnumerateArray())
+                        {
+                            long pUid = 0;
+                            int pKind = 0;
+
+                            JsonElement target = item;
+                            if (item.TryGetProperty("playlist", out var plEl))
+                            {
+                                target = plEl;
+                            }
+
+                            if (target.TryGetProperty("uid", out var uidEl) && uidEl.TryGetInt64(out long uid))
+                            {
+                                pUid = uid;
+                            }
+                            else if (target.TryGetProperty("owner", out var ownerEl) && ownerEl.TryGetProperty("uid", out var oUidEl) && oUidEl.TryGetInt64(out long oUid))
+                            {
+                                pUid = oUid;
+                            }
+
+                            if (target.TryGetProperty("kind", out var kindEl) && kindEl.TryGetInt32(out int kind))
+                            {
+                                pKind = kind;
+                            }
+
+                            if (pUid > 0 && pKind > 0)
+                            {
+                                _likedPlaylistKeys.Add($"{pUid}:{pKind}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[EnsureLikedPlaylistsLoaded warning] {ex.Message}");
+        }
+    }
+
+    public async Task<bool> LikePlaylistAsync(long ownerUid, int kind, CancellationToken cancellationToken = default)
+    {
+        string key = $"{ownerUid}:{kind}";
+        lock (_likedPlaylistKeys)
+        {
+            _likedPlaylistKeys.Add(key);
+        }
+        PlaylistLikeChanged?.Invoke(this, (ownerUid, kind, true));
+
+        try
+        {
+            string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                lock (_likedPlaylistKeys) { _likedPlaylistKeys.Remove(key); }
+                PlaylistLikeChanged?.Invoke(this, (ownerUid, kind, false));
+                return false;
+            }
+
+            var formValues = new List<KeyValuePair<string, string>>
+            {
+                new("playlist-id", key),
+                new("playlist-ids", key)
+            };
+            using var content = new FormUrlEncodedContent(formValues);
+            using var response = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/playlists/add-multiple", content, cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            using var fallbackContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("playlist-id", key) });
+            using var fallbackResponse = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/playlists/add", fallbackContent, cancellationToken).ConfigureAwait(false);
+            if (fallbackResponse != null && fallbackResponse.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            lock (_likedPlaylistKeys) { _likedPlaylistKeys.Remove(key); }
+            PlaylistLikeChanged?.Invoke(this, (ownerUid, kind, false));
+            return false;
+        }
+        catch
+        {
+            lock (_likedPlaylistKeys) { _likedPlaylistKeys.Remove(key); }
+            PlaylistLikeChanged?.Invoke(this, (ownerUid, kind, false));
+            throw;
+        }
+    }
+
+    public async Task<bool> UnlikePlaylistAsync(long ownerUid, int kind, CancellationToken cancellationToken = default)
+    {
+        string key = $"{ownerUid}:{kind}";
+        lock (_likedPlaylistKeys)
+        {
+            _likedPlaylistKeys.Remove(key);
+        }
+        PlaylistLikeChanged?.Invoke(this, (ownerUid, kind, false));
+
+        try
+        {
+            string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                lock (_likedPlaylistKeys) { _likedPlaylistKeys.Add(key); }
+                PlaylistLikeChanged?.Invoke(this, (ownerUid, kind, true));
+                return false;
+            }
+
+            var formValues = new List<KeyValuePair<string, string>>
+            {
+                new("playlist-id", key),
+                new("playlist-ids", key)
+            };
+            using var content = new FormUrlEncodedContent(formValues);
+            using var response = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/playlists/remove", content, cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            using var fallbackResponse = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/likes/playlists/{kind}/remove", null, cancellationToken).ConfigureAwait(false);
+            if (fallbackResponse != null && fallbackResponse.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            lock (_likedPlaylistKeys) { _likedPlaylistKeys.Add(key); }
+            PlaylistLikeChanged?.Invoke(this, (ownerUid, kind, true));
+            return false;
+        }
+        catch
+        {
+            lock (_likedPlaylistKeys) { _likedPlaylistKeys.Add(key); }
+            PlaylistLikeChanged?.Invoke(this, (ownerUid, kind, true));
+            throw;
+        }
+    }
 
     public bool IsArtistLiked(long artistId)
     {
@@ -1002,6 +1243,25 @@ public sealed class YandexMusicService : IYandexMusicService
         if (_lyricsCache.TryGetValue(cleanTrackId, out var cached) && cached != null && cached.Count > 0)
         {
             return cached;
+        }
+
+        // FckCensor feature: prefer clean, uncensored lyrics from LRCLIB for censored tracks
+        bool isReplaced = Track.IsTrackReplacedChecker?.Invoke(cleanTrackId) ?? false;
+        if (isReplaced && !string.IsNullOrWhiteSpace(title))
+        {
+            try
+            {
+                var lrclibLines = await FetchFromLrclibAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                if (lrclibLines != null && lrclibLines.Count > 0 && lrclibLines.Any(l => l.HasTimestamp && l.Timestamp > TimeSpan.Zero))
+                {
+                    _lyricsCache[cleanTrackId] = lrclibLines;
+                    return lrclibLines;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LRCLIB Priority Warning] {ex.Message}");
+            }
         }
 
         // 1. Fetch Yandex Signed LRC and Yandex Supplement in parallel (very fast, ~100-150ms)
@@ -1448,6 +1708,45 @@ public sealed class YandexMusicService : IYandexMusicService
 
     public async Task<IReadOnlyList<Album>> GetNewReleasesAsync(CancellationToken cancellationToken = default)
     {
+        try
+        {
+            // 1. Try full dedicated new-releases endpoint which returns array of IDs (up to 100)
+            using var fullResponse = await SendRequestAsync(HttpMethod.Get, "landing3/new-releases", null, cancellationToken).ConfigureAwait(false);
+            if (fullResponse != null && fullResponse.IsSuccessStatusCode)
+            {
+                var fullJson = await fullResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var fullDoc = JsonDocument.Parse(fullJson);
+                if (fullDoc.RootElement.TryGetProperty("result", out var resEl) &&
+                    resEl.TryGetProperty("newReleases", out var nrEl) &&
+                    nrEl.ValueKind == JsonValueKind.Array)
+                {
+                    var idList = new List<long>();
+                    foreach (var item in nrEl.EnumerateArray())
+                    {
+                        if (item.TryGetInt64(out long albumId))
+                        {
+                            idList.Add(albumId);
+                        }
+                    }
+
+                    if (idList.Count > 0)
+                    {
+                        // Load top 40 new releases to display a rich, smooth horizontal scroll list
+                        var loadedAlbums = await GetAlbumsAsync(idList.Take(40), cancellationToken).ConfigureAwait(false);
+                        if (loadedAlbums.Count > 0)
+                        {
+                            return loadedAlbums;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API GetNewReleases Full Warning] {ex.Message}");
+        }
+
+        // 2. Fallback to basic landing3?blocks=new-releases preview block
         var albums = new List<Album>();
         try
         {
@@ -1533,6 +1832,12 @@ public sealed class YandexMusicService : IYandexMusicService
 
     public async Task<Playlist?> GetPlaylistWithTracksAsync(long ownerUid, int kind, CancellationToken cancellationToken = default)
     {
+        string cacheKey = $"{ownerUid}_{kind}";
+        if (_playlistWithTracksCache.TryGetValue(cacheKey, out var cached) && (DateTime.UtcNow - cached.CachedAt).TotalMinutes < 10)
+        {
+            return cached.Playlist;
+        }
+
         try
         {
             using var response = await SendRequestAsync(HttpMethod.Get, $"users/{ownerUid}/playlists/{kind}", null, cancellationToken).ConfigureAwait(false);
@@ -1564,6 +1869,8 @@ public sealed class YandexMusicService : IYandexMusicService
                         }
                     }
                 }
+
+                _playlistWithTracksCache[cacheKey] = (playlist, DateTime.UtcNow);
             }
 
             return playlist;
@@ -1577,6 +1884,11 @@ public sealed class YandexMusicService : IYandexMusicService
 
     public async Task<Album?> GetAlbumWithTracksAsync(long albumId, CancellationToken cancellationToken = default)
     {
+        if (_albumWithTracksCache.TryGetValue(albumId, out var cached) && (DateTime.UtcNow - cached.CachedAt).TotalMinutes < 15)
+        {
+            return cached.Album;
+        }
+
         try
         {
             using var response = await SendRequestAsync(HttpMethod.Get, $"albums/{albumId}/with-tracks", null, cancellationToken).ConfigureAwait(false);
@@ -1587,6 +1899,10 @@ public sealed class YandexMusicService : IYandexMusicService
 
             var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var apiResult = JsonSerializer.Deserialize<YandexApiResponse<Album>>(json, _jsonOptions);
+            if (apiResult?.Result != null)
+            {
+                _albumWithTracksCache[albumId] = (apiResult.Result, DateTime.UtcNow);
+            }
             return apiResult?.Result;
         }
         catch (Exception ex)

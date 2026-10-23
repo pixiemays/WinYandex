@@ -110,7 +110,9 @@ public partial class App : Application
         };
 
         Track.IsTrackReplacedChecker = id => fckCensor.IsReplaced(id);
+        Track.TrackSpoofGetter = id => fckCensor.GetTrackSpoof(id);
         Track.IsTrackCachedChecker = id => audioCache.IsTrackCached(id);
+        Album.AlbumSpoofGetter = id => fckCensor.GetAlbumSpoof(id);
 
         AppDomain.CurrentDomain.ProcessExit += (s, e) =>
         {

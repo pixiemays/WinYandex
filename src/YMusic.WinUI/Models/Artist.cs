@@ -61,7 +61,10 @@ public sealed class Artist
     public string FormattedGenres => Genres != null && Genres.Count > 0 ? string.Join(", ", Genres) : string.Empty;
 
     [JsonIgnore]
-    public string GenresString => !string.IsNullOrWhiteSpace(FormattedGenres) ? FormattedGenres : "Исполнитель";
+    public string GenresString => !string.IsNullOrWhiteSpace(FormattedGenres) ? FormattedGenres : (App.Loc?.CurrentLanguage == "en" ? "Artist" : "Исполнитель");
+
+    [JsonIgnore]
+    public string SubtitleText => App.Loc?.CurrentLanguage == "en" ? "Artist" : "Артист";
 }
 
 public sealed class ArtistCounts

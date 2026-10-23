@@ -11,7 +11,8 @@ namespace YMusic.WinUI.Services.Implementations;
 
 public sealed class FckCensorService : IFckCensorService
 {
-    private const string RemoteListUrl = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list.json";
+    private const string RemoteListV2Url = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/main/list_v2.json";
+    private const string RemoteListLegacyUrl = "https://raw.githubusercontent.com/Hazzz895/FckCensorData/refs/heads/main/list.json";
     private const string SupabaseApiUrl = "https://pzomqvgckpgkshxhpite.supabase.co/rest/v1/reported_tracks";
     private const string SupabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6b21xdmdja3Bna3NoeGhwaXRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTgzNDEsImV4cCI6MjA5MDYzNDM0MX0.ggCxM-ver3gDWUBWyhSBfy3n7rpdW8jtlxRQVCXkhNg";
 
@@ -26,6 +27,9 @@ public sealed class FckCensorService : IFckCensorService
     private readonly object _lock = new();
 
     private Dictionary<string, string> _remoteTracks = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, TrackSpoof> _trackSpoofs = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<long, AlbumSpoof> _albumSpoofs = new();
+    private Dictionary<long, ArtistInsertion> _artistInsertions = new();
     private readonly Dictionary<string, string> _localTracks = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _remoteExceptions = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _reportedTracks = new(StringComparer.OrdinalIgnoreCase);
@@ -130,10 +134,13 @@ public sealed class FckCensorService : IFckCensorService
                 if (File.Exists(_remoteCacheFile))
                 {
                     string json = File.ReadAllText(_remoteCacheFile);
-                    var model = JsonSerializer.Deserialize<RemoteListModel>(json);
-                    if (model?.Tracks != null)
+                    ParseRemoteData(json, out var cachedTracks, out var cachedSpoofs, out var cachedAlbums, out var cachedArtists);
+                    if (cachedTracks.Count > 0)
                     {
-                        _remoteTracks = new Dictionary<string, string>(model.Tracks, StringComparer.OrdinalIgnoreCase);
+                        _remoteTracks = cachedTracks;
+                        _trackSpoofs = cachedSpoofs;
+                        _albumSpoofs = cachedAlbums;
+                        _artistInsertions = cachedArtists;
                     }
                 }
             }
@@ -148,26 +155,59 @@ public sealed class FckCensorService : IFckCensorService
     {
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            var response = await _httpClient.GetAsync(RemoteListUrl, cts.Token).ConfigureAwait(false);
-            if (response.IsSuccessStatusCode)
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            string? v2Json = null;
+            try
             {
-                var json = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
-                var model = JsonSerializer.Deserialize<RemoteListModel>(json);
-                if (model?.Tracks != null)
+                var response = await _httpClient.GetAsync(RemoteListV2Url, cts.Token).ConfigureAwait(false);
+                if (response.IsSuccessStatusCode)
+                {
+                    v2Json = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FckCensor] Failed to fetch list_v2: {ex.Message}");
+            }
+
+            if (!string.IsNullOrEmpty(v2Json))
+            {
+                ParseRemoteData(v2Json, out var tracksV2, out var spoofsV2, out var albumSpoofsV2, out var artistInsertionsV2);
+                if (tracksV2.Count > 0)
                 {
                     lock (_lock)
                     {
-                        _remoteTracks = new Dictionary<string, string>(model.Tracks, StringComparer.OrdinalIgnoreCase);
+                        _remoteTracks = tracksV2;
+                        _trackSpoofs = spoofsV2;
+                        _albumSpoofs = albumSpoofsV2;
+                        _artistInsertions = artistInsertionsV2;
                     }
 
-                    try
+                    try { File.WriteAllText(_remoteCacheFile, v2Json); } catch { }
+
+                    Debug.WriteLine($"[FckCensor] Successfully loaded {_remoteTracks.Count} tracks from FckCensor v2 list.");
+                    TrackReplacementChanged?.Invoke(this, string.Empty);
+                    return;
+                }
+            }
+
+            // Fallback to legacy v1 list if v2 failed
+            var legacyResp = await _httpClient.GetAsync(RemoteListLegacyUrl, cts.Token).ConfigureAwait(false);
+            if (legacyResp.IsSuccessStatusCode)
+            {
+                var legacyJson = await legacyResp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+                ParseRemoteData(legacyJson, out var legacyTracks, out var legacySpoofs, out var legacyAlbums, out var legacyArtists);
+                if (legacyTracks.Count > 0)
+                {
+                    lock (_lock)
                     {
-                        File.WriteAllText(_remoteCacheFile, json);
+                        _remoteTracks = legacyTracks;
+                        _trackSpoofs = legacySpoofs;
+                        _albumSpoofs = legacyAlbums;
+                        _artistInsertions = legacyArtists;
                     }
-                    catch { }
-
-                    Debug.WriteLine($"[FckCensor] Successfully loaded {_remoteTracks.Count} tracks from remote repository.");
+                    try { File.WriteAllText(_remoteCacheFile, legacyJson); } catch { }
+                    Debug.WriteLine($"[FckCensor] Loaded {_remoteTracks.Count} tracks from legacy v1 list.");
                     TrackReplacementChanged?.Invoke(this, string.Empty);
                 }
             }
@@ -175,6 +215,253 @@ public sealed class FckCensorService : IFckCensorService
         catch (Exception ex)
         {
             Debug.WriteLine($"[FckCensor] Failed to fetch remote track list: {ex.Message}");
+        }
+    }
+
+    private static void ParseRemoteData(
+        string json,
+        out Dictionary<string, string> tracks,
+        out Dictionary<string, TrackSpoof> spoofs,
+        out Dictionary<long, AlbumSpoof> albumSpoofs,
+        out Dictionary<long, ArtistInsertion> artistInsertions)
+    {
+        tracks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        spoofs = new Dictionary<string, TrackSpoof>(StringComparer.OrdinalIgnoreCase);
+        albumSpoofs = new Dictionary<long, AlbumSpoof>();
+        artistInsertions = new Dictionary<long, ArtistInsertion>();
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("sources", out var sources) && sources.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var source in sources.EnumerateArray())
+                {
+                    // 1. Tracks metadata spoofs
+                    if (source.TryGetProperty("tracks", out var metaTracks) && metaTracks.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var prop in metaTracks.EnumerateObject())
+                        {
+                            string id = prop.Name;
+                            var elem = prop.Value;
+                            if (elem.ValueKind == JsonValueKind.Object)
+                            {
+                                var spoof = new TrackSpoof();
+                                if (elem.TryGetProperty("title", out var titleProp) && titleProp.ValueKind == JsonValueKind.String)
+                                {
+                                    spoof.Title = titleProp.GetString();
+                                }
+                                if (elem.TryGetProperty("coverUri", out var coverProp) && coverProp.ValueKind == JsonValueKind.String)
+                                {
+                                    spoof.CoverUri = coverProp.GetString();
+                                }
+                                if (!string.IsNullOrEmpty(spoof.Title) || !string.IsNullOrEmpty(spoof.CoverUri))
+                                {
+                                    spoofs[id] = spoof;
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Albums spoofs (covers & restored tracklists)
+                    if (source.TryGetProperty("albums", out var albumsProp) && albumsProp.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var prop in albumsProp.EnumerateObject())
+                        {
+                            if (long.TryParse(prop.Name, out long albumId) && prop.Value.ValueKind == JsonValueKind.Object)
+                            {
+                                var elem = prop.Value;
+                                var albumSpoof = new AlbumSpoof();
+                                if (elem.TryGetProperty("coverUri", out var cProp) && cProp.ValueKind == JsonValueKind.String)
+                                {
+                                    albumSpoof.CoverUri = cProp.GetString();
+                                }
+                                if (elem.TryGetProperty("volumes", out var volsProp) && volsProp.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (var volItem in volsProp.EnumerateArray())
+                                    {
+                                        if (volItem.ValueKind == JsonValueKind.Array)
+                                        {
+                                            var volList = new List<long>();
+                                            foreach (var trackElem in volItem.EnumerateArray())
+                                            {
+                                                if (trackElem.ValueKind == JsonValueKind.Object && trackElem.TryGetProperty("id", out var idProp))
+                                                {
+                                                    if (idProp.ValueKind == JsonValueKind.Number) volList.Add(idProp.GetInt64());
+                                                    else if (idProp.ValueKind == JsonValueKind.String && long.TryParse(idProp.GetString(), out var tid)) volList.Add(tid);
+                                                }
+                                                else if (trackElem.ValueKind == JsonValueKind.Number)
+                                                {
+                                                    volList.Add(trackElem.GetInt64());
+                                                }
+                                            }
+                                            albumSpoof.Volumes.Add(volList);
+                                        }
+                                    }
+                                }
+                                albumSpoofs[albumId] = albumSpoof;
+                            }
+                        }
+                    }
+
+                    // 3. Artist Insertions
+                    if (source.TryGetProperty("artistsInsertions", out var insertionsProp) && insertionsProp.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var prop in insertionsProp.EnumerateObject())
+                        {
+                            if (long.TryParse(prop.Name, out long artistId) && prop.Value.ValueKind == JsonValueKind.Object)
+                            {
+                                var elem = prop.Value;
+                                if (elem.TryGetProperty("tracks", out var trksProp) && trksProp.ValueKind == JsonValueKind.Array)
+                                {
+                                    var insertion = new ArtistInsertion();
+                                    foreach (var item in trksProp.EnumerateArray())
+                                    {
+                                        if (item.ValueKind == JsonValueKind.Object)
+                                        {
+                                            string relId = item.TryGetProperty("releaseId", out var r) ? r.GetString() ?? "" : "";
+                                            int idx = item.TryGetProperty("index", out var i) && i.ValueKind == JsonValueKind.Number ? i.GetInt32() : 0;
+                                            if (!string.IsNullOrEmpty(relId))
+                                            {
+                                                insertion.Tracks.Add(new ArtistTrackInsertion { ReleaseId = relId, Index = idx });
+                                            }
+                                        }
+                                    }
+                                    if (insertion.Tracks.Count > 0)
+                                    {
+                                        artistInsertions[artistId] = insertion;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (source.TryGetProperty("tracksStorages", out var storages) && storages.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var storage in storages.EnumerateArray())
+                        {
+                            string? tmpl = null;
+                            if (storage.TryGetProperty("urlTemplate", out var tmplProp) && tmplProp.ValueKind == JsonValueKind.String)
+                            {
+                                tmpl = tmplProp.GetString();
+                            }
+
+                            if (storage.TryGetProperty("trackIds", out var trackIds) && trackIds.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var item in trackIds.EnumerateArray())
+                                {
+                                    string? tid = null;
+                                    if (item.ValueKind == JsonValueKind.Number)
+                                    {
+                                        tid = item.GetInt64().ToString();
+                                    }
+                                    else if (item.ValueKind == JsonValueKind.Object && item.TryGetProperty("id", out var idProp))
+                                    {
+                                        tid = idProp.ToString();
+                                    }
+
+                                    if (!string.IsNullOrEmpty(tid))
+                                    {
+                                        string url = !string.IsNullOrEmpty(tmpl)
+                                            ? Httpsify(tmpl.Replace("%%", tid))
+                                            : string.Empty;
+
+                                        if (!string.IsNullOrEmpty(url))
+                                        {
+                                            tracks[tid] = url;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (storage.TryGetProperty("tracks", out var stracks) && stracks.ValueKind == JsonValueKind.Object)
+                            {
+                                foreach (var prop in stracks.EnumerateObject())
+                                {
+                                    string tid = prop.Name;
+                                    var val = prop.Value;
+                                    string? raw = null;
+                                    if (val.ValueKind == JsonValueKind.String)
+                                    {
+                                        raw = val.GetString();
+                                    }
+                                    else if (val.ValueKind == JsonValueKind.Number)
+                                    {
+                                        raw = val.GetInt64().ToString();
+                                    }
+                                    else if (val.ValueKind == JsonValueKind.Object && val.TryGetProperty("url", out var urlProp))
+                                    {
+                                        raw = urlProp.GetString() ?? urlProp.ToString();
+                                    }
+
+                                    if (!string.IsNullOrEmpty(raw))
+                                    {
+                                        string url = raw.Contains("://", StringComparison.Ordinal)
+                                            ? raw
+                                            : (!string.IsNullOrEmpty(tmpl) ? Httpsify(tmpl.Replace("%%", raw)) : Httpsify(raw));
+
+                                        tracks[tid] = url;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (root.TryGetProperty("tracks", out var legacyTracks) && legacyTracks.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var prop in legacyTracks.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.String)
+                    {
+                        tracks[prop.Name] = prop.Value.GetString()!;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[FckCensor] ParseRemoteData error: {ex.Message}");
+        }
+    }
+
+    private static string Httpsify(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return url;
+        if (url.Contains("://", StringComparison.Ordinal)) return url;
+        return "https://" + url.TrimStart('/');
+    }
+
+    public TrackSpoof? GetTrackSpoof(string trackId)
+    {
+        if (string.IsNullOrWhiteSpace(trackId)) return null;
+
+        lock (_lock)
+        {
+            if (_remoteExceptions.Contains(trackId))
+            {
+                return null;
+            }
+
+            return _trackSpoofs.TryGetValue(trackId, out var spoof) ? spoof : null;
+        }
+    }
+
+    public AlbumSpoof? GetAlbumSpoof(long albumId)
+    {
+        lock (_lock)
+        {
+            return _albumSpoofs.TryGetValue(albumId, out var spoof) ? spoof : null;
+        }
+    }
+
+    public ArtistInsertion? GetArtistInsertions(long artistId)
+    {
+        lock (_lock)
+        {
+            return _artistInsertions.TryGetValue(artistId, out var insertion) ? insertion : null;
         }
     }
 

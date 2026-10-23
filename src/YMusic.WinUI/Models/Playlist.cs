@@ -45,8 +45,21 @@ public sealed partial class Playlist : ObservableObject
     [property: JsonIgnore]
     private bool _isPinned;
 
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isLiked;
+
+    [JsonIgnore]
+    public string PlaylistKey => $"{Uid}:{Kind}";
+
     [JsonIgnore]
     public string PinKey => $"playlist:{Uid}:{Kind}";
+
+    [JsonIgnore]
+    public string PinnedBadgeText => App.Loc?.CurrentLanguage == "en" ? "Pinned" : "Закреплено";
+
+    [JsonIgnore]
+    public string PlayActionText => App.Loc?.CurrentLanguage == "en" ? "Play" : "Слушать";
     [JsonPropertyName("uid")]
     [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
     public long Uid { get; set; }

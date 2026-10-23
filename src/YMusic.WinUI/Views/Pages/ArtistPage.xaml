@@ -224,11 +224,20 @@
                                                     </StackPanel>
                                                 </Border>
                                             </Grid>
-                                            <TextBlock Text="{x:Bind ArtistNames, Mode=OneWay}"
-                                                       FontSize="12"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       MaxLines="1" />
+                                            <HyperlinkButton Click="TrackArtist_Click"
+                                                             Tag="{x:Bind}"
+                                                             Padding="0"
+                                                             Margin="0,2,0,0"
+                                                             HorizontalAlignment="Left"
+                                                             VerticalAlignment="Center"
+                                                             ToolTipService.ToolTip="{x:Bind ArtistNames}">
+                                                <TextBlock Text="{x:Bind ArtistNames, Mode=OneWay}"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MaxLines="1"
+                                                           IsHitTestVisible="False" />
+                                            </HyperlinkButton>
                                         </StackPanel>
 
                                         <!-- Like Button -->

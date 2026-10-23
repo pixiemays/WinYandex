@@ -222,6 +222,54 @@ public sealed class BoolToLikeGlyphConverter : IValueConverter
     }
 }
 
+public sealed class BoolToLikeButtonTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        bool isEn = App.Loc?.CurrentLanguage == "en";
+        return value is bool b && b 
+            ? (isEn ? "In Favorites" : "В избранном") 
+            : (isEn ? "Favorite" : "В избранное");
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public sealed class BoolToLikeTooltipConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        bool isEn = App.Loc?.CurrentLanguage == "en";
+        return value is bool b && b 
+            ? (isEn ? "Remove from Favorites" : "Удалить из избранного") 
+            : (isEn ? "Add to Favorites" : "Добавить в избранное");
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public sealed class BoolToLikeMenuTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        bool isEn = App.Loc?.CurrentLanguage == "en";
+        return value is bool b && b 
+            ? (isEn ? "Remove from Favorites" : "Удалить из избранного") 
+            : (isEn ? "Add to Favorites" : "Добавить в избранное");
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public sealed class BoolToTrackTitleBrushConverter : IValueConverter
 {
     private static readonly SolidColorBrush FallbackAccentTextBrush = new(Windows.UI.Color.FromArgb(255, 96, 205, 255));
@@ -344,7 +392,10 @@ public sealed class BoolToPinTooltipConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        return value is bool b && b ? "Unpin from top" : "Pin to top";
+        bool isEn = App.Loc?.CurrentLanguage == "en";
+        return value is bool b && b 
+            ? (isEn ? "Unpin from top" : "Открепить") 
+            : (isEn ? "Pin to top" : "Закрепить вверху");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -357,7 +408,10 @@ public sealed class BoolToPinButtonTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        return value is bool b && b ? "Pinned" : "Pin";
+        bool isEn = App.Loc?.CurrentLanguage == "en";
+        return value is bool b && b 
+            ? (isEn ? "Pinned" : "Закреплено") 
+            : (isEn ? "Pin" : "Закрепить");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -370,7 +424,10 @@ public sealed class BoolToPinMenuTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        return value is bool b && b ? "Unpin from top" : "Pin to top";
+        bool isEn = App.Loc?.CurrentLanguage == "en";
+        return value is bool b && b 
+            ? (isEn ? "Unpin from top" : "Открепить") 
+            : (isEn ? "Pin to top" : "Закрепить вверху");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)

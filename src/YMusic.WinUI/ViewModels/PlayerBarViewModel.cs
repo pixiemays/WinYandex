@@ -3,7 +3,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using YMusic.WinUI.Helpers;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.Views.Controls;
@@ -50,11 +52,11 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     public string TrackTitle => !string.IsNullOrWhiteSpace(CurrentTrack?.Title)
         ? CurrentTrack.FullTitle
-        : "No track playing";
+        : (Loc?.CurrentLanguage == "en" ? "No track playing" : "Трек не выбран");
 
     public string ArtistNames => !string.IsNullOrWhiteSpace(CurrentTrack?.ArtistNames)
         ? CurrentTrack.ArtistNames
-        : "Select a track to start";
+        : (Loc?.CurrentLanguage == "en" ? "Select a track to start" : "Выберите трек для воспроизведения");
 
     public bool HasTrack => CurrentTrack != null;
 
@@ -83,7 +85,49 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     public string LikeGlyph => IsCurrentTrackLiked ? "\uEB52" : "\uEB51";
 
-    public string LikeTooltip => IsCurrentTrackLiked ? "Unlike" : "Like";
+    public string LikeTooltip => IsCurrentTrackLiked 
+        ? (Loc?.CurrentLanguage == "en" ? "Unlike" : "Удалить из избранного") 
+        : (Loc?.CurrentLanguage == "en" ? "Like" : "В избранное");
+
+    public string NowPlayingDrawerHeader => Loc?.CurrentLanguage == "en" ? "NOW PLAYING" : "СЕЙЧАС ИГРАЕТ";
+    public string SyncToCurrentLineText => Loc?.CurrentLanguage == "en" ? "Sync to current line" : "К текущей строке";
+    public string LoadingLyricsTitle => Loc?.CurrentLanguage == "en" ? "Loading lyrics..." : "Загрузка текста...";
+    public string LoadingLyricsSubtitle => Loc?.CurrentLanguage == "en" ? "Looking for synchronized timecodes" : "Ищем синхронизированные таймкоды";
+    public string EnjoyTheMusicText => Loc?.CurrentLanguage == "en" ? "Enjoy the music" : "Наслаждайтесь музыкой";
+
+    public string AudioEqualizerTooltip => Loc?.CurrentLanguage == "en" ? "Audio Equalizer" : "Эквалайзер";
+    public string EqualizerTitle => Loc?.CurrentLanguage == "en" ? "Equalizer" : "Эквалайзер";
+    public string EqualizerResetText => Loc?.CurrentLanguage == "en" ? "Reset" : "Сброс";
+    public string EqualizerResetTooltip => Loc?.CurrentLanguage == "en" ? "Reset all bands to 0 dB" : "Сбросить все полосы в 0 дБ";
+    public string EqualizerPresetLabel => Loc?.CurrentLanguage == "en" ? "Preset:" : "Пресет:";
+    public string ToggleOnContent => Loc?.CurrentLanguage == "en" ? "On" : "Вкл";
+    public string ToggleOffContent => Loc?.CurrentLanguage == "en" ? "Off" : "Выкл";
+    public string BestBitrateMenuText => Loc?.CurrentLanguage == "en" ? "Best Available Bitrate" : "Максимальный битрейт";
+
+    public string ShuffleTooltip => Loc?.CurrentLanguage == "en" ? "Shuffle" : "Перемешать";
+    public string PreviousTooltip => Loc?.CurrentLanguage == "en" ? "Previous" : "Предыдущий трек";
+    public string PlayPauseTooltip => Loc?.CurrentLanguage == "en" ? "Play / Pause" : "Воспроизведение / Пауза";
+    public string NextTooltip => Loc?.CurrentLanguage == "en" ? "Next" : "Следующий трек";
+    public string RepeatTooltip => Loc?.CurrentLanguage == "en" ? "Repeat" : "Повтор";
+    public string LyricsDrawerTooltip => Loc?.CurrentLanguage == "en" ? "Lyrics & Now Playing (Esc to close)" : "Текст песни и плеер (Esc для закрытия)";
+    public string CollapseDrawerTooltip => Loc?.CurrentLanguage == "en" ? "Collapse Now Playing (Esc)" : "Свернуть плеер (Esc)";
+    public string RecenterLyricsTooltip => Loc?.CurrentLanguage == "en" ? "Re-center lyrics on playing line" : "Вернуться к играющей строке";
+    public string ViewAlbumTooltip => Loc?.CurrentLanguage == "en" ? "View Album" : "Перейти к альбому";
+    public string FullscreenTooltip => Loc?.CurrentLanguage == "en" ? "Toggle Fullscreen" : "Полноэкранный режим";
+    public string ArtistInfoTooltip
+    {
+        get
+        {
+            bool isEn = Loc?.CurrentLanguage == "en";
+            if (CurrentTrack?.Artists?.Count > 1)
+            {
+                return isEn ? "Artists (click to choose)" : "Исполнители (нажмите для выбора)";
+            }
+            return isEn ? "About Artist" : "Об исполнителе";
+        }
+    }
+    public string VolumeInputTooltip => Loc?.CurrentLanguage == "en" ? "Click to enter volume percentage" : "Нажмите, чтобы ввести процент громкости";
+    public string FckCensorRepoMenuText => Loc?.CurrentLanguage == "en" ? "Original FckCensor project (GitHub)" : "Оригинальный проект FckCensor (GitHub)";
 
     public System.Collections.ObjectModel.ObservableCollection<LyricLine> Lyrics { get; } = new();
 
@@ -100,7 +144,9 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(LyricsBadgeGlyph))]
     private bool _hasSyncedLyrics;
 
-    public string LyricsBadgeText => HasSyncedLyrics ? "Synced Lyrics" : "Plain Lyrics";
+    public string LyricsBadgeText => HasSyncedLyrics
+        ? (Loc?.CurrentLanguage == "en" ? "Synced Lyrics" : "Синхр. текст")
+        : (Loc?.CurrentLanguage == "en" ? "Plain Lyrics" : "Текст");
     public string LyricsBadgeGlyph => HasSyncedLyrics ? "\uEC4F" : "\uE8D2";
     public bool ShowSyncLyricsButton => HasSyncedLyrics && IsUserScrolledAway;
 
@@ -361,6 +407,11 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             HasSyncedLyrics = false;
             IsUserScrolledAway = false;
             IsCurrentTrackLiked = track != null && _musicService.IsTrackLiked(track.Id);
+            if (track == null)
+            {
+                IsNowPlayingDrawerOpen = false;
+                IsPlaying = false;
+            }
         });
 
         UpdateFckCensorState();
@@ -674,8 +725,37 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     protected override void OnLanguageChanged()
     {
         base.OnLanguageChanged();
+        OnPropertyChanged(nameof(TrackTitle));
+        OnPropertyChanged(nameof(ArtistNames));
+        OnPropertyChanged(nameof(LikeTooltip));
         OnPropertyChanged(nameof(VolumeTooltip));
         OnPropertyChanged(nameof(MuteTooltip));
+        OnPropertyChanged(nameof(NowPlayingDrawerHeader));
+        OnPropertyChanged(nameof(SyncToCurrentLineText));
+        OnPropertyChanged(nameof(LoadingLyricsTitle));
+        OnPropertyChanged(nameof(LoadingLyricsSubtitle));
+        OnPropertyChanged(nameof(EnjoyTheMusicText));
+        OnPropertyChanged(nameof(AudioEqualizerTooltip));
+        OnPropertyChanged(nameof(EqualizerTitle));
+        OnPropertyChanged(nameof(EqualizerResetText));
+        OnPropertyChanged(nameof(EqualizerResetTooltip));
+        OnPropertyChanged(nameof(EqualizerPresetLabel));
+        OnPropertyChanged(nameof(ToggleOnContent));
+        OnPropertyChanged(nameof(ToggleOffContent));
+        OnPropertyChanged(nameof(BestBitrateMenuText));
+        OnPropertyChanged(nameof(ShuffleTooltip));
+        OnPropertyChanged(nameof(PreviousTooltip));
+        OnPropertyChanged(nameof(PlayPauseTooltip));
+        OnPropertyChanged(nameof(NextTooltip));
+        OnPropertyChanged(nameof(RepeatTooltip));
+        OnPropertyChanged(nameof(LyricsDrawerTooltip));
+        OnPropertyChanged(nameof(CollapseDrawerTooltip));
+        OnPropertyChanged(nameof(RecenterLyricsTooltip));
+        OnPropertyChanged(nameof(ViewAlbumTooltip));
+        OnPropertyChanged(nameof(FullscreenTooltip));
+        OnPropertyChanged(nameof(ArtistInfoTooltip));
+        OnPropertyChanged(nameof(VolumeInputTooltip));
+        OnPropertyChanged(nameof(FckCensorRepoMenuText));
     }
 
     [RelayCommand]
@@ -799,26 +879,11 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    public async Task OpenCurrentArtistAsync()
+    public async Task OpenCurrentArtistAsync(object? parameter = null)
     {
         if (CurrentTrack == null) return;
-
-        IsNowPlayingDrawerOpen = false;
-
-        var primaryArtist = CurrentTrack.Artists?.FirstOrDefault();
-        long artistId = primaryArtist?.Id ?? 0;
-        string artistName = !string.IsNullOrWhiteSpace(primaryArtist?.Name)
-            ? primaryArtist.Name
-            : CurrentTrack.ArtistNames;
-
-        if (primaryArtist != null && primaryArtist.Id > 0)
-        {
-            await _navigationService.NavigateToArtistAsync(primaryArtist);
-        }
-        else if (artistId > 0)
-        {
-            await _navigationService.NavigateToArtistByIdAsync(artistId, artistName);
-        }
+        var anchor = parameter as FrameworkElement;
+        await ArtistNavigationHelper.NavigateToTrackArtistAsync(anchor, CurrentTrack, () => IsNowPlayingDrawerOpen = false);
     }
 
     [RelayCommand]
@@ -931,6 +996,16 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             UpdateFckCensorState();
             ShowToast("Спасибо! Трек скоро будет добавлен в базу.");
         }
+    }
+
+    [RelayCommand]
+    public async Task OpenFckCensorRepoAsync()
+    {
+        try
+        {
+            await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/Hazzz895/FckCensor"));
+        }
+        catch { }
     }
 
     public void ShowToast(string message)

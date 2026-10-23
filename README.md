@@ -5,7 +5,11 @@
 <h1 align="center">WinYandex</h1>
 
 <p align="center">
-  <strong>Современный нативный клиент Яндекс Музыки для Windows 10/11</strong>
+  <strong>Modern native desktop client for Yandex Music on Windows 10/11</strong>
+</p>
+
+<p align="center">
+  <strong>English</strong> • <a href="README_ru.md">Русский</a>
 </p>
 
 <p align="center">
@@ -17,96 +21,96 @@
 
 ---
 
-**WinYandex** — быстрый и легковесный десктопный плеер для Яндекс Музыки, разработанный с нуля на нативном стеке Windows (WinUI 3 + Windows App SDK + C# .NET 8) взамен веб-оболочки Electron.
+**WinYandex** is a fast and lightweight desktop player for Yandex Music, built from scratch on the native Windows stack (WinUI 3 + Windows App SDK + C# .NET 8) as an alternative to the Electron web wrapper.
 
 <p align="center">
-  <img src="images/explore.png" alt="Главный экран WinYandex" width="850" />
+  <img src="images/explore.png" alt="WinYandex Explore Screen" width="850" />
 </p>
 
 <p align="center">
-  <img src="images/now_playing.png" alt="Режим Now Playing с синхронизированными текстами" width="422" />
-  <img src="images/artist.png" alt="Страница исполнителя" width="422" />
+  <img src="images/now_playing.png" alt="Now Playing Mode with Synchronized Lyrics" width="422" />
+  <img src="images/artist.png" alt="Artist Page" width="422" />
 </p>
 
 ---
 
-## Возможности
+## Features
 
-* **Fluent Design** — визуальный интерфейс в стиле Windows 11 с материалом Mica, плавными переходами и переключением тёмной и светлой тем.
-* **Чёткая типографика** — экранный шрифт Inter по умолчанию с возможностью выбора фирменного Yandex Sans или системного Segoe UI Variable в настройках.
-* **Дисковый аудио-кэш (LRU)** — сохранение прослушанных треков в локальный кэш (`%LocalAppData%/YMusic/Cache`) для мгновенного повторного воспроизведения (0 мс) без расхода трафика.
-* **Бесшовное воспроизведение (Gapless)** — предзагрузка аудиопотока и текстов следующего трека на 80% прогресса текущей песни для устранения пауз и буферизации.
-* **Синхронизированные тексты песен** — выдвижная панель воспроизведения с построчным ведением текста в реальном времени.
-* **10-полосный эквалайзер** — настройка звуковых частот от 31 Гц до 16 кГц с набором готовых пресетов (Rock, Pop, Bass Boost, Acoustic, Vocal и др.).
-* **Моя волна** — персональный бесконечный поток музыки с фильтрами настроения (*Спокойное, Бодрое, Радостное, Грустное*) и занятий (*Работа, Отдых, Дорога, Спорт*).
-* **FckCensor** — автоматический выбор оригинальных треков без заглушений и цензуры вместо цензурированных правообладателями версий.
-* **Discord Rich Presence** — отображение названия трека, исполнителя, обложки альбома и статуса воспроизведения в профиле Discord.
-* **Интеграция с Windows**:
-  * System Media Transport Controls (SMTC) — системное окно управления и поддержка мультимедийных клавиш клавиатуры и гарнитур.
-  * Taskbar Thumbnail Toolbar — управление воспроизведением прямо из миниатюры на панели задач Windows.
-  * Системный трей — иконка в трее Windows с контекстным меню и опцией сворачивания при закрытии окна.
-  * Toast-уведомления — всплывающие системные баннеры при переключении песен.
-* **Двуязычный интерфейс** — мгновенное переключение между русским и английским языками без перезапуска приложения.
-
----
-
-## Установка и запуск
-
-### 1. Установщик Setup.exe (Рекомендуется)
-Скачайте `WinYandex-v0.9.1-Setup-x64.exe` из раздела [Releases](https://github.com/pixiemays/WinYandex/releases). Установщик настроит ярлыки в меню «Пуск» и на рабочем столе.
-
-### 2. Портативная версия (ZIP)
-Скачайте архив `WinYandex-v0.9.1-win-x64-portable.zip`, распакуйте в любую папку и запустите `YMusic.WinUI.exe`. Приложение полностью автономно и не требует установки сторонних библиотек.
-
-### 3. Пакет MSIX Bundle
-Для установки в качестве нативного пакета Windows запустите файл `WinYandex_x64.msixbundle`.
+* **Fluent Design** — Windows 11 style visual interface featuring Mica material, fluid transitions, and seamless dark and light theme switching.
+* **Sharp Typography** — Inter Variable display font by default, with settings to select official Yandex Sans or system Segoe UI Variable.
+* **Disk Audio Cache (LRU)** — Caches played tracks locally (`%LocalAppData%/YMusic/Cache`) for instant subsequent playback (0 ms) without wasting network bandwidth.
+* **Gapless Playback** — Preloads the audio stream and lyrics for the upcoming track at 80% progress of the current song to eliminate pauses and buffering.
+* **Synchronized Lyrics** — Slide-up Now Playing panel with real-time, line-by-line synchronized lyrics scrolling.
+* **10-Band Equalizer** — Audio frequency adjustment from 31 Hz to 16 kHz with built-in presets (Rock, Pop, Bass Boost, Acoustic, Vocal, and more).
+* **Vibe (My Wave)** — Personalized infinite music stream with mood filters (*Calm, Energetic, Joyful, Melancholic*) and activity filters (*Work, Relax, Commute, Workout*).
+* **FckCensor** — Automatically picks original uncensored tracks instead of copyright-holder silenced versions.
+* **Discord Rich Presence** — Displays track name, artist, album art, and playback status directly on your Discord profile.
+* **Windows Integration**:
+  * System Media Transport Controls (SMTC) — System overlay and full support for hardware multimedia keys and headsets.
+  * Taskbar Thumbnail Toolbar — Control playback right from the Windows taskbar thumbnail preview.
+  * System Tray — Windows tray icon with context menu and minimize-to-tray support on window close.
+  * Toast Notifications — Native popup banners when switching tracks.
+* **Bilingual Interface** — Instant runtime switching between Russian and English without restarting the application.
 
 ---
 
-## Сборка из исходников
+## Installation & Getting Started
 
-### Требования
-* Windows 10 (1809+) или Windows 11
+### 1. Setup.exe Installer (Recommended)
+Download `WinYandex-v0.9.1-Setup-x64.exe` from the [Releases](https://github.com/pixiemays/WinYandex/releases) section. The installer sets up Start menu and Desktop shortcuts.
+
+### 2. Portable Version (ZIP)
+Download `WinYandex-v0.9.1-win-x64-portable.zip`, extract to any folder, and run `YMusic.WinUI.exe`. The application is fully standalone and requires no extra dependencies.
+
+### 3. MSIX Bundle Package
+To install as a native Windows package, run the `WinYandex_x64.msixbundle` file.
+
+---
+
+## Building from Source
+
+### Prerequisites
+* Windows 10 (1809+) or Windows 11
 * [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-* Visual Studio 2022 (с компонентами разработки под Windows) или VS Code с C# Dev Kit
+* Visual Studio 2022 (with Windows app development workload) or VS Code with C# Dev Kit
 
-### Сборка и запуск:
+### Build and Run:
 ```powershell
-# Клонирование репозитория
+# Clone the repository
 git clone https://github.com/pixiemays/WinYandex.git
 cd WinYandex
 
-# Запуск в режиме разработки
+# Run in development mode
 dotnet run --project src/YMusic.WinUI/YMusic.WinUI.csproj
 ```
 
-### Упаковка релиза и дистрибутивов:
+### Packaging Releases and Distributions:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/package_release.ps1
 ```
-*Файлы дистрибутива сохраняются в каталог `dist/`.*
+*Distribution artifacts are output to the `dist/` directory.*
 
 ---
 
-## Архитектура и стек
+## Architecture & Tech Stack
 
-* **Интерфейс:** Windows App SDK (WinUI 3) + .NET 8
-* **Архитектура:** MVVM (CommunityToolkit.Mvvm)
-* **Аудио:** Windows MediaFoundation / NAudio
-* **Шрифты:** Inter Variable & Yandex Sans Text
-* **Интеграции:** DiscordRichPresence, Windows.Media.SystemMediaTransportControls, Microsoft.Windows.AppNotifications
-
----
-
-## Отказ от ответственности (Disclaimer)
-
-* WinYandex является неофициальным клиентом с открытым исходным кодом.
-* Товарные знаки «Яндекс», «Яндекс Музыка» и связанные с ними сервисы принадлежат ООО «Яндекс».
-* Проект не аффилирован с компанией Яндекс.
-* Для доступа к личной медиатеке и прослушивания треков в высоком качестве требуется активная подписка Яндекс Плюс.
+* **UI:** Windows App SDK (WinUI 3) + .NET 8
+* **Architecture:** MVVM (CommunityToolkit.Mvvm)
+* **Audio:** Windows MediaFoundation / NAudio
+* **Fonts:** Inter Variable & Yandex Sans Text
+* **Integrations:** DiscordRichPresence, Windows.Media.SystemMediaTransportControls, Microsoft.Windows.AppNotifications
 
 ---
 
-## Лицензия
+## Disclaimer
 
-Распространяется под свободной копилефт-лицензией [GNU General Public License v3.0](LICENSE). Все модификации и производные работы обязаны оставаться открытыми под той же лицензией. Проект защищён от закрытия исходного кода и проприетарной перепродажи.
+* WinYandex is an unofficial open-source client.
+* "Yandex", "Yandex Music", and associated trademarks belong to Yandex LLC.
+* This project is not affiliated with or endorsed by Yandex.
+* An active Yandex Plus subscription is required to access your personal library and stream high-quality audio.
+
+---
+
+## License
+
+Distributed under the free copyleft [GNU General Public License v3.0](LICENSE). All modifications and derivative works must remain open-source under the same license. This protects the project from being closed-sourced or commercially repackaged.

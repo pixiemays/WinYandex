@@ -466,30 +466,44 @@
                                     StepFrequency="1"
                                     SmallChange="2"
                                     LargeChange="5"
+                                    IsThumbToolTipEnabled="False"
                                     Value="{x:Bind ViewModel.Volume, Mode=TwoWay}"
                                     VerticalAlignment="Center"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.VolumeTooltip, Mode=OneWay}" />
 
-                            <!-- Interactive Volume Percentage Box -->
-                            <TextBox x:Name="DrawerVolumePercentageBox"
-                                     Text="{x:Bind ViewModel.VolumePercentageText, Mode=OneWay}"
-                                     Width="48"
-                                     Height="28"
-                                     Padding="2,0"
-                                     FontSize="11"
-                                     FontWeight="SemiBold"
-                                     TextAlignment="Center"
-                                     CornerRadius="6"
-                                     VerticalAlignment="Center"
-                                     VerticalContentAlignment="Center"
-                                     Background="#26FFFFFF"
-                                     BorderBrush="#33FFFFFF"
-                                     BorderThickness="1"
-                                     Foreground="White"
-                                     ToolTipService.ToolTip="Нажмите, чтобы ввести процент громкости (0–100%)"
-                                     GotFocus="DrawerVolumePercentageBox_GotFocus"
-                                     LostFocus="DrawerVolumePercentageBox_LostFocus"
-                                     KeyDown="DrawerVolumePercentageBox_KeyDown" />
+                            <!-- Interactive Volume Percentage (Clean TextBlock, turns into compact editor on click) -->
+                            <Grid Width="38" Height="24" VerticalAlignment="Center" Margin="2,0,0,0">
+                                <Border x:Name="DrawerVolumePercentageBadge"
+                                        CornerRadius="4"
+                                        Background="Transparent"
+                                        Padding="2,2"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        ToolTipService.ToolTip="Нажмите, чтобы ввести процент громкости"
+                                        PointerPressed="DrawerVolumePercentageBadge_PointerPressed">
+                                    <TextBlock x:Name="DrawerVolumePercentageLabel"
+                                               Text="{x:Bind ViewModel.VolumePercentageText, Mode=OneWay}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#C8FFFFFF"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+
+                                <TextBox x:Name="DrawerVolumePercentageBox"
+                                         Width="38"
+                                         Height="24"
+                                         MinHeight="0"
+                                         Padding="0"
+                                         FontSize="11"
+                                         FontWeight="SemiBold"
+                                         TextAlignment="Center"
+                                         CornerRadius="4"
+                                         VerticalAlignment="Center"
+                                         VerticalContentAlignment="Center"
+                                         Visibility="Collapsed"
+                                         LostFocus="DrawerVolumePercentageBox_LostFocus"
+                                         KeyDown="DrawerVolumePercentageBox_KeyDown" />
+                            </Grid>
                         </StackPanel>
                     </StackPanel>
                 </Grid>

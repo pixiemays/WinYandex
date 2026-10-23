@@ -59,12 +59,16 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         }
     }
 
-    private void DrawerVolumePercentageBox_GotFocus(object sender, RoutedEventArgs e)
+    private void DrawerVolumePercentageBadge_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
-        if (DrawerVolumePercentageBox != null)
+        if (DrawerVolumePercentageBox != null && DrawerVolumePercentageBadge != null)
         {
+            DrawerVolumePercentageBadge.Visibility = Visibility.Collapsed;
+            DrawerVolumePercentageBox.Visibility = Visibility.Visible;
             DrawerVolumePercentageBox.Text = Math.Round(ViewModel.Volume).ToString();
+            DrawerVolumePercentageBox.Focus(FocusState.Programmatic);
             DrawerVolumePercentageBox.SelectAll();
+            e.Handled = true;
         }
     }
 
@@ -83,9 +87,10 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         }
         else if (e.Key == Windows.System.VirtualKey.Escape)
         {
-            if (DrawerVolumePercentageBox != null)
+            if (DrawerVolumePercentageBox != null && DrawerVolumePercentageBadge != null)
             {
-                DrawerVolumePercentageBox.Text = ViewModel.VolumePercentageText;
+                DrawerVolumePercentageBox.Visibility = Visibility.Collapsed;
+                DrawerVolumePercentageBadge.Visibility = Visibility.Visible;
             }
             DrawerVolumeSlider.Focus(FocusState.Programmatic);
             e.Handled = true;
@@ -94,9 +99,10 @@ public sealed partial class NowPlayingDrawerControl : UserControl
 
     private void CommitDrawerVolumeText()
     {
-        if (DrawerVolumePercentageBox == null) return;
+        if (DrawerVolumePercentageBox == null || DrawerVolumePercentageBadge == null) return;
         ViewModel.SetVolumeFromInput(DrawerVolumePercentageBox.Text);
-        DrawerVolumePercentageBox.Text = ViewModel.VolumePercentageText;
+        DrawerVolumePercentageBox.Visibility = Visibility.Collapsed;
+        DrawerVolumePercentageBadge.Visibility = Visibility.Visible;
     }
 
     private void SeekSlider_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)

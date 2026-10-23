@@ -40,12 +40,16 @@ public sealed partial class PlayerBarControl : UserControl
         }
     }
 
-    private void VolumePercentageBox_GotFocus(object sender, RoutedEventArgs e)
+    private void VolumePercentageBadge_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        if (VolumePercentageBox != null)
+        if (VolumePercentageBox != null && VolumePercentageBadge != null)
         {
+            VolumePercentageBadge.Visibility = Visibility.Collapsed;
+            VolumePercentageBox.Visibility = Visibility.Visible;
             VolumePercentageBox.Text = Math.Round(ViewModel.Volume).ToString();
+            VolumePercentageBox.Focus(FocusState.Programmatic);
             VolumePercentageBox.SelectAll();
+            e.Handled = true;
         }
     }
 
@@ -64,9 +68,10 @@ public sealed partial class PlayerBarControl : UserControl
         }
         else if (e.Key == Windows.System.VirtualKey.Escape)
         {
-            if (VolumePercentageBox != null)
+            if (VolumePercentageBox != null && VolumePercentageBadge != null)
             {
-                VolumePercentageBox.Text = ViewModel.VolumePercentageText;
+                VolumePercentageBox.Visibility = Visibility.Collapsed;
+                VolumePercentageBadge.Visibility = Visibility.Visible;
             }
             VolumeSlider.Focus(FocusState.Programmatic);
             e.Handled = true;
@@ -75,9 +80,10 @@ public sealed partial class PlayerBarControl : UserControl
 
     private void CommitVolumeText()
     {
-        if (VolumePercentageBox == null) return;
+        if (VolumePercentageBox == null || VolumePercentageBadge == null) return;
         ViewModel.SetVolumeFromInput(VolumePercentageBox.Text);
-        VolumePercentageBox.Text = ViewModel.VolumePercentageText;
+        VolumePercentageBox.Visibility = Visibility.Collapsed;
+        VolumePercentageBadge.Visibility = Visibility.Visible;
     }
 
     private void SeekSlider_PointerPressed(object sender, PointerRoutedEventArgs e)

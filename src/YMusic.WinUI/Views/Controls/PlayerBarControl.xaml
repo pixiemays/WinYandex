@@ -517,29 +517,44 @@
                         StepFrequency="1"
                         SmallChange="2"
                         LargeChange="5"
+                        IsThumbToolTipEnabled="False"
                         Value="{x:Bind ViewModel.Volume, Mode=TwoWay}"
                         VerticalAlignment="Center"
                         ToolTipService.ToolTip="{x:Bind ViewModel.VolumeTooltip, Mode=OneWay}" />
 
-                <!-- Interactive Volume Percentage Box (Click to edit) -->
-                <TextBox x:Name="VolumePercentageBox"
-                         Text="{x:Bind ViewModel.VolumePercentageText, Mode=OneWay}"
-                         Width="50"
-                         Height="30"
-                         Padding="2,0"
-                         FontSize="12"
-                         FontWeight="SemiBold"
-                         TextAlignment="Center"
-                         CornerRadius="6"
-                         VerticalAlignment="Center"
-                         VerticalContentAlignment="Center"
-                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                         BorderThickness="1"
-                         ToolTipService.ToolTip="Нажмите, чтобы ввести процент громкости (0–100%)"
-                         GotFocus="VolumePercentageBox_GotFocus"
-                         LostFocus="VolumePercentageBox_LostFocus"
-                         KeyDown="VolumePercentageBox_KeyDown" />
+                <!-- Interactive Volume Percentage (Clean TextBlock, turns into compact editor on click) -->
+                <Grid Width="38" Height="24" VerticalAlignment="Center" Margin="2,0,0,0">
+                    <Border x:Name="VolumePercentageBadge"
+                            CornerRadius="4"
+                            Background="Transparent"
+                            Padding="2,2"
+                            helpers:CursorHelper.UseHandCursor="True"
+                            ToolTipService.ToolTip="Нажмите, чтобы ввести процент громкости"
+                            PointerPressed="VolumePercentageBadge_PointerPressed">
+                        <TextBlock x:Name="VolumePercentageLabel"
+                                   Text="{x:Bind ViewModel.VolumePercentageText, Mode=OneWay}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+
+                    <TextBox x:Name="VolumePercentageBox"
+                             Width="38"
+                             Height="24"
+                             MinHeight="0"
+                             Padding="0"
+                             FontSize="11"
+                             FontWeight="SemiBold"
+                             TextAlignment="Center"
+                             CornerRadius="4"
+                             VerticalAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Visibility="Collapsed"
+                             LostFocus="VolumePercentageBox_LostFocus"
+                             KeyDown="VolumePercentageBox_KeyDown" />
+                </Grid>
             </StackPanel>
         </StackPanel>
 

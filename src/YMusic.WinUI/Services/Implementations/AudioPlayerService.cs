@@ -255,6 +255,16 @@ public sealed class AudioPlayerService : IAudioPlayerService
                 PositionChanged?.Invoke(this, pos);
                 CheckPreloadNextTrack(pos);
 
+                var dur = Duration;
+                if (dur > TimeSpan.Zero && (_currentTrack == null || _currentTrack.DurationMs <= 0))
+                {
+                    if (_currentTrack != null)
+                    {
+                        _currentTrack.DurationMs = (long)dur.TotalMilliseconds;
+                    }
+                    DurationChanged?.Invoke(this, dur);
+                }
+
                 if ((DateTime.UtcNow - _lastPeriodicSaveTime).TotalSeconds >= 3.0)
                 {
                     _lastPeriodicSaveTime = DateTime.UtcNow;
@@ -958,6 +968,18 @@ public sealed class AudioPlayerService : IAudioPlayerService
         }
 
         var source = MediaSource.CreateFromUri(new Uri(streamUrl));
+        source.OpenOperationCompleted += (s, args) =>
+        {
+            if (s.Duration.HasValue && s.Duration.Value > TimeSpan.Zero)
+            {
+                var realDur = s.Duration.Value;
+                if (_currentTrack != null && _currentTrack.DurationMs <= 0)
+                {
+                    _currentTrack.DurationMs = (long)realDur.TotalMilliseconds;
+                }
+                DurationChanged?.Invoke(this, realDur);
+            }
+        };
 
         if (_audioGraph != null && _deviceOutput != null)
         {
@@ -976,6 +998,16 @@ public sealed class AudioPlayerService : IAudioPlayerService
                     _currentInputNode = inputResult.Node;
                     _currentInputNode.AddOutgoingConnection(_deviceOutput);
                     _currentInputNode.MediaSourceCompleted += OnInputNodeMediaCompleted;
+
+                    if (_currentInputNode.Duration > TimeSpan.Zero)
+                    {
+                        var nodeDur = _currentInputNode.Duration;
+                        if (_currentTrack != null && _currentTrack.DurationMs <= 0)
+                        {
+                            _currentTrack.DurationMs = (long)nodeDur.TotalMilliseconds;
+                        }
+                        DurationChanged?.Invoke(this, nodeDur);
+                    }
 
                     if (startPosition.HasValue && startPosition.Value > TimeSpan.Zero)
                     {

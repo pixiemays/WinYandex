@@ -30,6 +30,7 @@ public sealed class FckCensorService : IFckCensorService
     private Dictionary<string, TrackSpoof> _trackSpoofs = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<long, AlbumSpoof> _albumSpoofs = new();
     private Dictionary<long, ArtistInsertion> _artistInsertions = new();
+    private Dictionary<string, string> _trackToAlbumCover = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _localTracks = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _remoteExceptions = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _reportedTracks = new(StringComparer.OrdinalIgnoreCase);
@@ -134,13 +135,14 @@ public sealed class FckCensorService : IFckCensorService
                 if (File.Exists(_remoteCacheFile))
                 {
                     string json = File.ReadAllText(_remoteCacheFile);
-                    ParseRemoteData(json, out var cachedTracks, out var cachedSpoofs, out var cachedAlbums, out var cachedArtists);
+                    ParseRemoteData(json, out var cachedTracks, out var cachedSpoofs, out var cachedAlbums, out var cachedArtists, out var cachedCovers);
                     if (cachedTracks.Count > 0)
                     {
                         _remoteTracks = cachedTracks;
                         _trackSpoofs = cachedSpoofs;
                         _albumSpoofs = cachedAlbums;
                         _artistInsertions = cachedArtists;
+                        _trackToAlbumCover = cachedCovers;
                     }
                 }
             }
@@ -172,7 +174,7 @@ public sealed class FckCensorService : IFckCensorService
 
             if (!string.IsNullOrEmpty(v2Json))
             {
-                ParseRemoteData(v2Json, out var tracksV2, out var spoofsV2, out var albumSpoofsV2, out var artistInsertionsV2);
+                ParseRemoteData(v2Json, out var tracksV2, out var spoofsV2, out var albumSpoofsV2, out var artistInsertionsV2, out var trackToCoverV2);
                 if (tracksV2.Count > 0)
                 {
                     lock (_lock)
@@ -181,6 +183,7 @@ public sealed class FckCensorService : IFckCensorService
                         _trackSpoofs = spoofsV2;
                         _albumSpoofs = albumSpoofsV2;
                         _artistInsertions = artistInsertionsV2;
+                        _trackToAlbumCover = trackToCoverV2;
                     }
 
                     try { File.WriteAllText(_remoteCacheFile, v2Json); } catch { }
@@ -196,7 +199,7 @@ public sealed class FckCensorService : IFckCensorService
             if (legacyResp.IsSuccessStatusCode)
             {
                 var legacyJson = await legacyResp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
-                ParseRemoteData(legacyJson, out var legacyTracks, out var legacySpoofs, out var legacyAlbums, out var legacyArtists);
+                ParseRemoteData(legacyJson, out var legacyTracks, out var legacySpoofs, out var legacyAlbums, out var legacyArtists, out var legacyCovers);
                 if (legacyTracks.Count > 0)
                 {
                     lock (_lock)
@@ -205,6 +208,7 @@ public sealed class FckCensorService : IFckCensorService
                         _trackSpoofs = legacySpoofs;
                         _albumSpoofs = legacyAlbums;
                         _artistInsertions = legacyArtists;
+                        _trackToAlbumCover = legacyCovers;
                     }
                     try { File.WriteAllText(_remoteCacheFile, legacyJson); } catch { }
                     Debug.WriteLine($"[FckCensor] Loaded {_remoteTracks.Count} tracks from legacy v1 list.");
@@ -223,12 +227,14 @@ public sealed class FckCensorService : IFckCensorService
         out Dictionary<string, string> tracks,
         out Dictionary<string, TrackSpoof> spoofs,
         out Dictionary<long, AlbumSpoof> albumSpoofs,
-        out Dictionary<long, ArtistInsertion> artistInsertions)
+        out Dictionary<long, ArtistInsertion> artistInsertions,
+        out Dictionary<string, string> trackToAlbumCover)
     {
         tracks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         spoofs = new Dictionary<string, TrackSpoof>(StringComparer.OrdinalIgnoreCase);
         albumSpoofs = new Dictionary<long, AlbumSpoof>();
         artistInsertions = new Dictionary<long, ArtistInsertion>();
+        trackToAlbumCover = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
@@ -302,6 +308,17 @@ public sealed class FckCensorService : IFckCensorService
                                     }
                                 }
                                 albumSpoofs[albumId] = albumSpoof;
+
+                                if (!string.IsNullOrEmpty(albumSpoof.CoverUri))
+                                {
+                                    foreach (var vol in albumSpoof.Volumes)
+                                    {
+                                        foreach (var tid in vol)
+                                        {
+                                            trackToAlbumCover[tid.ToString()] = albumSpoof.CoverUri;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -445,7 +462,16 @@ public sealed class FckCensorService : IFckCensorService
                 return null;
             }
 
-            return _trackSpoofs.TryGetValue(trackId, out var spoof) ? spoof : null;
+            _trackSpoofs.TryGetValue(trackId, out var spoof);
+            if ((spoof == null || string.IsNullOrEmpty(spoof.CoverUri)) && _trackToAlbumCover.TryGetValue(trackId, out var albumCover))
+            {
+                spoof = new TrackSpoof
+                {
+                    Title = spoof?.Title,
+                    CoverUri = albumCover
+                };
+            }
+            return spoof;
         }
     }
 

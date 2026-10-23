@@ -104,17 +104,29 @@ public sealed partial class Track : ObservableObject
     }
     private bool _available = true;
 
-    [JsonPropertyName("durationMs")]
-    public long DurationMs { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Duration))]
+    [NotifyPropertyChangedFor(nameof(FormattedDuration))]
+    [property: JsonPropertyName("durationMs")]
+    private long _durationMs;
 
     [JsonPropertyName("artists")]
     public List<Artist> Artists { get; set; } = new();
 
-    [JsonPropertyName("albums")]
-    public List<Album> Albums { get; set; } = new();
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AlbumTitle))]
+    [NotifyPropertyChangedFor(nameof(CoverUrl))]
+    [NotifyPropertyChangedFor(nameof(HdCoverUrl))]
+    [NotifyPropertyChangedFor(nameof(ThumbnailUrl))]
+    [property: JsonPropertyName("albums")]
+    private List<Album> _albums = new();
 
-    [JsonPropertyName("coverUri")]
-    public string? CoverUri { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CoverUrl))]
+    [NotifyPropertyChangedFor(nameof(HdCoverUrl))]
+    [NotifyPropertyChangedFor(nameof(ThumbnailUrl))]
+    [property: JsonPropertyName("coverUri")]
+    private string? _coverUri;
 
     [JsonPropertyName("ogImage")]
     public string? OgImage { get; set; }
@@ -155,6 +167,14 @@ public sealed partial class Track : ObservableObject
         if (string.IsNullOrWhiteSpace(raw) && Albums.Count > 0)
         {
             raw = Albums[0].CoverUri;
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                var spoof = Album.AlbumSpoofGetter?.Invoke(Albums[0].Id);
+                if (spoof != null && !string.IsNullOrWhiteSpace(spoof.CoverUri))
+                {
+                    raw = spoof.CoverUri;
+                }
+            }
         }
 
         if (string.IsNullOrWhiteSpace(raw) && !string.IsNullOrWhiteSpace(OgImage))

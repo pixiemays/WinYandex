@@ -397,7 +397,8 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             CurrentTrack = track;
             CoverUrl = track?.CoverUrl;
             HdCoverUrl = track?.HdCoverUrl ?? track?.CoverUrl;
-            Duration = track?.Duration ?? TimeSpan.Zero;
+            var initialDur = (track != null && track.Duration > TimeSpan.Zero) ? track.Duration : _audioPlayer.Duration;
+            Duration = initialDur > TimeSpan.Zero ? initialDur : TimeSpan.Zero;
             DurationSeconds = Duration.TotalSeconds;
             Position = TimeSpan.Zero;
             PositionSeconds = 0;
@@ -581,8 +582,15 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     {
         RunOnUi(() =>
         {
-            Duration = duration;
-            DurationSeconds = duration.TotalSeconds;
+            if (duration > TimeSpan.Zero)
+            {
+                Duration = duration;
+                DurationSeconds = duration.TotalSeconds;
+                if (CurrentTrack != null && CurrentTrack.DurationMs <= 0)
+                {
+                    CurrentTrack.DurationMs = (long)duration.TotalMilliseconds;
+                }
+            }
         });
     }
 

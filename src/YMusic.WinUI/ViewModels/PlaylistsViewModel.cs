@@ -478,6 +478,26 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                 }
             }
 
+            string? albumCoverUri = fullAlbum?.CoverUri ?? album.CoverUri ?? albumSpoof?.CoverUri;
+            var albumRef = fullAlbum ?? album;
+
+            foreach (var t in tracks)
+            {
+                if (t.Albums == null || t.Albums.Count == 0)
+                {
+                    t.Albums = new List<Album> { albumRef };
+                }
+                else if (string.IsNullOrEmpty(t.Albums[0].CoverUri) && !string.IsNullOrEmpty(albumCoverUri))
+                {
+                    t.Albums[0].CoverUri = albumCoverUri;
+                }
+
+                if (string.IsNullOrEmpty(t.CoverUri) && !string.IsNullOrEmpty(albumCoverUri))
+                {
+                    t.CoverUri = albumCoverUri;
+                }
+            }
+
             RunOnUi(() =>
             {
                 if (fullAlbum != null)

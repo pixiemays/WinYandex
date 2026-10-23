@@ -625,7 +625,7 @@
                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center" />
-                                        <Image Source="{x:Bind ThumbnailUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
+                                        <Image Source="{x:Bind ThumbnailUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
 
                                         <!-- Equalizer Overlay -->
                                         <Grid Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
@@ -705,7 +705,7 @@
                                                  HorizontalAlignment="Left"
                                                  VerticalAlignment="Center"
                                                  ToolTipService.ToolTip="{x:Bind AlbumTitle}">
-                                    <TextBlock Text="{x:Bind AlbumTitle}"
+                                    <TextBlock Text="{x:Bind AlbumTitle, Mode=OneWay}"
                                                FontSize="12"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                TextTrimming="CharacterEllipsis" />
@@ -713,7 +713,7 @@
 
                                 <!-- Duration -->
                                 <TextBlock Grid.Column="4"
-                                           Text="{x:Bind FormattedDuration}"
+                                           Text="{x:Bind FormattedDuration, Mode=OneWay}"
                                            FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            HorizontalAlignment="Right"

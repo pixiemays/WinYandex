@@ -106,16 +106,29 @@ public sealed partial class ArtistViewModel : BaseViewModel
         }
     }
 
-    public string BackButtonText => PreviousPageTag switch
+    public string BackButtonText
     {
-        "Search" => "Back to Search",
-        "Explore" => "Back to Explore",
-        "Likes" => "Back to Liked Tracks",
-        "Wave" => "Back to My Wave",
-        "Playlists" => "Back to Library",
-        "Account" => "Back",
-        _ => "Back"
-    };
+        get
+        {
+            bool isEn = Loc?.CurrentLanguage == "en";
+            return PreviousPageTag switch
+            {
+                "Search" => isEn ? "Back to Search" : "Назад к поиску",
+                "Explore" => isEn ? "Back to Explore" : "Назад на Главную",
+                "Likes" => isEn ? "Back to Liked Tracks" : "Назад к Любимым трекам",
+                "Wave" => isEn ? "Back to My Wave" : "Назад в Мою волну",
+                "Playlists" => isEn ? "Back to Library" : "Назад к Коллекции",
+                "Account" => isEn ? "Back" : "Назад",
+                _ => isEn ? "Back" : "Назад"
+            };
+        }
+    }
+
+    protected override void OnLanguageChanged()
+    {
+        base.OnLanguageChanged();
+        OnPropertyChanged(nameof(BackButtonText));
+    }
 
     public ArtistViewModel(
         IYandexMusicService musicService,

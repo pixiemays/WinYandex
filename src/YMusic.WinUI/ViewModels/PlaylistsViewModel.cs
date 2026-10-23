@@ -129,6 +129,8 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
             bool isEn = Loc?.CurrentLanguage == "en";
             return PreviousPageTag switch
             {
+                "Search" => isEn ? "Back to Search" : "Назад к поиску",
+                "Artist" => isEn ? "Back to Artist" : "Назад к исполнителю",
                 "Likes" => isEn ? "Back to Liked Tracks" : "Назад к Любимым трекам",
                 "Explore" => isEn ? "Back to Explore" : "Назад на Главную",
                 "Wave" => isEn ? "Back to My Wave" : "Назад в Мою волну",

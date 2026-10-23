@@ -348,6 +348,7 @@ public sealed partial class ShellWindow : Window
         Type t when t == typeof(LikedTracksPage) => "Likes",
         Type t when t == typeof(PlaylistsPage) => "Playlists",
         Type t when t == typeof(LoginPage) || t == typeof(ProfilePage) => "Account",
+        Type t when t == typeof(ArtistPage) => "Artist",
         _ => null
     };
 

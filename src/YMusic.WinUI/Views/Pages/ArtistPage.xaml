@@ -78,7 +78,7 @@
                                     HorizontalAlignment="Left">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="&#xE735;" FontSize="10" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
-                                    <TextBlock Text="ИСПОЛНИТЕЛЬ"
+                                    <TextBlock Text="{x:Bind ViewModel.BadgeText, Mode=OneWay}"
                                                FontSize="11"
                                                FontWeight="Bold"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -118,7 +118,7 @@
                                         helpers:CursorHelper.UseHandCursor="True">
                                     <StackPanel Orientation="Horizontal" Spacing="10">
                                         <FontIcon Glyph="&#xE768;" FontSize="14" />
-                                        <TextBlock Text="Слушать" FontWeight="SemiBold" FontSize="14" />
+                                        <TextBlock Text="{x:Bind ViewModel.PlayPopularTracksText, Mode=OneWay}" FontWeight="SemiBold" FontSize="14" />
                                     </StackPanel>
                                 </Button>
 
@@ -131,7 +131,7 @@
                                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                         BorderThickness="1"
-                                        ToolTipService.ToolTip="Добавить в любимые исполнители"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.LikeArtistTooltip, Mode=OneWay}"
                                         helpers:CursorHelper.UseHandCursor="True">
                                     <FontIcon Glyph="{x:Bind ViewModel.IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeGlyphConverter}}"
                                               FontSize="16"
@@ -145,7 +145,7 @@
                 <!-- 3. POPULAR TRACKS SECTION -->
                 <StackPanel Spacing="14"
                             Visibility="{x:Bind ViewModel.HasPopularTracks, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <TextBlock Text="Популярные треки"
+                    <TextBlock Text="{x:Bind ViewModel.PopularTracksTitle, Mode=OneWay}"
                                FontSize="20"
                                FontWeight="Bold" />
 
@@ -217,7 +217,7 @@
                                                         CornerRadius="3"
                                                         Background="{ThemeResource AccentFillColorDefaultBrush}"
                                                         VerticalAlignment="Center"
-                                                        ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)">
+                                                        ToolTipService.ToolTip="{x:Bind FckBadgeTooltip}">
                                                     <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                         <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                                         <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
@@ -282,7 +282,7 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
-                                   Text="Дискография"
+                                   Text="{x:Bind ViewModel.DiscographyTitle, Mode=OneWay}"
                                    FontSize="20"
                                    FontWeight="Bold"
                                    VerticalAlignment="Center"
@@ -298,7 +298,7 @@
                                     Background="{x:Bind ViewModel.IsAllReleasesFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}"
                                     BorderThickness="0"
                                     helpers:CursorHelper.UseHandCursor="True">
-                                <TextBlock Text="Все релизы"
+                                <TextBlock Text="{x:Bind ViewModel.AllReleasesFilterText, Mode=OneWay}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
                                            Foreground="{x:Bind ViewModel.IsAllReleasesFilter, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}}" />
@@ -309,7 +309,7 @@
                                     Background="{x:Bind ViewModel.IsAlbumsFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}"
                                     BorderThickness="0"
                                     helpers:CursorHelper.UseHandCursor="True">
-                                <TextBlock Text="Альбомы"
+                                <TextBlock Text="{x:Bind ViewModel.AlbumsFilterText, Mode=OneWay}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
                                            Foreground="{x:Bind ViewModel.IsAlbumsFilter, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}}" />
@@ -320,7 +320,7 @@
                                     Background="{x:Bind ViewModel.IsSinglesFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}"
                                     BorderThickness="0"
                                     helpers:CursorHelper.UseHandCursor="True">
-                                <TextBlock Text="Синглы и EP"
+                                <TextBlock Text="{x:Bind ViewModel.SinglesFilterText, Mode=OneWay}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
                                            Foreground="{x:Bind ViewModel.IsSinglesFilter, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}}" />
@@ -332,7 +332,7 @@
                                     BorderThickness="0"
                                     Visibility="{x:Bind ViewModel.HasAlsoAlbums, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                                     helpers:CursorHelper.UseHandCursor="True">
-                                <TextBlock Text="Сборники"
+                                <TextBlock Text="{x:Bind ViewModel.CompilationsFilterText, Mode=OneWay}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
                                            Foreground="{x:Bind ViewModel.IsCompilationsFilter, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}}" />
@@ -348,7 +348,7 @@
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 BorderThickness="1"
-                                ToolTipService.ToolTip="Изменить порядок сортировки (по году)"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.SortOrderTooltip, Mode=OneWay}"
                                 helpers:CursorHelper.UseHandCursor="True">
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <FontIcon Glyph="{x:Bind ViewModel.SortOrderGlyph, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
@@ -358,7 +358,7 @@
                     </Grid>
 
                     <!-- Albums Empty In Selected Filter Placeholder -->
-                    <TextBlock Text="В этой категории пока нет релизов"
+                    <TextBlock Text="{x:Bind ViewModel.EmptyCategoryText, Mode=OneWay}"
                                FontSize="13"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                Margin="4,8"
@@ -404,7 +404,7 @@
                 <!-- 5. ABOUT / BIO SECTION -->
                 <StackPanel Spacing="14"
                             Visibility="{x:Bind ViewModel.HasDescription, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <TextBlock Text="Об исполнителе"
+                    <TextBlock Text="{x:Bind ViewModel.AboutArtistTitle, Mode=OneWay}"
                                FontSize="20"
                                FontWeight="Bold" />
 
@@ -436,7 +436,7 @@
                             HorizontalAlignment="Center">
                         <FontIcon Glyph="&#xE142;" FontSize="26" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <TextBlock Text="У этого исполнителя пока нет доступных треков или альбомов"
+                    <TextBlock Text="{x:Bind ViewModel.EmptyStateText, Mode=OneWay}"
                                FontSize="15"
                                FontWeight="SemiBold"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"

@@ -153,6 +153,11 @@ public sealed partial class Track : ObservableObject
         : Duration.ToString(@"m\:ss");
 
     [JsonIgnore]
+    public string FckBadgeTooltip => App.Loc?.CurrentLanguage == "en"
+        ? "Explicit version restored by FckCensor"
+        : "Трек подменен FckCensor (Uncensored)";
+
+    [JsonIgnore]
     public string? CoverUrl => GetCoverUrl(200);
 
     [JsonIgnore]

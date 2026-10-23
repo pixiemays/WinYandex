@@ -28,8 +28,7 @@
 </p>
 
 <p align="center">
-  <img src="images/now_playing.png" alt="Режим Now Playing с синхронизированными текстами" width="422" />
-  <img src="images/artist.png" alt="Страница исполнителя" width="422" />
+  <img src="images/now_playing.png" alt="Режим Now Playing с синхронизированными текстами" width="850" />
 </p>
 
 ---

@@ -353,7 +353,7 @@
                                     Padding="8,2"
                                     CornerRadius="8"
                                     Background="{ThemeResource AccentFillColorDefaultBrush}"
-                                    ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.FckBadgeTooltip, Mode=OneWay}"
                                     VerticalAlignment="Center"
                                     Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">

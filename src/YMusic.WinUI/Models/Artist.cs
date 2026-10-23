@@ -100,13 +100,27 @@ public sealed class ArtistStats
     public long? LastMonthListenersDelta { get; set; }
 
     [JsonIgnore]
-    public string FormattedListeners => LastMonthListeners switch
+    public string FormattedListeners => FormatListeners(LastMonthListeners, App.Loc?.CurrentLanguage == "en");
+
+    public static string FormatListeners(long? listeners, bool isEn)
     {
-        null => string.Empty,
-        > 1_000_000 => $"{LastMonthListeners.Value / 1_000_000.0:0.#} млн слушателей в месяц",
-        > 1_000 => $"{LastMonthListeners.Value / 1_000.0:0.#} тыс. слушателей в месяц",
-        _ => $"{LastMonthListeners.Value:N0} слушателей в месяц"
-    };
+        if (listeners == null) return string.Empty;
+        if (isEn)
+        {
+            return listeners.Value switch
+            {
+                >= 1_000_000 => $"{listeners.Value / 1_000_000.0:0.#}M monthly listeners",
+                >= 1_000 => $"{listeners.Value / 1_000.0:0.#}K monthly listeners",
+                _ => $"{listeners.Value:N0} monthly listeners"
+            };
+        }
+        return listeners.Value switch
+        {
+            >= 1_000_000 => $"{listeners.Value / 1_000_000.0:0.#} млн слушателей в месяц",
+            >= 1_000 => $"{listeners.Value / 1_000.0:0.#} тыс. слушателей в месяц",
+            _ => $"{listeners.Value:N0} слушателей в месяц"
+        };
+    }
 }
 
 public sealed class ArtistBriefInfoResult

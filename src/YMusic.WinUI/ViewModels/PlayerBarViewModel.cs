@@ -128,6 +128,12 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     }
     public string VolumeInputTooltip => Loc?.CurrentLanguage == "en" ? "Click to enter volume percentage" : "Нажмите, чтобы ввести процент громкости";
     public string FckCensorRepoMenuText => Loc?.CurrentLanguage == "en" ? "Original FckCensor project (GitHub)" : "Оригинальный проект FckCensor (GitHub)";
+    public string FckOptionsTooltip => Loc?.CurrentLanguage == "en" ? "Options / FckCensor" : "Дополнительно / FckCensor";
+    public string FckRemoveReplacementText => Loc?.CurrentLanguage == "en" ? "Remove replacement (FckCensor)" : "Удалить замену (FckCensor)";
+    public string FckChooseAnotherFileText => Loc?.CurrentLanguage == "en" ? "Choose another audio file..." : "Выбрать другой аудиофайл...";
+    public string FckReplaceTrackText => Loc?.CurrentLanguage == "en" ? "Replace track (FckCensor)..." : "Подменить трек (FckCensor)...";
+    public string FckReportCensorshipText => Loc?.CurrentLanguage == "en" ? "Report censorship" : "Сообщить о цензуре";
+    public string FckBadgeTooltip => Loc?.CurrentLanguage == "en" ? "Track replaced by FckCensor (Uncensored)" : "Трек подменен FckCensor (Uncensored)";
 
     public System.Collections.ObjectModel.ObservableCollection<LyricLine> Lyrics { get; } = new();
 
@@ -764,6 +770,12 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         OnPropertyChanged(nameof(ArtistInfoTooltip));
         OnPropertyChanged(nameof(VolumeInputTooltip));
         OnPropertyChanged(nameof(FckCensorRepoMenuText));
+        OnPropertyChanged(nameof(FckOptionsTooltip));
+        OnPropertyChanged(nameof(FckRemoveReplacementText));
+        OnPropertyChanged(nameof(FckChooseAnotherFileText));
+        OnPropertyChanged(nameof(FckReplaceTrackText));
+        OnPropertyChanged(nameof(FckReportCensorshipText));
+        OnPropertyChanged(nameof(FckBadgeTooltip));
     }
 
     [RelayCommand]

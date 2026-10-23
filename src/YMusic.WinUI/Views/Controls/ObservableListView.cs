@@ -19,13 +19,6 @@ public sealed class ObservableListView : ListView
             InnerScrollViewer = sv;
             sv.ViewChanged -= OnScrollViewChanged;
             sv.ViewChanged += OnScrollViewChanged;
-            sv.RegisterPropertyChangedCallback(ScrollViewer.VerticalOffsetProperty, (s, dp) =>
-            {
-                if (s is ScrollViewer scroller)
-                {
-                    VerticalOffsetChanged?.Invoke(this, scroller.VerticalOffset);
-                }
-            });
         }
     }
 

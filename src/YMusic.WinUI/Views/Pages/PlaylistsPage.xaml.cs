@@ -64,11 +64,6 @@ public sealed partial class PlaylistsPage : Page
                 });
             }
         };
-
-        TracksListView.VerticalOffsetChanged += (_, offset) =>
-        {
-            UpdatePlaylistHeaderCollapse(offset);
-        };
     }
 
     private void ApplyInitialViewState()
@@ -310,57 +305,11 @@ public sealed partial class PlaylistsPage : Page
         ViewModel.SelectCategory("albums");
     }
 
-    private void PlaylistHeroGrid_PointerWheelChanged(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-    {
-        var delta = e.GetCurrentPoint(PlaylistHeroGrid).Properties.MouseWheelDelta;
-        TracksListView.ScrollByDelta(delta);
-        e.Handled = true;
-    }
-
-    private void UpdatePlaylistHeaderCollapse(double offset)
-    {
-        if (PlaylistHeroGrid == null || PlaylistCoverBorder == null || PlaylistTitleText == null) return;
-
-        double progress = Math.Clamp(offset / 100.0, 0.0, 1.0);
-
-        // 1. Cover dimensions: 140 down to 48
-        double coverSize = Math.Round(140.0 - progress * (140.0 - 48.0));
-        PlaylistCoverBorder.Width = coverSize;
-        PlaylistCoverBorder.Height = coverSize;
-        PlaylistCoverBorder.CornerRadius = new CornerRadius(Math.Round(10.0 - progress * 5.0));
-        if (PlaylistCoverIcon != null)
-        {
-            PlaylistCoverIcon.FontSize = Math.Round(36.0 - progress * (36.0 - 18.0));
-        }
-
-        // 2. Title font size: 28 down to 18
-        PlaylistTitleText.FontSize = Math.Round(28.0 - progress * (28.0 - 18.0));
-        PlaylistTitleText.MaxLines = progress > 0.5 ? 1 : 2;
-
-        // 3. Spacing and margins
-        if (PlaylistMetaStack != null)
-        {
-            PlaylistMetaStack.Margin = new Thickness(Math.Round(20.0 - progress * 8.0), 0, 0, 0);
-            PlaylistMetaStack.Spacing = Math.Round(8.0 - progress * 4.0);
-        }
-
-        PlaylistHeroGrid.Margin = new Thickness(0, 0, 0, Math.Round(24.0 - progress * 12.0));
-
-        // 4. Fade extra info
-        double fadeOut = Math.Clamp(1.0 - progress * 1.8, 0.0, 1.0);
-        if (PlaylistExtraInfoPanel != null)
-        {
-            PlaylistExtraInfoPanel.Opacity = fadeOut;
-            PlaylistExtraInfoPanel.Visibility = fadeOut <= 0.01 ? Visibility.Collapsed : Visibility.Visible;
-        }
-    }
-
     private async void PlaylistCard_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button button && button.Tag is Playlist playlist)
         {
             ViewModel.IsBackButtonVisible = true;
-            UpdatePlaylistHeaderCollapse(0);
             TracksListView.ScrollToTop();
             await ViewModel.OpenPlaylistCommand.ExecuteAsync(playlist);
         }
@@ -379,7 +328,6 @@ public sealed partial class PlaylistsPage : Page
         if (sender is Button button && button.Tag is Album album)
         {
             ViewModel.IsBackButtonVisible = true;
-            UpdatePlaylistHeaderCollapse(0);
             TracksListView.ScrollToTop();
             await ViewModel.OpenAlbumCommand.ExecuteAsync(album);
         }
@@ -459,7 +407,6 @@ public sealed partial class PlaylistsPage : Page
 
     public void ResetScrollAndHeader()
     {
-        UpdatePlaylistHeaderCollapse(0);
         TracksListView?.ScrollToTop();
     }
 

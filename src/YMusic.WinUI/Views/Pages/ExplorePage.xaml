@@ -529,9 +529,8 @@
             <!-- Hero Section -->
             <Grid x:Name="DetailHeroGrid"
                   Grid.Row="1"
-                  Margin="0,0,0,24"
-                  Background="Transparent"
-                  PointerWheelChanged="DetailHeroGrid_PointerWheelChanged">
+                  Margin="0,0,0,20"
+                  Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />

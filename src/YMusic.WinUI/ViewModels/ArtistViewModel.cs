@@ -87,12 +87,33 @@ public sealed partial class ArtistViewModel : BaseViewModel
     [ObservableProperty]
     private bool _hasDisplayAlbums;
 
+    private long? _lastMonthListeners;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SortOrderText))]
     [NotifyPropertyChangedFor(nameof(SortOrderGlyph))]
     private bool _isSortDescending = true; // Default: true (newest first)
 
-    public string SortOrderText => IsSortDescending ? "Сначала новые" : "Сначала старые";
+    public string BadgeText => Loc?.CurrentLanguage == "en" ? "ARTIST" : "ИСПОЛНИТЕЛЬ";
+    public string PlayPopularTracksText => Loc?.CurrentLanguage == "en" ? "Play" : "Слушать";
+    public string LikeArtistTooltip => IsLiked
+        ? (Loc?.CurrentLanguage == "en" ? "Remove from favorite artists" : "Удалить из любимых исполнителей")
+        : (Loc?.CurrentLanguage == "en" ? "Add to favorite artists" : "Добавить в любимые исполнители");
+    public string PopularTracksTitle => Loc?.CurrentLanguage == "en" ? "Popular Tracks" : "Популярные треки";
+    public string DiscographyTitle => Loc?.CurrentLanguage == "en" ? "Discography" : "Дискография";
+    public string AllReleasesFilterText => Loc?.CurrentLanguage == "en" ? "All Releases" : "Все релизы";
+    public string AlbumsFilterText => Loc?.CurrentLanguage == "en" ? "Albums" : "Альбомы";
+    public string SinglesFilterText => Loc?.CurrentLanguage == "en" ? "Singles & EPs" : "Синглы и EP";
+    public string CompilationsFilterText => Loc?.CurrentLanguage == "en" ? "Compilations" : "Сборники";
+    public string SortOrderText => IsSortDescending
+        ? (Loc?.CurrentLanguage == "en" ? "Newest first" : "Сначала новые")
+        : (Loc?.CurrentLanguage == "en" ? "Oldest first" : "Сначала старые");
+    public string SortOrderTooltip => Loc?.CurrentLanguage == "en" ? "Change sort order (by year)" : "Изменить порядок сортировки (по году)";
+    public string EmptyCategoryText => Loc?.CurrentLanguage == "en" ? "No releases in this category yet" : "В этой категории пока нет релизов";
+    public string AboutArtistTitle => Loc?.CurrentLanguage == "en" ? "About the Artist" : "Об исполнителе";
+    public string EmptyStateText => Loc?.CurrentLanguage == "en" ? "This artist has no available tracks or albums yet" : "У этого исполнителя пока нет доступных треков или альбомов";
+    public string FckCensorTooltip => Loc?.CurrentLanguage == "en" ? "Track replaced by FckCensor (Uncensored)" : "Трек подменен FckCensor (Uncensored)";
+
     public string SortOrderGlyph => IsSortDescending ? "\uE74B" : "\uE74A";
 
     public bool ShowEmptyState => !IsBusy && !HasPopularTracks && !HasAlbums;
@@ -103,6 +124,10 @@ public sealed partial class ArtistViewModel : BaseViewModel
         if (e.PropertyName == nameof(IsBusy))
         {
             OnPropertyChanged(nameof(ShowEmptyState));
+        }
+        else if (e.PropertyName == nameof(IsLiked))
+        {
+            OnPropertyChanged(nameof(LikeArtistTooltip));
         }
     }
 
@@ -128,6 +153,25 @@ public sealed partial class ArtistViewModel : BaseViewModel
     {
         base.OnLanguageChanged();
         OnPropertyChanged(nameof(BackButtonText));
+        OnPropertyChanged(nameof(BadgeText));
+        OnPropertyChanged(nameof(PlayPopularTracksText));
+        OnPropertyChanged(nameof(LikeArtistTooltip));
+        OnPropertyChanged(nameof(PopularTracksTitle));
+        OnPropertyChanged(nameof(DiscographyTitle));
+        OnPropertyChanged(nameof(AllReleasesFilterText));
+        OnPropertyChanged(nameof(AlbumsFilterText));
+        OnPropertyChanged(nameof(SinglesFilterText));
+        OnPropertyChanged(nameof(CompilationsFilterText));
+        OnPropertyChanged(nameof(SortOrderText));
+        OnPropertyChanged(nameof(SortOrderTooltip));
+        OnPropertyChanged(nameof(EmptyCategoryText));
+        OnPropertyChanged(nameof(AboutArtistTitle));
+        OnPropertyChanged(nameof(EmptyStateText));
+        OnPropertyChanged(nameof(FckCensorTooltip));
+        if (_lastMonthListeners != null)
+        {
+            FormattedListeners = ArtistStats.FormatListeners(_lastMonthListeners, Loc?.CurrentLanguage == "en");
+        }
     }
 
     public ArtistViewModel(
@@ -282,10 +326,12 @@ public sealed partial class ArtistViewModel : BaseViewModel
 
                 if (briefInfo?.Stats != null)
                 {
-                    FormattedListeners = briefInfo.Stats.FormattedListeners;
+                    _lastMonthListeners = briefInfo.Stats.LastMonthListeners;
+                    FormattedListeners = ArtistStats.FormatListeners(_lastMonthListeners, Loc?.CurrentLanguage == "en");
                 }
                 else
                 {
+                    _lastMonthListeners = null;
                     FormattedListeners = string.Empty;
                 }
 

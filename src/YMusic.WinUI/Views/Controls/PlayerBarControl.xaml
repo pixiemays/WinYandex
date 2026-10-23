@@ -113,7 +113,7 @@
                             CornerRadius="4"
                             Background="{ThemeResource AccentFillColorDefaultBrush}"
                             VerticalAlignment="Center"
-                            ToolTipService.ToolTip="Трек подменен FckCensor (Uncensored)">
+                            ToolTipService.ToolTip="{x:Bind ViewModel.FckBadgeTooltip, Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                             <FontIcon Glyph="&#xE70F;" FontSize="9" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                             <TextBlock Text="FCK" FontSize="10" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
@@ -168,12 +168,12 @@
                     Background="Transparent"
                     BorderBrush="Transparent"
                     helpers:CursorHelper.UseHandCursor="True"
-                    ToolTipService.ToolTip="Дополнительно / FckCensor"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.FckOptionsTooltip, Mode=OneWay}"
                     Margin="2,0,0,0">
                 <Button.Flyout>
                     <MenuFlyout>
                         <!-- When Replaced: Remove replacement -->
-                        <MenuFlyoutItem Text="Удалить замену (FckCensor)"
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.FckRemoveReplacementText, Mode=OneWay}"
                                         Command="{x:Bind ViewModel.RemoveCurrentTrackReplacementCommand}"
                                         Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                             <MenuFlyoutItem.Icon>
@@ -182,7 +182,7 @@
                         </MenuFlyoutItem>
                         
                         <!-- When Replaced: Change with another file -->
-                        <MenuFlyoutItem Text="Выбрать другой аудиофайл..."
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.FckChooseAnotherFileText, Mode=OneWay}"
                                         Command="{x:Bind ViewModel.ReplaceCurrentTrackCommand}"
                                         Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                             <MenuFlyoutItem.Icon>
@@ -191,7 +191,7 @@
                         </MenuFlyoutItem>
 
                         <!-- When Not Replaced: Replace Track -->
-                        <MenuFlyoutItem Text="Подменить трек (FckCensor)..."
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.FckReplaceTrackText, Mode=OneWay}"
                                         Command="{x:Bind ViewModel.ReplaceCurrentTrackCommand}"
                                         Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource InvertedBoolToVisibilityConverter}}">
                             <MenuFlyoutItem.Icon>
@@ -200,7 +200,7 @@
                         </MenuFlyoutItem>
 
                         <!-- When Not Replaced: Report Censorship -->
-                        <MenuFlyoutItem Text="Сообщить о цензуре"
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.FckReportCensorshipText, Mode=OneWay}"
                                         Command="{x:Bind ViewModel.ReportCurrentTrackCensorshipCommand}"
                                         Visibility="{x:Bind ViewModel.CanReportCurrentTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                             <MenuFlyoutItem.Icon>

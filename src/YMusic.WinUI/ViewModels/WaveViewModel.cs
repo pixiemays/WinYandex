@@ -170,7 +170,7 @@ public sealed partial class WaveViewModel : BaseViewModel
             Description = "Personal stream tailored to your music taste",
             StationType = "user",
             StationTag = "onyourwave",
-            Glyph = "\uE768",
+            Glyph = "\uE93E",
             GradientStart = "#FF0844",
             GradientEnd = "#FFB199"
         });

@@ -139,7 +139,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                                <FontIcon Glyph="&#xE768;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <FontIcon Glyph="&#xE93E;" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                 <TextBlock Text="My Wave" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />

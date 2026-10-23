@@ -440,26 +440,56 @@
                         </StackPanel>
 
                         <!-- Volume Slider Row -->
-                        <StackPanel Orientation="Horizontal"
+                        <StackPanel x:Name="DrawerVolumeContainer"
+                                    Orientation="Horizontal"
                                     HorizontalAlignment="Center"
-                                    Spacing="8"
-                                    Margin="0,1,0,0">
+                                    Spacing="6"
+                                    Margin="0,2,0,0">
                             <Button Command="{x:Bind ViewModel.ToggleMuteCommand}"
                                     Width="32"
                                     Height="32"
                                     CornerRadius="16"
+                                    Padding="0"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
                                     Background="Transparent"
                                     BorderBrush="Transparent"
                                     helpers:CursorHelper.UseHandCursor="True"
-                                    ToolTipService.ToolTip="Mute / Unmute">
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.MuteTooltip, Mode=OneWay}">
                                 <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" FontSize="14" Foreground="#B0FFFFFF" />
                             </Button>
 
-                            <Slider Width="110"
+                            <Slider x:Name="DrawerVolumeSlider"
+                                    Width="150"
                                     Minimum="0"
                                     Maximum="100"
+                                    StepFrequency="1"
+                                    SmallChange="2"
+                                    LargeChange="5"
                                     Value="{x:Bind ViewModel.Volume, Mode=TwoWay}"
-                                    VerticalAlignment="Center" />
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.VolumeTooltip, Mode=OneWay}" />
+
+                            <!-- Interactive Volume Percentage Box -->
+                            <TextBox x:Name="DrawerVolumePercentageBox"
+                                     Text="{x:Bind ViewModel.VolumePercentageText, Mode=OneWay}"
+                                     Width="48"
+                                     Height="28"
+                                     Padding="2,0"
+                                     FontSize="11"
+                                     FontWeight="SemiBold"
+                                     TextAlignment="Center"
+                                     CornerRadius="6"
+                                     VerticalAlignment="Center"
+                                     VerticalContentAlignment="Center"
+                                     Background="#26FFFFFF"
+                                     BorderBrush="#33FFFFFF"
+                                     BorderThickness="1"
+                                     Foreground="White"
+                                     ToolTipService.ToolTip="Нажмите, чтобы ввести процент громкости (0–100%)"
+                                     GotFocus="DrawerVolumePercentageBox_GotFocus"
+                                     LostFocus="DrawerVolumePercentageBox_LostFocus"
+                                     KeyDown="DrawerVolumePercentageBox_KeyDown" />
                         </StackPanel>
                     </StackPanel>
                 </Grid>

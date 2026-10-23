@@ -41,7 +41,7 @@ public sealed class UpdateService : IUpdateService
                 return plusIdx > 0 ? infoVersion.Substring(0, plusIdx) : infoVersion;
             }
             var ver = assembly.GetName().Version;
-            return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "0.9.0";
+            return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "0.9.1";
         }
     }
 

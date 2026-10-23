@@ -69,7 +69,7 @@
                                     Content="{x:Bind ViewModel.NavWaveText, Mode=OneWay}"
                                     Tag="Wave">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE768;" />
+                        <FontIcon Glyph="&#xE93E;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemLikes"

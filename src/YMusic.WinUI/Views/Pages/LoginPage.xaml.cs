@@ -1,9 +1,12 @@
 #nullable enable
 
+using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
+using Windows.ApplicationModel.DataTransfer;
 using YMusic.WinUI.Services;
 using YMusic.WinUI.ViewModels;
 
@@ -15,6 +18,7 @@ public sealed partial class LoginPage : Page
         $"https://oauth.yandex.ru/authorize?response_type=token&client_id={EnvironmentConfig.YandexClientId}";
 
     private bool _isLoggingIn;
+    private DispatcherQueueTimer? _clipboardTimer;
 
     public LoginViewModel ViewModel { get; }
 
@@ -24,7 +28,144 @@ public sealed partial class LoginPage : Page
         InitializeComponent();
     }
 
-    private async void SignInWithYandexButton_Click(object sender, RoutedEventArgs e)
+    private void Page_Unloaded(object sender, RoutedEventArgs e)
+    {
+        StopClipboardListener();
+    }
+
+    private void SignInWithBrowserButton_Click(object sender, RoutedEventArgs e)
+    {
+        StartBrowserOAuth();
+    }
+
+    private void StartBrowserOAuth()
+    {
+        _isLoggingIn = false;
+        ViewModel.ClearError();
+        InitialLoginPanel.Visibility = Visibility.Collapsed;
+        BrowserWaitingPanel.Visibility = Visibility.Visible;
+
+        OpenBrowser();
+        StartClipboardListener();
+    }
+
+    private void OpenBrowser()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(OAuthUrl)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            ViewModel.SetError($"Не удалось открыть браузер: {ex.Message}");
+        }
+    }
+
+    private void ReopenBrowserButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenBrowser();
+    }
+
+    private void CancelBrowserAuthButton_Click(object sender, RoutedEventArgs e)
+    {
+        StopClipboardListener();
+        BrowserWaitingPanel.Visibility = Visibility.Collapsed;
+        InitialLoginPanel.Visibility = Visibility.Visible;
+    }
+
+    private void StartClipboardListener()
+    {
+        StopClipboardListener();
+        _clipboardTimer = DispatcherQueue.CreateTimer();
+        _clipboardTimer.Interval = TimeSpan.FromMilliseconds(800);
+        _clipboardTimer.Tick += async (s, e) =>
+        {
+            await CheckClipboardForTokenAsync(showErrorIfNotFound: false);
+        };
+        _clipboardTimer.Start();
+    }
+
+    private void StopClipboardListener()
+    {
+        if (_clipboardTimer != null)
+        {
+            _clipboardTimer.Stop();
+            _clipboardTimer = null;
+        }
+    }
+
+    private async void PasteFromClipboardButton_Click(object sender, RoutedEventArgs e)
+    {
+        bool success = await CheckClipboardForTokenAsync(showErrorIfNotFound: true);
+        if (!success && !ViewModel.HasError)
+        {
+            ViewModel.SetError("В буфере обмена пока не найдена ссылка с токеном. Скопируйте адресную строку в браузере после входа (Ctrl+C).");
+        }
+    }
+
+    private async Task<bool> CheckClipboardForTokenAsync(bool showErrorIfNotFound)
+    {
+        if (_isLoggingIn)
+        {
+            return false;
+        }
+
+        try
+        {
+            var dataPackage = Clipboard.GetContent();
+            if (dataPackage != null && dataPackage.Contains(StandardDataFormats.Text))
+            {
+                string text = await dataPackage.GetTextAsync();
+                string? token = ExtractToken(text);
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    _isLoggingIn = true;
+                    StopClipboardListener();
+
+                    bool success = await ViewModel.LoginWithOAuthTokenAsync(token);
+                    if (!success)
+                    {
+                        _isLoggingIn = false;
+                        StartClipboardListener();
+                    }
+                    return success;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore transient clipboard access errors
+        }
+
+        return false;
+    }
+
+    private static string? ExtractToken(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return null;
+        }
+
+        var match = Regex.Match(input, @"(?:^|[#&?])access_token=([^&]+)");
+        if (match.Success)
+        {
+            return Uri.UnescapeDataString(match.Groups[1].Value);
+        }
+
+        string trimmed = input.Trim();
+        if (trimmed.StartsWith("y0_") && !trimmed.Contains(" ") && trimmed.Length >= 20)
+        {
+            return trimmed;
+        }
+
+        return null;
+    }
+
+    private async void SignInWithEmbeddedButton_Click(object sender, RoutedEventArgs e)
     {
         _isLoggingIn = false;
         OAuthOverlay.Visibility = Visibility.Visible;
@@ -41,7 +182,7 @@ public sealed partial class LoginPage : Page
         catch (Exception ex)
         {
             OAuthOverlay.Visibility = Visibility.Collapsed;
-            ViewModel.SetError($"Failed to initialize browser: {ex.Message}");
+            ViewModel.SetError($"Не удалось инициализировать браузер: {ex.Message}");
         }
     }
 
@@ -81,15 +222,11 @@ public sealed partial class LoginPage : Page
             return;
         }
 
-        var match = Regex.Match(uriString, @"[#&?]access_token=([^&]+)");
-        if (match.Success)
+        string? token = ExtractToken(uriString);
+        if (!string.IsNullOrWhiteSpace(token))
         {
             _isLoggingIn = true;
             cancelAction?.Invoke();
-
-            string token = Uri.UnescapeDataString(match.Groups[1].Value);
-            System.Diagnostics.Debug.WriteLine($"[OAuth Redirect] Matched URI: {uriString}");
-            System.Diagnostics.Debug.WriteLine($"[OAuth Token Extracted] Length: {token.Length}");
 
             DispatcherQueue.TryEnqueue(async () =>
             {

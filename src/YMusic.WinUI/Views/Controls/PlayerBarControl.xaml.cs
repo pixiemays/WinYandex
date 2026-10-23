@@ -20,11 +20,64 @@ public sealed partial class PlayerBarControl : UserControl
         SeekSlider.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(SeekSlider_PointerPressed), true);
         SeekSlider.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler(SeekSlider_PointerReleased), true);
         SeekSlider.AddHandler(UIElement.PointerCaptureLostEvent, new PointerEventHandler(SeekSlider_PointerCaptureLost), true);
+
+        VolumeContainer.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(VolumeContainer_PointerWheelChanged), true);
     }
 
     private void UserControl_Loaded(object sender, RoutedEventArgs e)
     {
         Bindings.Update();
+    }
+
+    private void VolumeContainer_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        var delta = e.GetCurrentPoint(null).Properties.MouseWheelDelta;
+        if (delta != 0)
+        {
+            double step = delta > 0 ? 2.0 : -2.0;
+            ViewModel.ChangeVolume(step);
+            e.Handled = true;
+        }
+    }
+
+    private void VolumePercentageBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (VolumePercentageBox != null)
+        {
+            VolumePercentageBox.Text = Math.Round(ViewModel.Volume).ToString();
+            VolumePercentageBox.SelectAll();
+        }
+    }
+
+    private void VolumePercentageBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        CommitVolumeText();
+    }
+
+    private void VolumePercentageBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            CommitVolumeText();
+            VolumeSlider.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+        else if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            if (VolumePercentageBox != null)
+            {
+                VolumePercentageBox.Text = ViewModel.VolumePercentageText;
+            }
+            VolumeSlider.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+    }
+
+    private void CommitVolumeText()
+    {
+        if (VolumePercentageBox == null) return;
+        ViewModel.SetVolumeFromInput(VolumePercentageBox.Text);
+        VolumePercentageBox.Text = ViewModel.VolumePercentageText;
     }
 
     private void SeekSlider_PointerPressed(object sender, PointerRoutedEventArgs e)

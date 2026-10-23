@@ -65,7 +65,7 @@ public sealed partial class WavePreset : CommunityToolkit.Mvvm.ComponentModel.Ob
 
     public string StationType { get; set; } = "user";
     public string StationTag { get; set; } = "onyourwave";
-    public string Glyph { get; set; } = "\uE768";
+    public string Glyph { get; set; } = "\uE93E";
 
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
     private string _description = string.Empty;

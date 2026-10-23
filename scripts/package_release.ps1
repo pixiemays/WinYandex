@@ -1,6 +1,6 @@
 # WinYandex Release Packaging Script
 param(
-    [string]$Version = "0.9.0",
+    [string]$Version = "0.9.1",
     [switch]$SkipBuild
 )
 

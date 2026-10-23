@@ -144,10 +144,16 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     private double _durationSeconds;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VolumeGlyph))]
+    [NotifyPropertyChangedFor(nameof(VolumePercentageText))]
+    [NotifyPropertyChangedFor(nameof(VolumeTooltip))]
     private double _volume = 80;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(VolumeGlyph))]
+    [NotifyPropertyChangedFor(nameof(VolumePercentageText))]
+    [NotifyPropertyChangedFor(nameof(VolumeTooltip))]
+    [NotifyPropertyChangedFor(nameof(MuteTooltip))]
     private bool _isMuted;
 
     [ObservableProperty]
@@ -161,7 +167,19 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     public string VolumeGlyph => IsMuted || Volume == 0
         ? "\uE74F" // Mute
-        : (Volume < 33 ? "\uE992" : (Volume < 66 ? "\uE993" : "\uE767"));
+        : (Volume < 33 ? "\uE993" : (Volume < 66 ? "\uE994" : "\uE767"));
+
+    private bool IsRussian => Loc?.CurrentLanguage != "en";
+
+    public string VolumePercentageText => $"{Math.Round(Volume):0}%";
+
+    public string VolumeTooltip => IsMuted
+        ? (IsRussian ? "Без звука" : "Muted")
+        : (IsRussian ? $"Громкость: {Math.Round(Volume):0}%" : $"Volume: {Math.Round(Volume):0}%");
+
+    public string MuteTooltip => IsMuted
+        ? (IsRussian ? "Включить звук" : "Unmute")
+        : (IsRussian ? "Выключить звук" : "Mute");
 
     public string RepeatGlyph => RepeatMode switch
     {
@@ -524,7 +542,13 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     private void OnMuteChanged(object? sender, bool isMuted)
     {
-        RunOnUi(() => IsMuted = isMuted);
+        RunOnUi(() =>
+        {
+            IsMuted = isMuted;
+            OnPropertyChanged(nameof(VolumePercentageText));
+            OnPropertyChanged(nameof(VolumeTooltip));
+            OnPropertyChanged(nameof(MuteTooltip));
+        });
     }
 
     private void OnRepeatModeChanged(object? sender, RepeatMode repeatMode)
@@ -611,6 +635,47 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         {
             _audioPlayer.Volume = value;
         }
+        OnPropertyChanged(nameof(VolumePercentageText));
+        OnPropertyChanged(nameof(VolumeTooltip));
+    }
+
+    public void ChangeVolume(double delta)
+    {
+        if (IsMuted && delta > 0)
+        {
+            IsMuted = false;
+            _audioPlayer.IsMuted = false;
+        }
+        Volume = Math.Clamp(Math.Round(Volume + delta), 0.0, 100.0);
+    }
+
+    public void SetVolumeFromInput(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            OnPropertyChanged(nameof(VolumePercentageText));
+            return;
+        }
+
+        string cleaned = input.Replace("%", "").Trim();
+        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double parsed) ||
+            double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out parsed))
+        {
+            if (IsMuted && parsed > 0)
+            {
+                IsMuted = false;
+                _audioPlayer.IsMuted = false;
+            }
+            Volume = Math.Clamp(Math.Round(parsed), 0.0, 100.0);
+        }
+        OnPropertyChanged(nameof(VolumePercentageText));
+    }
+
+    protected override void OnLanguageChanged()
+    {
+        base.OnLanguageChanged();
+        OnPropertyChanged(nameof(VolumeTooltip));
+        OnPropertyChanged(nameof(MuteTooltip));
     }
 
     [RelayCommand]

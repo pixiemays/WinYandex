@@ -44,6 +44,59 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         SeekSlider.AddHandler(UIElement.PointerPressedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(SeekSlider_PointerPressed), true);
         SeekSlider.AddHandler(UIElement.PointerReleasedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(SeekSlider_PointerReleased), true);
         SeekSlider.AddHandler(UIElement.PointerCaptureLostEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(SeekSlider_PointerCaptureLost), true);
+
+        DrawerVolumeContainer.AddHandler(UIElement.PointerWheelChangedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(DrawerVolumeContainer_PointerWheelChanged), true);
+    }
+
+    private void DrawerVolumeContainer_PointerWheelChanged(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        var delta = e.GetCurrentPoint(null).Properties.MouseWheelDelta;
+        if (delta != 0)
+        {
+            double step = delta > 0 ? 2.0 : -2.0;
+            ViewModel.ChangeVolume(step);
+            e.Handled = true;
+        }
+    }
+
+    private void DrawerVolumePercentageBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (DrawerVolumePercentageBox != null)
+        {
+            DrawerVolumePercentageBox.Text = Math.Round(ViewModel.Volume).ToString();
+            DrawerVolumePercentageBox.SelectAll();
+        }
+    }
+
+    private void DrawerVolumePercentageBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        CommitDrawerVolumeText();
+    }
+
+    private void DrawerVolumePercentageBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            CommitDrawerVolumeText();
+            DrawerVolumeSlider.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+        else if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            if (DrawerVolumePercentageBox != null)
+            {
+                DrawerVolumePercentageBox.Text = ViewModel.VolumePercentageText;
+            }
+            DrawerVolumeSlider.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+    }
+
+    private void CommitDrawerVolumeText()
+    {
+        if (DrawerVolumePercentageBox == null) return;
+        ViewModel.SetVolumeFromInput(DrawerVolumePercentageBox.Text);
+        DrawerVolumePercentageBox.Text = ViewModel.VolumePercentageText;
     }
 
     private void SeekSlider_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)

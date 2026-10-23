@@ -30,7 +30,7 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore src/YMusic.WinUI/YMusic.WinUI.csproj -r win-x64 -c Release
+      run: dotnet restore src/YMusic.WinUI/YMusic.WinUI.csproj -r win-x64
 
     # Fast CI validation on push to main or PR (under 1 minute)
     - name: Fast Build & Verify (CI)

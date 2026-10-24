@@ -49,6 +49,21 @@ public interface IAudioCacheService : IDisposable
     void EnforceCacheLimit();
 
     /// <summary>
+    /// Gets the base directory currently used for the audio cache.
+    /// </summary>
+    string CacheDirectory { get; }
+
+    /// <summary>
+    /// Gets the directory where audio files are saved.
+    /// </summary>
+    string AudioDirectory { get; }
+
+    /// <summary>
+    /// Changes the cache location on disk (e.g. to another drive), optionally moving existing files.
+    /// </summary>
+    Task<bool> ChangeCacheLocationAsync(string? newLocation, bool moveExistingFiles = true);
+
+    /// <summary>
     /// Fired whenever the cache changes (track cached, evicted, or cache cleared).
     /// </summary>
     event EventHandler? CacheUpdated;

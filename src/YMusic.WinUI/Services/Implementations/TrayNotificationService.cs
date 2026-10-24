@@ -740,6 +740,12 @@ public sealed class TrayNotificationService : ITrayNotificationService
 
         ShowWindow(_hWnd, SW_RESTORE);
         SetForegroundWindow(_hWnd);
+        try
+        {
+            SwitchToThisWindow(_hWnd, true);
+        }
+        catch { }
+        _shellWindow.Activate();
     }
 
     public void MinimizeToTray()
@@ -1202,6 +1208,9 @@ public sealed class TrayNotificationService : ITrayNotificationService
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern void SwitchToThisWindow(IntPtr hWnd, bool fUnknown);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr GetForegroundWindow();

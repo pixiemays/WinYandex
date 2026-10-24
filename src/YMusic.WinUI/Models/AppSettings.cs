@@ -37,6 +37,9 @@ public sealed class AppSettings
     [JsonPropertyName("audioCacheEnabled")]
     public bool AudioCacheEnabled { get; set; } = true;
 
+    [JsonPropertyName("audioCacheLocation")]
+    public string AudioCacheLocation { get; set; } = string.Empty;
+
     [JsonPropertyName("cacheSizeLimitMb")]
     public int CacheSizeLimitMb { get; set; } = 1024;
 }

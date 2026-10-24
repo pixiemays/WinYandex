@@ -95,6 +95,8 @@ public sealed class LocalizationService : ILocalizationService
         ["Settings_TrackNotifications"] = ("Уведомления Windows Toast", "Windows Toast Notifications"),
         ["Settings_TrackNotificationsDesc"] = ("Показывать уведомление при смене трека", "Show notification when track changes"),
         ["Settings_AudioCache"] = ("Дисковый аудио-кэш", "Audio Disk Cache"),
+        ["Settings_AudioCacheLocation"] = ("Расположение кэша", "Audio Cache Location"),
+        ["Settings_AudioCacheLocationDesc"] = ("Папка на диске для хранения кэшированных треков", "Disk folder for storing cached audio tracks"),
         ["Settings_CacheLimit"] = ("Лимит кэша", "Cache Storage Limit"),
         ["Settings_ClearCache"] = ("Очистить кэш", "Clear Cache"),
         ["Settings_OpenAppData"] = ("Папка данных приложения", "Application Data Folder"),

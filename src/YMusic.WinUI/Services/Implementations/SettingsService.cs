@@ -176,6 +176,20 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public string AudioCacheLocation
+    {
+        get => _settings.AudioCacheLocation;
+        set
+        {
+            if (_settings.AudioCacheLocation != value)
+            {
+                _settings.AudioCacheLocation = value ?? string.Empty;
+                Save();
+                NotifyChanged(nameof(AudioCacheLocation));
+            }
+        }
+    }
+
     public int CacheSizeLimitMb
     {
         get => _settings.CacheSizeLimitMb;

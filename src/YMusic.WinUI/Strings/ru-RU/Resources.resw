@@ -183,6 +183,8 @@
   <data name="Settings_FckCensorDesc" xml:space="preserve"><value>Автоматическая замена треков на нецензурированные версии</value></data>
   <data name="Settings_AudioCache" xml:space="preserve"><value>Локальный дисковый кэш</value></data>
   <data name="Settings_AudioCacheDesc" xml:space="preserve"><value>Кэширование воспроизводимых аудиопотоков для мгновенного запуска (0 мс)</value></data>
+  <data name="Settings_AudioCacheLocation" xml:space="preserve"><value>Расположение кэша</value></data>
+  <data name="Settings_AudioCacheLocationDesc" xml:space="preserve"><value>Директория на диске для хранения кэшированных треков</value></data>
   <data name="Settings_CacheLimit" xml:space="preserve"><value>Лимит дискового кэша</value></data>
   <data name="Settings_ClearCache" xml:space="preserve"><value>Очистить кэш</value></data>
   <data name="Settings_OpenAppData" xml:space="preserve"><value>Открыть папку AppData</value></data>

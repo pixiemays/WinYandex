@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
@@ -114,7 +115,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private string _appDataPath = string.Empty;
 
     [ObservableProperty]
-    private string _appVersionText = "v0.9.1";
+    private string _appVersionText = "v0.9.2";
 
     [ObservableProperty]
     private int _selectedQualityIndex;
@@ -226,7 +227,15 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string StorageSectionTitle => IsRussian ? "Хранилище и данные" : "Storage & Data";
     public string AudioCacheTitle => IsRussian ? "Дисковый аудио-кэш (LRU)" : "Audio Disk Cache (LRU)";
     public string InstantReplayText => IsRussian ? "Мгновенный старт" : "Instant Replay";
-    public string AudioCacheDesc => IsRussian ? "Сохранение треков в %LocalAppData%/YMusic/Cache для мгновенного запуска (0 мс) без повторного скачивания" : "Save played tracks offline in %LocalAppData%/YMusic/Cache for instant 0 ms replay without network re-downloading";
+    public string AudioCacheDesc => IsRussian ? "Сохранение треков на диске для мгновенного запуска (0 мс) без повторного скачивания" : "Save played tracks offline on disk for instant 0 ms replay without network re-downloading";
+
+    public string CacheLocationTitle => IsRussian ? "Расположение кэша" : "Audio Cache Location";
+    public string CacheLocationDesc => IsRussian ? "Директория на диске для хранения кэшированных треков" : "Disk folder for storing cached audio tracks";
+    public string CurrentCachePath => _audioCacheService.CacheDirectory;
+    public bool IsCustomCachePath => !string.IsNullOrEmpty(_settingsService.AudioCacheLocation);
+    public string ChangeCacheFolderButtonText => IsRussian ? "Выбрать папку" : "Change Folder";
+    public string ResetCacheFolderButtonText => IsRussian ? "По умолчанию" : "Reset";
+    public string ResetCacheFolderTooltip => IsRussian ? "Вернуть стандартную папку на диске C:" : "Reset to default folder on drive C:";
 
     public string CacheLimitTitle => IsRussian ? "Лимит дискового кэша" : "Cache Storage Limit";
     public string CacheLimitDesc => IsRussian ? "Автоматически удаляет наименее прослушиваемые треки (LRU) при превышении квоты" : "Automatically evicts least recently played tracks (LRU) when local cache exceeds this quota";
@@ -826,13 +835,138 @@ public sealed partial class ProfileViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    public async Task ChangeCacheFolderAsync()
+    {
+        try
+        {
+            var picker = new Windows.Storage.Pickers.FolderPicker();
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.ComputerFolder;
+            picker.FileTypeFilter.Add("*");
+
+            if (App.MainWindow != null)
+            {
+                IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            }
+
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder == null) return;
+
+            string selectedPath = folder.Path;
+            if (string.IsNullOrWhiteSpace(selectedPath)) return;
+
+            if (string.Equals(Path.GetFullPath(selectedPath).TrimEnd('\\'), Path.GetFullPath(_audioCacheService.CacheDirectory).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            bool shouldMigrate = false;
+            int trackCount = _audioCacheService.GetCachedTrackCount();
+            if (trackCount > 0 && App.MainWindow?.Content?.XamlRoot != null)
+            {
+                var dialog = new ContentDialog
+                {
+                    XamlRoot = App.MainWindow.Content.XamlRoot,
+                    Title = IsRussian ? "Перенос кэша треков" : "Migrate Audio Cache",
+                    Content = IsRussian
+                        ? $"В текущем кэше сохранено {trackCount} треков ({FormatBytes(_audioCacheService.GetTotalCacheSizeBytes())}).\n\nПеренести существующие файлы в новую папку ({selectedPath})?"
+                        : $"Currently {trackCount} tracks ({FormatBytes(_audioCacheService.GetTotalCacheSizeBytes())}) are cached.\n\nDo you want to move existing files to the new folder ({selectedPath})?",
+                    PrimaryButtonText = IsRussian ? "Перенести файлы" : "Move files",
+                    SecondaryButtonText = IsRussian ? "Начать с чистого кэша" : "Start fresh",
+                    CloseButtonText = IsRussian ? "Отмена" : "Cancel",
+                    DefaultButton = ContentDialogButton.Primary
+                };
+
+                var result = await dialog.ShowAsync();
+                if (result == ContentDialogResult.None)
+                {
+                    return;
+                }
+
+                shouldMigrate = (result == ContentDialogResult.Primary);
+            }
+
+            bool success = await _audioCacheService.ChangeCacheLocationAsync(selectedPath, shouldMigrate);
+            if (success)
+            {
+                OnPropertyChanged(nameof(CurrentCachePath));
+                OnPropertyChanged(nameof(IsCustomCachePath));
+                CalculateCacheSize();
+                ShowNotification(IsRussian
+                    ? $"Папка кэша изменена: {selectedPath}"
+                    : $"Cache folder changed: {selectedPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(IsRussian
+                ? $"Ошибка при выборе папки: {ex.Message}"
+                : $"Failed to change cache folder: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public async Task ResetCacheFolderAsync()
+    {
+        try
+        {
+            string defaultDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic", "Cache");
+            if (string.Equals(Path.GetFullPath(defaultDir).TrimEnd('\\'), Path.GetFullPath(_audioCacheService.CacheDirectory).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            bool shouldMigrate = false;
+            int trackCount = _audioCacheService.GetCachedTrackCount();
+            if (trackCount > 0 && App.MainWindow?.Content?.XamlRoot != null)
+            {
+                var dialog = new ContentDialog
+                {
+                    XamlRoot = App.MainWindow.Content.XamlRoot,
+                    Title = IsRussian ? "Сброс расположения кэша" : "Reset Cache Location",
+                    Content = IsRussian
+                        ? $"Перенести сохраненные треки ({trackCount} шт.) обратно в стандартную папку на диске C:\n({defaultDir})?"
+                        : $"Move saved tracks ({trackCount} items) back to default folder on drive C:\n({defaultDir})?",
+                    PrimaryButtonText = IsRussian ? "Перенести файлы" : "Move files",
+                    SecondaryButtonText = IsRussian ? "Сбросить без переноса" : "Reset without moving",
+                    CloseButtonText = IsRussian ? "Отмена" : "Cancel",
+                    DefaultButton = ContentDialogButton.Primary
+                };
+
+                var result = await dialog.ShowAsync();
+                if (result == ContentDialogResult.None)
+                {
+                    return;
+                }
+
+                shouldMigrate = (result == ContentDialogResult.Primary);
+            }
+
+            bool success = await _audioCacheService.ChangeCacheLocationAsync(null, shouldMigrate);
+            if (success)
+            {
+                OnPropertyChanged(nameof(CurrentCachePath));
+                OnPropertyChanged(nameof(IsCustomCachePath));
+                CalculateCacheSize();
+                ShowNotification(IsRussian
+                    ? "Папка кэша сброшена к стандартной на диске C:"
+                    : "Cache folder reset to default location on drive C:");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(IsRussian ? $"Ошибка сброса папки: {ex.Message}" : $"Reset failed: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
     public async Task ClearCacheAsync()
     {
         try
         {
             await _audioCacheService.ClearCacheAsync();
 
-            string cacheFolder = Path.Combine(_appDataDir, "Cache");
+            string cacheFolder = _audioCacheService.CacheDirectory;
             if (Directory.Exists(cacheFolder))
             {
                 var files = Directory.GetFiles(cacheFolder);
@@ -856,7 +990,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         try
         {
-            string cacheFolder = Path.Combine(_appDataDir, "Cache", "Audio");
+            string cacheFolder = _audioCacheService.AudioDirectory;
             Directory.CreateDirectory(cacheFolder);
             Process.Start(new ProcessStartInfo
             {
@@ -1050,6 +1184,13 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(LocalStorageTitle));
         OnPropertyChanged(nameof(StorageOccupiedText));
         OnPropertyChanged(nameof(CachedItemsText));
+        OnPropertyChanged(nameof(CacheLocationTitle));
+        OnPropertyChanged(nameof(CacheLocationDesc));
+        OnPropertyChanged(nameof(CurrentCachePath));
+        OnPropertyChanged(nameof(IsCustomCachePath));
+        OnPropertyChanged(nameof(ChangeCacheFolderButtonText));
+        OnPropertyChanged(nameof(ResetCacheFolderButtonText));
+        OnPropertyChanged(nameof(ResetCacheFolderTooltip));
         OnPropertyChanged(nameof(OpenCacheTooltip));
         OnPropertyChanged(nameof(OpenCacheButtonText));
         OnPropertyChanged(nameof(ClearCacheButtonText));
@@ -1166,17 +1307,26 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 ? $"{trackCount} трек(ов) в кэше"
                 : (trackCount == 1 ? "1 track cached" : $"{trackCount} tracks cached");
 
-            if (!Directory.Exists(_appDataDir))
+            long totalBytes = 0;
+            if (Directory.Exists(_appDataDir))
             {
-                CacheSizeText = "0 KB";
-                return;
+                var dirInfo = new DirectoryInfo(_appDataDir);
+                foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+                {
+                    totalBytes += file.Length;
+                }
             }
 
-            var dirInfo = new DirectoryInfo(_appDataDir);
-            long totalBytes = 0;
-            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+            string currentCache = _audioCacheService.CacheDirectory;
+            if (!string.IsNullOrEmpty(currentCache) &&
+                Directory.Exists(currentCache) &&
+                !currentCache.StartsWith(_appDataDir, StringComparison.OrdinalIgnoreCase))
             {
-                totalBytes += file.Length;
+                var cacheDirInfo = new DirectoryInfo(currentCache);
+                foreach (var file in cacheDirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+                {
+                    totalBytes += file.Length;
+                }
             }
 
             string limitStr = _settingsService.CacheSizeLimitMb > 0

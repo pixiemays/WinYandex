@@ -183,6 +183,8 @@
   <data name="Settings_FckCensorDesc" xml:space="preserve"><value>Automatically replace censored tracks with original versions</value></data>
   <data name="Settings_AudioCache" xml:space="preserve"><value>Local Audio Disk Cache</value></data>
   <data name="Settings_AudioCacheDesc" xml:space="preserve"><value>Cache played audio streams for instant 0 ms playback</value></data>
+  <data name="Settings_AudioCacheLocation" xml:space="preserve"><value>Audio Cache Location</value></data>
+  <data name="Settings_AudioCacheLocationDesc" xml:space="preserve"><value>Disk folder for storing cached audio tracks</value></data>
   <data name="Settings_CacheLimit" xml:space="preserve"><value>Cache Size Limit</value></data>
   <data name="Settings_ClearCache" xml:space="preserve"><value>Clear Cache</value></data>
   <data name="Settings_OpenAppData" xml:space="preserve"><value>Open AppData Folder</value></data>

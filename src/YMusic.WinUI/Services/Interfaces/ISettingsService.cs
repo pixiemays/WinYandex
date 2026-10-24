@@ -16,6 +16,7 @@ public interface ISettingsService
     string AppFont { get; set; }
     string Language { get; set; }
     bool AudioCacheEnabled { get; set; }
+    string AudioCacheLocation { get; set; }
     int CacheSizeLimitMb { get; set; }
 
     event EventHandler<string>? SettingChanged;

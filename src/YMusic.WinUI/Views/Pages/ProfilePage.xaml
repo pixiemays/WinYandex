@@ -537,6 +537,59 @@
                         </Grid>
                     </Border>
 
+                    <!-- Audio Cache Location Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="6" Margin="0,0,16,0">
+                                <TextBlock Text="{x:Bind ViewModel.CacheLocationTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.CacheLocationDesc, Mode=OneWay}"
+                                           FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        HorizontalAlignment="Left"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.CurrentCachePath, Mode=OneWay}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xED25;" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="{x:Bind ViewModel.CurrentCachePath, Mode=OneWay}"
+                                                   FontSize="12"
+                                                   FontFamily="Consolas"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxWidth="480" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Command="{x:Bind ViewModel.ResetCacheFolderCommand}"
+                                        Visibility="{x:Bind ViewModel.IsCustomCachePath, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                        Padding="12,8"
+                                        CornerRadius="8"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.ResetCacheFolderTooltip, Mode=OneWay}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE777;" FontSize="12" />
+                                        <TextBlock Text="{x:Bind ViewModel.ResetCacheFolderButtonText, Mode=OneWay}" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{x:Bind ViewModel.ChangeCacheFolderCommand}"
+                                        Padding="14,8"
+                                        CornerRadius="8"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        Style="{ThemeResource AccentButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xED25;" FontSize="12" />
+                                        <TextBlock Text="{x:Bind ViewModel.ChangeCacheFolderButtonText, Mode=OneWay}" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                     <!-- Cache Size Limit Card -->
                     <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                         <Grid>

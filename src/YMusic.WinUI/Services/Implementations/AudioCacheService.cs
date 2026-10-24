@@ -46,9 +46,12 @@ public sealed class AudioCacheMetadata
 public sealed class AudioCacheService : IAudioCacheService
 {
     private readonly ISettingsService _settingsService;
-    private readonly string _cacheBaseDir;
-    private readonly string _audioDir;
-    private readonly string _indexFilePath;
+    private string _cacheBaseDir;
+    private string _audioDir;
+    private string _indexFilePath;
+
+    public string CacheDirectory => _cacheBaseDir;
+    public string AudioDirectory => _audioDir;
 
     private readonly object _lock = new();
     private AudioCacheMetadata _metadata = new();
@@ -67,6 +70,29 @@ public sealed class AudioCacheService : IAudioCacheService
 
     public event EventHandler? CacheUpdated;
 
+    public static string GetDefaultCacheDir()
+    {
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(appData, "YMusic", "Cache");
+    }
+
+    private static string ResolveCacheDir(string? configuredDir)
+    {
+        if (string.IsNullOrWhiteSpace(configuredDir))
+        {
+            return GetDefaultCacheDir();
+        }
+
+        try
+        {
+            return Path.GetFullPath(configuredDir);
+        }
+        catch
+        {
+            return GetDefaultCacheDir();
+        }
+    }
+
     public AudioCacheService(ISettingsService settingsService, HttpClient? httpClient = null)
     {
         _settingsService = settingsService;
@@ -80,13 +106,29 @@ public sealed class AudioCacheService : IAudioCacheService
         };
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("YMusic/1.0 (Windows NT 10.0; Win64; x64)");
 
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        _cacheBaseDir = Path.Combine(appData, "YMusic", "Cache");
+        string configured = _settingsService.AudioCacheLocation;
+        _cacheBaseDir = ResolveCacheDir(configured);
         _audioDir = Path.Combine(_cacheBaseDir, "Audio");
         _indexFilePath = Path.Combine(_cacheBaseDir, "audio_cache_index.json");
 
-        Directory.CreateDirectory(_cacheBaseDir);
-        Directory.CreateDirectory(_audioDir);
+        try
+        {
+            Directory.CreateDirectory(_cacheBaseDir);
+            Directory.CreateDirectory(_audioDir);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[AudioCache] Failed to initialize directory '{_cacheBaseDir}': {ex.Message}. Falling back to default.");
+            _cacheBaseDir = GetDefaultCacheDir();
+            _audioDir = Path.Combine(_cacheBaseDir, "Audio");
+            _indexFilePath = Path.Combine(_cacheBaseDir, "audio_cache_index.json");
+            try
+            {
+                Directory.CreateDirectory(_cacheBaseDir);
+                Directory.CreateDirectory(_audioDir);
+            }
+            catch { }
+        }
 
         _saveDebounceTimer = new System.Timers.Timer(2000)
         {
@@ -97,6 +139,100 @@ public sealed class AudioCacheService : IAudioCacheService
         LoadIndexAndSelfHeal();
 
         _settingsService.SettingChanged += OnSettingChanged;
+    }
+
+    public async Task<bool> ChangeCacheLocationAsync(string? newLocation, bool moveExistingFiles = true)
+    {
+        string targetBaseDir = ResolveCacheDir(newLocation);
+        string currentBaseDir;
+        lock (_lock)
+        {
+            currentBaseDir = _cacheBaseDir;
+        }
+
+        if (string.Equals(Path.GetFullPath(targetBaseDir).TrimEnd('\\'), Path.GetFullPath(currentBaseDir).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        string targetAudioDir = Path.Combine(targetBaseDir, "Audio");
+        string targetIndexFilePath = Path.Combine(targetBaseDir, "audio_cache_index.json");
+
+        try
+        {
+            Directory.CreateDirectory(targetBaseDir);
+            Directory.CreateDirectory(targetAudioDir);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[AudioCache] Failed to create directories at '{targetBaseDir}': {ex.Message}");
+            throw new InvalidOperationException($"Cannot access or create target directory '{targetBaseDir}': {ex.Message}", ex);
+        }
+
+        // Cancel pending background downloads
+        foreach (var kvp in _activeDownloads)
+        {
+            try { kvp.Value.Cancel(); } catch { }
+        }
+        _activeDownloads.Clear();
+
+        await Task.Run(() =>
+        {
+            lock (_lock)
+            {
+                _saveDebounceTimer.Stop();
+                FlushIndexIfDirty();
+
+                if (moveExistingFiles && Directory.Exists(_audioDir))
+                {
+                    try
+                    {
+                        var files = Directory.GetFiles(_audioDir);
+                        foreach (var file in files)
+                        {
+                            try
+                            {
+                                string fileName = Path.GetFileName(file);
+                                string destFile = Path.Combine(targetAudioDir, fileName);
+                                if (!File.Exists(destFile))
+                                {
+                                    File.Copy(file, destFile, overwrite: true);
+                                }
+                                try { File.Delete(file); } catch { }
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"[AudioCache] Error copying audio file '{file}': {ex.Message}");
+                            }
+                        }
+
+                        if (File.Exists(_indexFilePath))
+                        {
+                            try
+                            {
+                                File.Copy(_indexFilePath, targetIndexFilePath, overwrite: true);
+                                try { File.Delete(_indexFilePath); } catch { }
+                            }
+                            catch { }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[AudioCache] Error during cache migration: {ex.Message}");
+                    }
+                }
+
+                _cacheBaseDir = targetBaseDir;
+                _audioDir = targetAudioDir;
+                _indexFilePath = targetIndexFilePath;
+
+                LoadIndexAndSelfHeal();
+            }
+        });
+
+        _settingsService.AudioCacheLocation = (string.Equals(targetBaseDir, GetDefaultCacheDir(), StringComparison.OrdinalIgnoreCase) ? string.Empty : targetBaseDir);
+        NotifyCacheUpdated();
+        return true;
     }
 
     private void OnSettingChanged(object? sender, string propName)

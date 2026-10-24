@@ -1051,7 +1051,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
             if (update.IsUpdateAvailable)
             {
                 NewVersionTag = $"v{update.LatestVersion}";
-                UpdateReleaseNotes = !string.IsNullOrWhiteSpace(update.ReleaseNotes) ? update.ReleaseNotes : (IsRussian ? "Улучшения стабильности и исправления ошибок." : "Bug fixes and improvements.");
+                UpdateReleaseNotes = update.GetReleaseNotes(IsRussian);
                 UpdateStatusText = IsRussian
                     ? $"Доступна новая версия: {NewVersionTag}!"
                     : $"New version available: {NewVersionTag}!";
@@ -1212,6 +1212,17 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(DownloadUpdateButtonText));
         OnPropertyChanged(nameof(UpdateSectionTitle));
         OnPropertyChanged(nameof(ReleaseNotesTitle));
+
+        if (AvailableUpdate != null)
+        {
+            UpdateReleaseNotes = AvailableUpdate.GetReleaseNotes(IsRussian);
+            if (IsUpdateAvailable)
+            {
+                UpdateStatusText = IsRussian
+                    ? $"Доступна новая версия: {NewVersionTag}!"
+                    : $"New version available: {NewVersionTag}!";
+            }
+        }
 
         CalculateCacheSize();
     }

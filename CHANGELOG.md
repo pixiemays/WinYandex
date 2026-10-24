@@ -1,87 +1,87 @@
-# История изменений (Changelog)
+# Changelog
 
-Все заметные изменения в проекте WinYandex документируются в этом файле.
+All notable changes to the WinYandex project are documented in this file.
 
 ---
 
 ## [0.9.3] — 2026-10-24
 
-### Интерфейс и система обновлений
-* Улучшен визуальный стиль карточки доступного обновления в настройках: устранен неконтрастный белый текст на ярком акцентном фоне, карточка оформлена в аккуратном стиле Fluent Card с акцентной рамкой и системными кистями темы.
-* Добавлена плавная прокрутка всего списка изменений (Changelog) внутри карточки доступного обновления.
-* Исправлен переход по кнопке обновления из главного баннера приложения: страница настроек теперь автоматически и плавно скроллится вниз к блоку обновления.
-* Полноценная интеграция истории изменений: релизы GitHub и внутренний сервис обновлений теперь публикуют форматированный список нововведений напрямую из CHANGELOG.md вместо шаблонной ссылки Full Changelog.
-* Добавлена автоматическая очистка загруженных файлов инсталлятора после установки обновления и при старте приложения для экономии места на диске.
+### UI & Update System
+* Improved visual styling of the Update Available card in settings: eliminated low-contrast white text on accent background, redesigned as a clean Fluent Card with accent border and dynamic system theme brushes.
+* Added smooth scrolling (`ScrollViewer`) for the entire changelog list directly within the update card.
+* Fixed update navigation from the main player notification banner: clicking the update button now smoothly scrolls down to the update section in settings.
+* Seamless changelog integration: GitHub releases and the in-app update service now publish formatted release notes directly from `CHANGELOG.md` instead of a generic compare link.
+* Added automatic cleanup of downloaded update installer files after installation and on app startup to reclaim disk space.
 
 ---
 
 ## [0.9.2] — 2026-10-24
 
-### Системный трей и жизненный цикл (Single Instance)
-* Исправлено повторное открытие приложения при включенной опции скрытия в системный трей: клик по ярлыку или закрепленной иконке в панели задач Windows теперь активирует и восстанавливает уже запущенный экземпляр из трея, вместо создания дублирующего процесса.
-* Добавлена межпроцессная переадресация активации (Windows AppLifecycle Single Instance) с корректной передачей прав на отображение поверх остальных окон (`AllowSetForegroundWindow` / `SwitchToThisWindow`).
+### System Tray & App Lifecycle (Single Instance)
+* Fixed re-opening the application when "hide to tray on close" is enabled: clicking desktop shortcuts or pinned taskbar icons now restores and activates the existing tray instance instead of launching a duplicate process.
+* Implemented cross-process activation redirection (Windows AppLifecycle Single Instance) with proper window foreground handoff (`AllowSetForegroundWindow` / `SwitchToThisWindow`).
 
-### Дисковый аудио-кэш и хранилище
-* Добавлена возможность выбора произвольной папки и любого диска (D:, E: и т.д.) для сохранения дискового кэша музыки, а не только системного диска C:.
-* Добавлена кнопка выбора директории с нативным диалогом проводника Windows.
-* Добавлен автоматический безопасный перенос ранее сохраненных треков в новое расположение (с подтверждением пользователя).
-* Добавлена кнопка быстрого сброса пути кэша к расположению по умолчанию на системном диске.
-* Динамический подсчет занятого места теперь корректно учитывает кэш на любых подключенных дисках.
+### Audio Cache & Storage
+* Added ability to select custom directories and any drive (e.g. D:, E:) for audio cache storage, removing the restriction to drive C:.
+* Added custom directory picker button with native Windows Explorer dialog.
+* Added safe automated migration of previously cached tracks to the new location (with user confirmation).
+* Added quick reset button to restore the default cache path on the system drive.
+* Dynamic cache size calculation now accurately accounts for storage across all connected drives.
 
 ---
 
 ## [0.9.1] — 2026-10-24
 
-### Интерфейс и анимации
-* Добавлены плавные анимации входа и выхода из полноэкранного режима Now Playing (плавное скольжение снизу, затухание и легкое масштабирование обложки).
-* Устранены скачки высоты контента и боковой панели при переключении режима Now Playing.
-* Добавлены плавные анимации открытия и закрытия альбомов и плейлистов.
-* Добавлен кроссфейд при переключении между альбомами.
-* Устранено моргание таблицы треков при загрузке.
-* Заменена иконка воспроизведения возле заголовка «Моя волна» на нейтральную иконку аудиоволны.
-* Увеличена ширина боковой панели навигации до 250 px для предотвращения обрезки названий.
-* Добавлена возможность ставить и снимать лайки (добавлять в избранное) для альбомов и плейлистов в шапке и контекстных меню.
-* Добавлено меню выбора исполнителя при переходе из треков с несколькими артистами (в плеере, Now Playing и списках треков).
-* Скрыта кнопка «Назад» при открытии альбомов и плейлистов из закрепленных элементов боковой панели.
-* Устранено повторное проигрывание анимации и перезагрузка при клике на уже открытый альбом или плейлист.
-* Исправлен возврат назад из альбома: переход возвращает напрямую на исходную страницу (включая страницу исполнителя) без промежуточного показа библиотеки плейлистов.
-* Исправлена обрезка бейджей качества и текста в Now Playing.
-* Исправлено обрезание кнопок Mute, эквалайзера и текстов в плеере.
+### UI & Animations
+* Added smooth entry and exit animations for full-screen Now Playing mode (slide up, fade, and subtle album art scale).
+* Eliminated layout shifts and content jumping in the main panel when toggling Now Playing mode.
+* Added smooth opening and closing animations for albums and playlists.
+* Added crossfade transition when switching between albums.
+* Fixed track table flickering during data loading.
+* Replaced playback icon near "My Vibe" header with a neutral audio wave icon.
+* Increased navigation sidebar width to 250 px to prevent text clipping.
+* Added ability to like and unlike (add/remove from favorites) albums and playlists in headers and context menus.
+* Added artist picker context menu when clicking tracks with multiple artists (in player bar, Now Playing, and track lists).
+* Hid back button when navigating to pinned albums or playlists directly from the sidebar.
+* Prevented re-triggering animation and reloading when clicking already opened albums or playlists.
+* Fixed back navigation from albums: now returns directly to the originating page (including artist page) without intermediate playlist library display.
+* Fixed quality badges and text clipping in Now Playing mode.
+* Fixed clipping of Mute, equalizer, and lyrics buttons in the player bar.
 
-### Управление звуком
-* Увеличена ширина слайдера громкости и добавлена плавная регулировка колесом мыши.
-* Добавлен ввод точного процента громкости вручную по клику на число.
-* Скорректирована иконка динамика на низких уровнях громкости.
+### Audio Controls
+* Increased volume slider width and added smooth mouse wheel adjustment.
+* Added manual volume percentage input by clicking the numeric value.
+* Refined speaker icon state for low volume levels.
 
-### Производительность
-* Добавлено кэширование альбомов и плейлистов в памяти, устраняющее повторные сетевые запросы.
+### Performance
+* Added in-memory caching for albums and playlists, eliminating redundant network calls.
 
 ### FckCensor v2
-* Поддержка базы list_v2.json.
-* Восстановление заблокированных треков в альбомах (AlbumSpoof).
-* Внедрение перезалитых треков в карточки артистов (ArtistInsertion).
-* Приоритет синхронизированных текстов LRCLIB для замененных треков.
-* Автоматическое наследование обложек альбомов для восстановленных треков.
-* Динамическое определение длительности заблокированных треков из аудиопотока и разблокировка перемотки.
-* Добавлены ссылки на оригинальный репозиторий FckCensor в профиле и контекстных меню.
+* Support for `list_v2.json` database.
+* Restored blocked tracks in albums (AlbumSpoof).
+* Re-uploaded track injection into artist pages (ArtistInsertion).
+* Priority for synchronized LRCLIB lyrics on replaced tracks.
+* Automatic inheritance of album art for recovered tracks.
+* Dynamic audio stream duration detection and seek bar unlocking for blocked tracks.
+* Added attribution links to original FckCensor repository in settings and context menus.
 
-### Авторизация и сессия
-* Добавлена авторизация через внешний системный браузер с перехватом токена из буфера обмена.
-* Добавлен бейдж безопасности SSL для встроенного окна входа и исправлен перенос текста.
-* При выходе из аккаунта воспроизведение полностью останавливается, а плеер и закрепления скрываются.
+### Authentication & Session
+* Added external system browser authentication with clipboard token capture.
+* Added SSL security indicator badge to embedded login window and improved text wrapping.
+* Clean playback stop, player collapse, and pinned items concealment on account logout.
 
 ---
 
 ## [0.9.0] — 2026-10-23
 
-### Релиз
-* Нативный клиент Яндекс Музыки на WinUI 3 и .NET 8.
-* Поддержка персонального потока «Моя волна» с фильтрами.
-* Воспроизведение треков, плейлистов, альбомов и страниц артистов.
-* Встроенный 10-полосный эквалайзер с пресетами.
-* Синхронизированные тексты песен в реальном времени.
-* Локальный дисковый LRU-кэш и Gapless preload.
-* Базовая интеграция модуля подмены зацензуренных треков (FckCensor).
-* Интеграция с SMTC, системным треем и Discord Rich Presence.
-* Тёмная и светлая темы с эффектом Mica.
-* Поддержка русского и английского языков.
+### Release
+* Native Yandex Music desktop client built with WinUI 3 and .NET 8.
+* "My Vibe" personalized stream support with dynamic moods and filters.
+* Playback for tracks, playlists, albums, and artist discographies.
+* Built-in 10-band equalizer with audio presets.
+* Real-time synchronized lyrics display.
+* Local disk LRU cache with gapless track preloading.
+* Integrated FckCensor module for censored track replacement.
+* Full integration with Windows SMTC, system tray, and Discord Rich Presence.
+* Light and dark themes with Mica material effects.
+* Global hotkeys and media key control.

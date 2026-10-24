@@ -132,6 +132,47 @@ public sealed class UpdateService : IUpdateService
                 }
             }
 
+            // 3. Load Russian changelog (from raw CHANGELOG_ru.md on GitHub or local CHANGELOG_ru.md)
+            try
+            {
+                string changelogRuUrl = $"https://raw.githubusercontent.com/{RepoOwner}/{RepoName}/main/CHANGELOG_ru.md";
+                using var clRuResponse = await HttpClient.GetAsync(changelogRuUrl, ct).ConfigureAwait(false);
+                if (clRuResponse.IsSuccessStatusCode)
+                {
+                    string clRuContent = await clRuResponse.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                    string parsedNotesRu = ExtractReleaseNotesFromChangelog(clRuContent, cleanTag);
+                    if (!string.IsNullOrWhiteSpace(parsedNotesRu))
+                    {
+                        info.ReleaseNotesRu = parsedNotesRu;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[UpdateService] Failed to load CHANGELOG_ru.md from GitHub: {ex.Message}");
+            }
+
+            if (string.IsNullOrWhiteSpace(info.ReleaseNotesRu))
+            {
+                try
+                {
+                    string localChangelogRu = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG_ru.md");
+                    if (File.Exists(localChangelogRu))
+                    {
+                        string localRuContent = File.ReadAllText(localChangelogRu);
+                        string parsedNotesRu = ExtractReleaseNotesFromChangelog(localRuContent, cleanTag);
+                        if (!string.IsNullOrWhiteSpace(parsedNotesRu))
+                        {
+                            info.ReleaseNotesRu = parsedNotesRu;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[UpdateService] Failed to load local CHANGELOG_ru.md: {ex.Message}");
+                }
+            }
+
             if (root.TryGetProperty("html_url", out var htmlProp))
             {
                 info.HtmlUrl = htmlProp.GetString() ?? info.HtmlUrl;

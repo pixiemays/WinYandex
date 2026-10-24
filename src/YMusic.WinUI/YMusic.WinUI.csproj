@@ -34,6 +34,9 @@
     <None Include="..\..\CHANGELOG.md" Link="CHANGELOG.md" Condition="Exists('..\..\CHANGELOG.md')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\..\CHANGELOG_ru.md" Link="CHANGELOG_ru.md" Condition="Exists('..\..\CHANGELOG_ru.md')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

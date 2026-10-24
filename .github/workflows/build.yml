@@ -68,7 +68,7 @@ jobs:
         }
         
         # 2. Inno Setup Installer EXE
-        $rawTag = if ($env:GITHUB_REF -like "refs/tags/*") { $env:GITHUB_REF.Substring(10) } else { "0.9.2" }
+        $rawTag = if ($env:GITHUB_REF -like "refs/tags/*") { $env:GITHUB_REF.Substring(10) } else { "0.9.3" }
         $version = $rawTag.TrimStart('v', 'V')
         $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
         if (-not (Test-Path $iscc)) {

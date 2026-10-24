@@ -56,10 +56,10 @@
 ## Установка и запуск
 
 ### 1. Установщик Setup.exe (Рекомендуется)
-Скачайте `WinYandex-v0.9.2-Setup-x64.exe` из раздела [Releases](https://github.com/pixiemays/WinYandex/releases). Установщик настроит ярлыки в меню «Пуск» и на рабочем столе.
+Скачайте `WinYandex-v0.9.3-Setup-x64.exe` из раздела [Releases](https://github.com/pixiemays/WinYandex/releases). Установщик настроит ярлыки в меню «Пуск» и на рабочем столе.
 
 ### 2. Портативная версия (ZIP)
-Скачайте архив `WinYandex-v0.9.2-win-x64-portable.zip`, распакуйте в любую папку и запустите `YMusic.WinUI.exe`. Приложение полностью автономно и не требует установки сторонних библиотек.
+Скачайте архив `WinYandex-v0.9.3-win-x64-portable.zip`, распакуйте в любую папку и запустите `YMusic.WinUI.exe`. Приложение полностью автономно и не требует установки сторонних библиотек.
 
 ### 3. Пакет MSIX Bundle
 Для установки в качестве нативного пакета Windows запустите файл `WinYandex_x64.msixbundle`.

@@ -42,7 +42,7 @@ public sealed class UpdateService : IUpdateService
                 return plusIdx > 0 ? infoVersion.Substring(0, plusIdx) : infoVersion;
             }
             var ver = assembly.GetName().Version;
-            return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "0.9.2";
+            return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "0.9.3";
         }
     }
 
@@ -192,6 +192,16 @@ public sealed class UpdateService : IUpdateService
         string updatesDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic", "Updates");
         Directory.CreateDirectory(updatesDir);
 
+        // Clean up any old installer files before starting a new download
+        try
+        {
+            foreach (var existingFile in Directory.EnumerateFiles(updatesDir))
+            {
+                try { File.Delete(existingFile); } catch { }
+            }
+        }
+        catch { }
+
         string fileName = update.AssetName ?? $"WinYandex-v{update.LatestVersion}-Setup.exe";
         string filePath = Path.Combine(updatesDir, fileName);
 
@@ -239,6 +249,20 @@ public sealed class UpdateService : IUpdateService
                     FileName = installerFilePath,
                     UseShellExecute = true
                 });
+
+                // Spawn a detached delayed background command to delete the installer after installation
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        Arguments = $"/c timeout /t 90 /nobreak >nul & del /f /q \"{installerFilePath}\"",
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    });
+                }
+                catch { }
             }
             else
             {
@@ -311,5 +335,34 @@ public sealed class UpdateService : IUpdateService
         }
 
         return string.Empty;
+    }
+
+    public static void CleanOldUpdates()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                // Wait 5 seconds after startup for any previous installer to finish and release file locks
+                await Task.Delay(5000);
+                string updatesDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic", "Updates");
+                if (Directory.Exists(updatesDir))
+                {
+                    foreach (var file in Directory.EnumerateFiles(updatesDir))
+                    {
+                        try
+                        {
+                            File.Delete(file);
+                            Debug.WriteLine($"[UpdateService] Cleaned up old update file: {file}");
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[UpdateService] CleanOldUpdates error: {ex.Message}");
+            }
+        });
     }
 }

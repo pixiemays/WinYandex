@@ -134,5 +134,6 @@ public partial class App : Application
         _window.Activate();
         GetService<ITrayNotificationService>()?.InitializeThumbnailButtons();
         GetService<IDiscordRpcService>()?.Initialize();
+        UpdateService.CleanOldUpdates();
     }
 }

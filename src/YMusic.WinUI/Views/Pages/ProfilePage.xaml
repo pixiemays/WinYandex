@@ -9,7 +9,8 @@
     xmlns:helpers="using:YMusic.WinUI.Helpers"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
+    <ScrollViewer x:Name="PageScrollViewer"
+                  VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled"
                   Padding="36,28,36,48">
         <StackPanel HorizontalAlignment="Stretch" Spacing="28">
@@ -705,7 +706,7 @@
             <!-- ========================================== -->
             <!-- 5. ABOUT & UPDATES                        -->
             <!-- ========================================== -->
-            <Border Padding="20" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+            <Border x:Name="AboutAndUpdatesSection" Padding="20" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                 <StackPanel Spacing="16">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -760,30 +761,33 @@
 
                     <!-- Update Available Card -->
                     <Border Visibility="{x:Bind ViewModel.IsUpdateAvailable, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                            Padding="16"
-                            CornerRadius="8"
-                            Background="{ThemeResource AccentFillColorDefaultBrush}"
-                            Opacity="0.95">
-                        <StackPanel Spacing="10">
+                            Padding="18,16"
+                            CornerRadius="10"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                            BorderThickness="1.5">
+                        <StackPanel Spacing="12">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
-                                <StackPanel Spacing="4">
+                                <StackPanel Spacing="6" Margin="0,0,16,0">
                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                        <FontIcon Glyph="&#xE896;" FontSize="16" Foreground="White" />
+                                        <FontIcon Glyph="&#xE896;" FontSize="16" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
                                         <TextBlock Text="{x:Bind ViewModel.NewVersionTag, Mode=OneWay}"
                                                    FontWeight="Bold"
                                                    FontSize="15"
-                                                   Foreground="White" />
+                                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                                        <Border Padding="6,1.5" CornerRadius="4" Background="#26FACC15" BorderBrush="#4DFACC15" BorderThickness="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind ViewModel.UpdateSectionTitle, Mode=OneWay}" FontSize="10" FontWeight="SemiBold" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                                        </Border>
                                     </StackPanel>
                                     <TextBlock Text="{x:Bind ViewModel.UpdateReleaseNotes, Mode=OneWay}"
                                                FontSize="12"
-                                               Foreground="White"
-                                               Opacity="0.9"
-                                               MaxLines="3"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               MaxLines="4"
                                                TextWrapping="Wrap"
                                                TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
@@ -791,31 +795,28 @@
                                 <Button Grid.Column="1"
                                         Command="{x:Bind ViewModel.DownloadAndInstallUpdateCommand}"
                                         IsEnabled="{x:Bind ViewModel.CanDownloadUpdate, Mode=OneWay}"
-                                        Background="White"
-                                        Foreground="Black"
+                                        Style="{ThemeResource AccentButtonStyle}"
                                         FontWeight="SemiBold"
                                         Padding="16,8"
-                                        CornerRadius="6"
+                                        CornerRadius="8"
                                         VerticalAlignment="Center"
                                         helpers:CursorHelper.UseHandCursor="True">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="&#xE896;" FontSize="13" Foreground="Black" />
-                                        <TextBlock Text="{x:Bind ViewModel.DownloadUpdateButtonText, Mode=OneWay}" FontSize="13" Foreground="Black" />
+                                        <FontIcon Glyph="&#xE896;" FontSize="13" />
+                                        <TextBlock Text="{x:Bind ViewModel.DownloadUpdateButtonText, Mode=OneWay}" FontSize="13" />
                                     </StackPanel>
                                 </Button>
                             </Grid>
 
                             <!-- Download Progress Bar -->
-                            <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.IsDownloadingUpdate, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <StackPanel Spacing="6" Visibility="{x:Bind ViewModel.IsDownloadingUpdate, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <ProgressBar Value="{x:Bind ViewModel.UpdateDownloadProgress, Mode=OneWay}"
                                              Maximum="100"
                                              Height="6"
-                                             CornerRadius="3"
-                                             Foreground="White" />
+                                             CornerRadius="3" />
                                 <TextBlock Text="{x:Bind ViewModel.UpdateProgressText, Mode=OneWay}"
                                            FontSize="11"
-                                           Foreground="White"
-                                           Opacity="0.95" />
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>

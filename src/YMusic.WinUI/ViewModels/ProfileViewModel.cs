@@ -145,6 +145,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private bool _isFckCensorEnabled;
 
     [ObservableProperty]
+    private bool _shouldScrollToUpdates;
+
+    [ObservableProperty]
     private int _selectedThemeIndex;
 
     [ObservableProperty]

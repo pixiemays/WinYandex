@@ -15,6 +15,15 @@ public sealed partial class ProfilePage : Page
         ViewModel = App.GetService<ProfileViewModel>();
         DataContext = ViewModel;
         InitializeComponent();
+
+        Loaded += (_, _) =>
+        {
+            if (ViewModel.ShouldScrollToUpdates)
+            {
+                ViewModel.ShouldScrollToUpdates = false;
+                ScrollToUpdates();
+            }
+        };
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -22,6 +31,22 @@ public sealed partial class ProfilePage : Page
         base.OnNavigatedTo(e);
         Bindings.Update();
         _ = ViewModel.InitializeAsync();
+
+        if (ViewModel.ShouldScrollToUpdates || (e.Parameter is string s && s == "Updates"))
+        {
+            ViewModel.ShouldScrollToUpdates = false;
+            ScrollToUpdates();
+        }
+    }
+
+    public void ScrollToUpdates()
+    {
+        DispatcherQueue.TryEnqueue(async () =>
+        {
+            await System.Threading.Tasks.Task.Delay(150);
+            PageScrollViewer?.ChangeView(null, PageScrollViewer.ScrollableHeight, null, false);
+            AboutAndUpdatesSection?.StartBringIntoView(new Microsoft.UI.Xaml.BringIntoViewOptions { AnimationDesired = true });
+        });
     }
 
     public string FormatLogin(string? login)

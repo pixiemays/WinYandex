@@ -283,6 +283,9 @@ public sealed partial class ShellWindow : Window
             }
         }
 
+        bool isUpdatesTarget = tag.Equals("Account:Updates", StringComparison.OrdinalIgnoreCase) ||
+                               tag.Equals("Settings:Updates", StringComparison.OrdinalIgnoreCase);
+
         Type? targetPage = tag switch
         {
             "Explore" => typeof(ExplorePage),
@@ -290,9 +293,9 @@ public sealed partial class ShellWindow : Window
             "Wave" => typeof(WavePage),
             "Likes" => typeof(LikedTracksPage),
             "Playlists" => typeof(PlaylistsPage),
-            "Account" => ViewModel.IsAuthenticated ? typeof(ProfilePage) : typeof(LoginPage),
+            "Account" or "Account:Updates" => ViewModel.IsAuthenticated ? typeof(ProfilePage) : typeof(LoginPage),
             "Profile" => typeof(ProfilePage),
-            "Settings" => typeof(ProfilePage),
+            "Settings" or "Settings:Updates" => typeof(ProfilePage),
             "Artist" => typeof(ArtistPage),
             _ => null
         };
@@ -308,7 +311,7 @@ public sealed partial class ShellWindow : Window
                     "Wave" => NavItemWave,
                     "Likes" => NavItemLikes,
                     "Playlists" => NavItemPlaylists,
-                    "Account" or "Profile" or "Settings" => NavItemAccount,
+                    "Account" or "Profile" or "Settings" or "Account:Updates" or "Settings:Updates" => NavItemAccount,
                     _ => null
                 };
                 if (navItem != null && !ReferenceEquals(NavView.SelectedItem, navItem))
@@ -322,7 +325,11 @@ public sealed partial class ShellWindow : Window
 
                 if (ContentFrame.CurrentSourcePageType != targetPage)
                 {
-                    ContentFrame.Navigate(targetPage);
+                    ContentFrame.Navigate(targetPage, isUpdatesTarget ? "Updates" : null);
+                }
+                else if (isUpdatesTarget && ContentFrame.Content is ProfilePage profilePage)
+                {
+                    profilePage.ScrollToUpdates();
                 }
             }
             catch (Exception ex)

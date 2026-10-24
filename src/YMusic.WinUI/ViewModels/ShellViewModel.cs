@@ -86,7 +86,9 @@ public sealed partial class ShellViewModel : BaseViewModel
     public void OpenUpdates()
     {
         IsUpdateBannerOpen = false;
-        _navigationService.NavigateToTag("Account");
+        var profileVm = App.GetService<ProfileViewModel>();
+        profileVm.ShouldScrollToUpdates = true;
+        _navigationService.NavigateToTag("Account:Updates");
     }
 
     [RelayCommand]

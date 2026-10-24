@@ -31,6 +31,9 @@
     <Content Include="Strings\**\*.resw">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="..\..\CHANGELOG.md" Link="CHANGELOG.md" Condition="Exists('..\..\CHANGELOG.md')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

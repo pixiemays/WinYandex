@@ -784,12 +784,12 @@
                                             <TextBlock Text="{x:Bind ViewModel.UpdateSectionTitle, Mode=OneWay}" FontSize="10" FontWeight="SemiBold" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
                                         </Border>
                                     </StackPanel>
-                                    <TextBlock Text="{x:Bind ViewModel.UpdateReleaseNotes, Mode=OneWay}"
-                                               FontSize="12"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               MaxLines="4"
-                                               TextWrapping="Wrap"
-                                               TextTrimming="CharacterEllipsis" />
+                                    <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto" Margin="0,4,0,0">
+                                        <TextBlock Text="{x:Bind ViewModel.UpdateReleaseNotes, Mode=OneWay}"
+                                                   FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextWrapping="Wrap" />
+                                    </ScrollViewer>
                                 </StackPanel>
 
                                 <Button Grid.Column="1"

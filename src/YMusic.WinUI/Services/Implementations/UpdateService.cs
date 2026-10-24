@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
@@ -79,6 +80,56 @@ public sealed class UpdateService : IUpdateService
             if (root.TryGetProperty("body", out var bodyProp))
             {
                 info.ReleaseNotes = bodyProp.GetString() ?? "";
+            }
+
+            bool isGenericChangelog = string.IsNullOrWhiteSpace(info.ReleaseNotes) ||
+                                     info.ReleaseNotes.Contains("Full Changelog", StringComparison.OrdinalIgnoreCase) ||
+                                     info.ReleaseNotes.Trim().StartsWith("**Full Changelog**", StringComparison.OrdinalIgnoreCase);
+
+            if (isGenericChangelog)
+            {
+                // 1. Try fetching CHANGELOG.md from GitHub raw repository
+                try
+                {
+                    string changelogUrl = $"https://raw.githubusercontent.com/{RepoOwner}/{RepoName}/main/CHANGELOG.md";
+                    using var clResponse = await HttpClient.GetAsync(changelogUrl, ct).ConfigureAwait(false);
+                    if (clResponse.IsSuccessStatusCode)
+                    {
+                        string clContent = await clResponse.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                        string parsedNotes = ExtractReleaseNotesFromChangelog(clContent, cleanTag);
+                        if (!string.IsNullOrWhiteSpace(parsedNotes))
+                        {
+                            info.ReleaseNotes = parsedNotes;
+                            isGenericChangelog = false;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[UpdateService] Failed to load CHANGELOG.md from GitHub: {ex.Message}");
+                }
+
+                // 2. Fallback to local CHANGELOG.md if available
+                if (isGenericChangelog)
+                {
+                    try
+                    {
+                        string localChangelog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
+                        if (File.Exists(localChangelog))
+                        {
+                            string localContent = File.ReadAllText(localChangelog);
+                            string parsedNotes = ExtractReleaseNotesFromChangelog(localContent, cleanTag);
+                            if (!string.IsNullOrWhiteSpace(parsedNotes))
+                            {
+                                info.ReleaseNotes = parsedNotes;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[UpdateService] Failed to load local CHANGELOG.md: {ex.Message}");
+                    }
+                }
             }
 
             if (root.TryGetProperty("html_url", out var htmlProp))
@@ -242,5 +293,23 @@ public sealed class UpdateService : IUpdateService
         if (parts.Length == 1) return $"{parts[0]}.0.0";
         if (parts.Length == 2) return $"{parts[0]}.{parts[1]}.0";
         return clean;
+    }
+
+    public static string ExtractReleaseNotesFromChangelog(string changelog, string version)
+    {
+        if (string.IsNullOrWhiteSpace(changelog) || string.IsNullOrWhiteSpace(version))
+        {
+            return string.Empty;
+        }
+
+        string cleanVersion = version.TrimStart('v', 'V');
+        string pattern = @"(?ms)^##\s*\[?" + Regex.Escape(cleanVersion) + @"\]?[^\r\n]*\r?\n(.*?)(?=\r?\n---\s*(\r?\n|\Z)|\r?\n##\s*\[|\Z)";
+        var match = Regex.Match(changelog, pattern);
+        if (match.Success)
+        {
+            return match.Groups[1].Value.Trim();
+        }
+
+        return string.Empty;
     }
 }

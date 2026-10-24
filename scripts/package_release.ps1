@@ -74,5 +74,18 @@ if ($iscc) {
     Write-Host "  2. Run: ISCC.exe installer\installer.iss" -ForegroundColor Cyan
 }
 
+$changelogFile = Join-Path $rootDir "CHANGELOG.md"
+if (Test-Path $changelogFile) {
+    $changelog = Get-Content -Raw -Encoding UTF8 $changelogFile
+    $escaped = [regex]::Escape($Version)
+    $pattern = "(?ms)^##\s*\[?" + $escaped + "\]?[^\r\n]*\r?\n(.*?)(?=\r?\n---\s*(\r?\n|\Z)|\r?\n##\s*\[|\Z)"
+    if ($changelog -match $pattern) {
+        $notes = $matches[1].Trim()
+        $notesFile = Join-Path $distDir "release_notes.md"
+        [System.IO.File]::WriteAllText($notesFile, $notes, [System.Text.Encoding]::UTF8)
+        Write-Host "  -> Release notes extracted to: $notesFile" -ForegroundColor Green
+    }
+}
+
 Write-Host "`nAll release artifacts available in: $distDir" -ForegroundColor Cyan
 Get-ChildItem $distDir | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize

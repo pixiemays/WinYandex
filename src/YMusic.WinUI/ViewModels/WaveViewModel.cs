@@ -421,6 +421,133 @@ public sealed partial class WaveViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    public async Task StartWaveForTrackAsync(Track? track = null)
+    {
+        track ??= _audioPlayer.CurrentTrack;
+        if (track == null) return;
+
+        var isEn = Loc?.CurrentLanguage == "en";
+        var trackTitle = !string.IsNullOrWhiteSpace(track.Title) ? track.Title : "Трек";
+        var trackPreset = new WavePreset
+        {
+            Title = isEn ? $"Wave by \"{trackTitle}\"" : $"Волна по треку «{trackTitle}»",
+            Description = track.ArtistNames ?? (isEn ? "Personal stream" : "Персональный поток"),
+            StationType = "track",
+            StationTag = track.Id,
+            Glyph = "\uE93E",
+            GradientStart = "#FF512F",
+            GradientEnd = "#DD2476"
+        };
+
+        SelectedPreset = trackPreset;
+
+        SetBusy(true);
+        ClearError();
+        StatusText = isEn
+            ? $"Tuning tracks for \"{trackTitle}\"..."
+            : $"Подбираем треки для «{trackTitle}»...";
+
+        try
+        {
+            var stationResult = await _musicService.GetRotorStationTracksAsync(
+                "track",
+                track.Id).ConfigureAwait(false);
+
+            if (stationResult?.Sequence == null || stationResult.Sequence.Count == 0)
+            {
+                SetError(isEn ? "Could not retrieve tracks for this wave." : "Не удалось получить треки для волны.");
+                return;
+            }
+
+            _currentBatchId = stationResult.BatchId;
+            _isWaveActive = true;
+            _audioPlayer.CurrentPlaybackMode = PlaybackMode.Wave;
+
+            var tracks = stationResult.Sequence
+                .Where(item => item.Track != null)
+                .Select(item => item.Track!)
+                .ToList();
+
+            if (tracks.Count == 0)
+            {
+                SetError(isEn ? "No playable tracks received in station response." : "В ответе станции нет доступных треков.");
+                return;
+            }
+
+            if (_audioPlayer.CurrentTrack != null && Track.IsSameTrackId(_audioPlayer.CurrentTrack.Id, track.Id))
+            {
+                // Current track is already playing; keep it playing seamlessly and replace the upcoming queue
+                var upcoming = tracks.Where(t => !Track.IsSameTrackId(t.Id, track.Id)).ToList();
+                _audioPlayer.ReplaceUpcomingQueue(upcoming);
+
+                RunOnUi(() =>
+                {
+                    UpcomingTracks.Clear();
+                    foreach (var t in upcoming)
+                    {
+                        UpcomingTracks.Add(t);
+                    }
+                    IsWaveActiveState = true;
+                    StatusText = isEn
+                        ? $"\"{trackPreset.Title}\" active"
+                        : $"«{trackPreset.Title}» активна";
+                    OnPropertyChanged(nameof(IsWavePlaying));
+                    OnPropertyChanged(nameof(PlayPauseGlyph));
+                });
+
+                if (!_audioPlayer.IsPlaying)
+                {
+                    _audioPlayer.Play();
+                }
+            }
+            else
+            {
+                // Different track or player was empty: start playback from the first track in sequence
+                RunOnUi(() =>
+                {
+                    UpcomingTracks.Clear();
+                    foreach (var t in tracks.Skip(1))
+                    {
+                        UpcomingTracks.Add(t);
+                    }
+                    IsWaveActiveState = true;
+                    StatusText = isEn
+                        ? $"\"{trackPreset.Title}\" active"
+                        : $"«{trackPreset.Title}» активна";
+                    OnPropertyChanged(nameof(IsWavePlaying));
+                    OnPropertyChanged(nameof(PlayPauseGlyph));
+                });
+
+                await _audioPlayer.PlayQueueAsync(tracks, 0).ConfigureAwait(false);
+            }
+
+            // Send radioStarted and trackStarted telemetry
+            var playingTrack = _audioPlayer.CurrentTrack ?? track;
+            _ = _musicService.SendRotorFeedbackAsync(
+                "radioStarted",
+                "track",
+                track.Id,
+                playingTrack.Id,
+                _currentBatchId);
+
+            _ = _musicService.SendRotorFeedbackAsync(
+                "trackStarted",
+                "track",
+                track.Id,
+                playingTrack.Id,
+                _currentBatchId);
+        }
+        catch (Exception ex)
+        {
+            SetError($"Error starting track wave: {ex.Message}");
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    [RelayCommand]
     public void TogglePlayPause()
     {
         if (!_isWaveActive || _audioPlayer.CurrentPlaybackMode != PlaybackMode.Wave)
@@ -576,6 +703,8 @@ public sealed partial class WaveViewModel : BaseViewModel
             SelectedPreset.StationTag,
             track.Id,
             _currentBatchId);
+
+        _ = _musicService.DislikeTrackAsync(track.Id);
 
         await _audioPlayer.NextAsync().ConfigureAwait(false);
     }

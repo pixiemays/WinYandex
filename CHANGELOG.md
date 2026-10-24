@@ -4,6 +4,26 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.4] — 2026-10-24
+
+### Track Context Menu
+* Added a comprehensive track context menu accessible via right-click and "···" button across all views (Playlists, Liked Tracks, Search, Artist Page, Explore, Player Bar, and Now Playing drawer).
+* **"My Wave by track"**: launch a personalized My Wave stream tuned to any selected track. If the track is currently playing, playback continues smoothly without interruption while the upcoming queue seamlessly updates to the wave stream.
+* **Queue management**: added "Play next" (insert immediately after the current track) and "Add to end of queue".
+* **"Don't like" (Dislike)**: added full dislike support synchronized with Yandex Music cloud. Disliked tracks are visually dimmed (semi-transparent) across all lists, and disliking the currently playing track skips it automatically.
+* **"Add to playlist"**: dynamic submenu listing all user playlists with instant track addition via API.
+* **"Share"**: instant copying of web track links to clipboard.
+* **"Download to file"**: direct download of audio tracks to the user's `Downloads` folder with clean tagging (`Artist - Title.m4a` / `mp3`).
+* **"Track details"**: modal dialog displaying comprehensive metadata (title, artists, album, year, duration, bitrate, codec, and track ID).
+* **FckCensor integration**: quick options to replace censored tracks with local files, remove existing replacements, or report censorship directly from any list.
+
+### UI & Notifications
+* Added a global floating toast notification pill at the bottom of the window to confirm user actions (track added to playlist, link copied, file downloaded, added to queue, etc.).
+* Visual dimming for disliked tracks across all track lists.
+* Complete localization (English and Russian) for all new context menu items, toasts, and dialogs.
+
+---
+
 ## [0.9.3] — 2026-10-24
 
 ### UI & Update System

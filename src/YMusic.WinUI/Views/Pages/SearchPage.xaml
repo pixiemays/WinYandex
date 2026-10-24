@@ -374,6 +374,8 @@
                                                     Margin="0,2"
                                                     CornerRadius="8"
                                                     helpers:CursorHelper.UseHandCursor="True"
+                                                    helpers:TrackMenuHelper.Track="{x:Bind}"
+                                                    Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
                                                     Background="Transparent"
                                                     BorderBrush="Transparent">
                                                 <Grid Height="44" ColumnSpacing="12">
@@ -592,6 +594,8 @@
                                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                                             Padding="12,8" Margin="0,3" CornerRadius="8"
                                             helpers:CursorHelper.UseHandCursor="True"
+                                            helpers:TrackMenuHelper.Track="{x:Bind}"
+                                            Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
                                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
                                         <Grid Height="48" ColumnSpacing="16">

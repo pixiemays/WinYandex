@@ -564,6 +564,64 @@ public sealed class AudioPlayerService : IAudioPlayerService
         RequestSaveState();
     }
 
+    public void PlayNext(Track track)
+    {
+        if (_queue.Count == 0 || _orderIndex < 0)
+        {
+            _ = PlayTrackAsync(track);
+            return;
+        }
+
+        int currentTrackQueueIndex = (_orderIndex >= 0 && _orderIndex < _playOrder.Count)
+            ? _playOrder[_orderIndex]
+            : -1;
+
+        int insertQueueIndex = currentTrackQueueIndex >= 0 ? currentTrackQueueIndex + 1 : _queue.Count;
+        if (insertQueueIndex > _queue.Count) insertQueueIndex = _queue.Count;
+
+        _queue.Insert(insertQueueIndex, track);
+
+        for (int i = 0; i < _playOrder.Count; i++)
+        {
+            if (_playOrder[i] >= insertQueueIndex)
+            {
+                _playOrder[i]++;
+            }
+        }
+
+        int insertOrderIndex = _orderIndex + 1;
+        if (insertOrderIndex > _playOrder.Count) insertOrderIndex = _playOrder.Count;
+        _playOrder.Insert(insertOrderIndex, insertQueueIndex);
+
+        _preloadedTrack = null;
+        QueueChanged?.Invoke(this, EventArgs.Empty);
+        RequestSaveState();
+    }
+
+    public void ReplaceUpcomingQueue(IEnumerable<Track> newUpcomingTracks)
+    {
+        var list = newUpcomingTracks.ToList();
+        if (_currentTrack == null)
+        {
+            if (list.Count > 0)
+            {
+                _ = PlayQueueAsync(list, 0);
+            }
+            return;
+        }
+
+        _queue.Clear();
+        _queue.Add(_currentTrack);
+        _queue.AddRange(list);
+
+        _playOrder = Enumerable.Range(0, _queue.Count).ToList();
+        _orderIndex = 0;
+        _preloadedTrack = null;
+
+        QueueChanged?.Invoke(this, EventArgs.Empty);
+        RequestSaveState();
+    }
+
     public void Play()
     {
         if (_currentInputNode != null && _audioGraph != null)

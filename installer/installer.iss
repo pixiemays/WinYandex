@@ -2,7 +2,9 @@
 ; Requires Inno Setup 6 (https://jrsoftware.org/isdl.php)
 
 #define MyAppName "WinYandex"
-#define MyAppVersion "0.9.3"
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0"
+#endif
 #define MyAppPublisher "WinYandex"
 #define MyAppExeName "YMusic.WinUI.exe"
 

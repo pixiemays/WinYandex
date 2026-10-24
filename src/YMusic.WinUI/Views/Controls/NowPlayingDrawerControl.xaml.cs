@@ -436,4 +436,10 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         _currentTransition = sb;
         sb.Begin();
     }
+
+    private async void DrawerTrackOptionsFlyout_Opening(object? sender, object e)
+    {
+        await ViewModel.PopulatePlaylistSubItemAsync(DrawerAddToPlaylistSubItem);
+    }
 }
+

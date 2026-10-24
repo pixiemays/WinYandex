@@ -1,14 +1,20 @@
-# WinYandex Release Packaging Script
 param(
-    [string]$Version = "0.9.3",
+    [string]$Version,
     [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
 $rootDir = Resolve-Path "$PSScriptRoot\.."
 $projectDir = Join-Path $rootDir "src\YMusic.WinUI"
+$csprojPath = Join-Path $projectDir "YMusic.WinUI.csproj"
 $distDir = Join-Path $rootDir "dist"
 $publishDir = Join-Path $projectDir "bin\Release\net8.0-windows10.0.26100.0\win-x64\publish"
+
+if (-not $Version) {
+    [xml]$xml = Get-Content $csprojPath
+    $Version = $xml.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+    if (-not $Version) { $Version = "1.0.0" }
+}
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  WinYandex Release Packager v$Version" -ForegroundColor Cyan

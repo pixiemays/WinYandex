@@ -133,5 +133,31 @@
         <controls:NowPlayingDrawerControl Grid.Row="0"
                                           Grid.RowSpan="3"
                                           x:Name="NowPlayingDrawer" />
+
+        <!-- Global Toast Notification Pill -->
+        <Border Grid.Row="0"
+                Grid.RowSpan="3"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Margin="0,0,0,104"
+                Padding="16,10"
+                CornerRadius="20"
+                Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                Visibility="{x:Bind ViewModel.PlayerBar.ToastVisibility, Mode=OneWay}"
+                Canvas.ZIndex="99999"
+                IsHitTestVisible="False">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Border Width="22" Height="22" CornerRadius="11" Background="{ThemeResource AccentFillColorDefaultBrush}">
+                    <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Text="{x:Bind ViewModel.PlayerBar.ToastMessage, Mode=OneWay}" 
+                           FontSize="13" 
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

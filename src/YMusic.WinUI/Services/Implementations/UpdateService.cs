@@ -30,7 +30,7 @@ public sealed class UpdateService : IUpdateService
         HttpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
     }
 
-    public string CurrentVersion
+    public static string AppVersion
     {
         get
         {
@@ -42,9 +42,11 @@ public sealed class UpdateService : IUpdateService
                 return plusIdx > 0 ? infoVersion.Substring(0, plusIdx) : infoVersion;
             }
             var ver = assembly.GetName().Version;
-            return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "0.9.3";
+            return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "1.0.0";
         }
     }
+
+    public string CurrentVersion => AppVersion;
 
     public async Task<UpdateInfo> CheckForUpdatesAsync(CancellationToken ct = default)
     {

@@ -122,4 +122,10 @@ public sealed partial class PlayerBarControl : UserControl
             CoverHoverOverlay.Opacity = 0;
         }
     }
+
+    private async void TrackOptionsFlyout_Opening(object? sender, object e)
+    {
+        await ViewModel.PopulatePlaylistSubItemAsync(AddToPlaylistSubItem);
+    }
 }
+

@@ -22,9 +22,18 @@ public interface IYandexMusicService
     event EventHandler<(string TrackId, bool IsLiked)>? TrackLikeChanged;
     event EventHandler? LikedTracksLoaded;
 
+    Task<IReadOnlyList<string>> GetDislikedTrackIdsAsync(string userId, CancellationToken cancellationToken = default);
+    Task<bool> DislikeTrackAsync(string trackId, CancellationToken cancellationToken = default);
+    Task<bool> UndislikeTrackAsync(string trackId, CancellationToken cancellationToken = default);
+    bool IsTrackDisliked(string trackId);
+    Task EnsureDislikedTracksLoadedAsync(CancellationToken cancellationToken = default);
+    event EventHandler<(string TrackId, bool IsDisliked)>? TrackDislikeChanged;
+    event EventHandler? DislikedTracksLoaded;
+
     Task<IReadOnlyList<Track>> GetTracksAsync(IEnumerable<string> trackIds, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Playlist>> GetUserPlaylistsAsync(string userId, CancellationToken cancellationToken = default);
+    Task<bool> AddTrackToPlaylistAsync(long ownerUid, int kind, string trackId, string? albumId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Album>> GetLikedAlbumsAsync(string userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Album>> GetAlbumsAsync(IEnumerable<long> albumIds, CancellationToken cancellationToken = default);
     Task<bool> LikeAlbumAsync(long albumId, CancellationToken cancellationToken = default);

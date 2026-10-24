@@ -28,6 +28,8 @@ public sealed class TrackPlaybackCoordinator : ITrackPlaybackCoordinator
         _audioPlayer.IsPlayingChanged += (_, _) => UpdateAll();
         _musicService.TrackLikeChanged += OnTrackLikeChanged;
         _musicService.LikedTracksLoaded += (_, _) => UpdateAll();
+        _musicService.TrackDislikeChanged += OnTrackDislikeChanged;
+        _musicService.DislikedTracksLoaded += (_, _) => UpdateAll();
         _fckCensorService.TrackReplacementChanged += (_, _) => UpdateAll();
         _audioCacheService.CacheUpdated += (_, _) => UpdateAll();
     }
@@ -82,6 +84,11 @@ public sealed class TrackPlaybackCoordinator : ITrackPlaybackCoordinator
                 if (track.IsLiked != isLiked)
                 {
                     track.IsLiked = isLiked;
+                }
+                bool isDisliked = _musicService.IsTrackDisliked(track.Id);
+                if (track.IsDisliked != isDisliked)
+                {
+                    track.IsDisliked = isDisliked;
                 }
                 bool isReplaced = _fckCensorService.IsReplaced(track.Id);
                 if (track.IsReplaced != isReplaced)
@@ -157,6 +164,47 @@ public sealed class TrackPlaybackCoordinator : ITrackPlaybackCoordinator
                         if (track.IsLiked != e.IsLiked)
                         {
                             track.IsLiked = e.IsLiked;
+                        }
+                    }
+                }
+            }
+        }
+
+        var dispatcher = App.MainDispatcherQueue;
+        if (dispatcher != null && !dispatcher.HasThreadAccess)
+        {
+            dispatcher.TryEnqueue(Execute);
+        }
+        else
+        {
+            Execute();
+        }
+    }
+
+    private void OnTrackDislikeChanged(object? sender, (string TrackId, bool IsDisliked) e)
+    {
+        void Execute()
+        {
+            List<IEnumerable<Track>> active;
+            lock (_lock)
+            {
+                CleanDeadReferences();
+                active = _trackedCollections
+                    .Select(r => r.TryGetTarget(out var target) ? target : null)
+                    .Where(t => t != null)
+                    .Select(t => t!)
+                    .ToList();
+            }
+
+            foreach (var col in active)
+            {
+                foreach (var track in col.ToList())
+                {
+                    if (Track.IsSameTrackId(track.Id, e.TrackId))
+                    {
+                        if (track.IsDisliked != e.IsDisliked)
+                        {
+                            track.IsDisliked = e.IsDisliked;
                         }
                     }
                 }

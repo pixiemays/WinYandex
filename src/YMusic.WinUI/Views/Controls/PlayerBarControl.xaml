@@ -154,7 +154,7 @@
                     ToolTipService.ToolTip="{x:Bind ViewModel.LikeTooltip, Mode=OneWay}">
                 <FontIcon Glyph="{x:Bind ViewModel.LikeGlyph, Mode=OneWay}"
                           FontSize="18"
-                          Foreground="{x:Bind ViewModel.IsCurrentTrackLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+                          Foreground="{x:Bind ViewModel.LikeBrush, Mode=OneWay}" />
             </Button>
 
             <!-- More Options / FckCensor Button -->
@@ -171,7 +171,84 @@
                     ToolTipService.ToolTip="{x:Bind ViewModel.FckOptionsTooltip, Mode=OneWay}"
                     Margin="2,0,0,0">
                 <Button.Flyout>
-                    <MenuFlyout>
+                    <MenuFlyout x:Name="TrackOptionsFlyout" Opening="TrackOptionsFlyout_Opening">
+                        <!-- Start Wave by Track -->
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.StartTrackWaveMenuText, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.StartTrackWaveCommand}"
+                                        Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE93E;" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <!-- Play Next -->
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.PlayNextMenuText, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.PlayNextCommand}"
+                                        Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE892;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <!-- Add to Queue -->
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.AddToQueueMenuText, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.AddToQueueCommand}"
+                                        Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xEA37;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <MenuFlyoutSeparator Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+                        <!-- Dislike -->
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.DislikeMenuText, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.DislikeAndSkipCommand}"
+                                        Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="{x:Bind ViewModel.DislikeMenuGlyph, Mode=OneWay}" Foreground="#FF5555" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <!-- Add to Playlist (Submenu) -->
+                        <MenuFlyoutSubItem x:Name="AddToPlaylistSubItem"
+                                           Text="{x:Bind ViewModel.AddToPlaylistMenuText, Mode=OneWay}"
+                                           Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutSubItem.Icon>
+                                <FontIcon Glyph="&#xE8F4;" />
+                            </MenuFlyoutSubItem.Icon>
+                            <MenuFlyoutItem Text="..." IsEnabled="False" />
+                        </MenuFlyoutSubItem>
+
+                        <!-- Share -->
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.ShareMenuText, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.ShareTrackCommand}"
+                                        Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE72D;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <!-- Download to file -->
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.DownloadFileMenuText, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.DownloadTrackFileCommand}"
+                                        Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE896;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <!-- Track details -->
+                        <MenuFlyoutItem Text="{x:Bind ViewModel.TrackDetailsMenuText, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.ShowTrackDetailsCommand}"
+                                        Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE946;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+
+                        <MenuFlyoutSeparator Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+
                         <!-- When Replaced: Remove replacement -->
                         <MenuFlyoutItem Text="{x:Bind ViewModel.FckRemoveReplacementText, Mode=OneWay}"
                                         Command="{x:Bind ViewModel.RemoveCurrentTrackReplacementCommand}"
@@ -205,16 +282,6 @@
                                         Visibility="{x:Bind ViewModel.CanReportCurrentTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE7BA;" Foreground="#FFB900" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
-
-                        <MenuFlyoutSeparator />
-
-                        <!-- Original Repository Credit -->
-                        <MenuFlyoutItem Text="{x:Bind ViewModel.FckCensorRepoMenuText, Mode=OneWay}"
-                                        Command="{x:Bind ViewModel.OpenFckCensorRepoCommand}">
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xE8A7;" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
                     </MenuFlyout>
@@ -569,23 +636,5 @@
                 </Grid>
             </StackPanel>
         </StackPanel>
-
-        <!-- Toast / Action Feedback Pill -->
-        <Border Grid.ColumnSpan="3"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Margin="0,-48,0,0"
-                Padding="16,8"
-                CornerRadius="8"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                Visibility="{x:Bind ViewModel.IsToastOpen, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                Canvas.ZIndex="1000">
-            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <FontIcon Glyph="&#xE73E;" FontSize="14" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
-                <TextBlock Text="{x:Bind ViewModel.ToastMessage, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
-            </StackPanel>
-        </Border>
     </Grid>
 </UserControl>

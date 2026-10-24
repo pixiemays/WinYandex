@@ -115,6 +115,41 @@
   <data name="Wave_Mood_Sad" xml:space="preserve"><value>Melancholy</value></data>
   <data name="Wave_Like" xml:space="preserve"><value>Like</value></data>
   <data name="Wave_Dislike" xml:space="preserve"><value>Dislike</value></data>
+  <data name="Wave_ByTrack" xml:space="preserve"><value>My Wave by track</value></data>
+  <data name="TrackMenu_PlayNext" xml:space="preserve"><value>Play next</value></data>
+  <data name="TrackMenu_AddToQueue" xml:space="preserve"><value>Add to end of queue</value></data>
+  <data name="TrackMenu_Dislike" xml:space="preserve"><value>I don't like it</value></data>
+  <data name="TrackMenu_Undislike" xml:space="preserve"><value>Remove from disliked</value></data>
+  <data name="TrackMenu_AddToPlaylist" xml:space="preserve"><value>Add to playlist</value></data>
+  <data name="TrackMenu_Share" xml:space="preserve"><value>Share</value></data>
+  <data name="TrackMenu_DownloadFile" xml:space="preserve"><value>Download to file</value></data>
+  <data name="TrackMenu_Details" xml:space="preserve"><value>Track details</value></data>
+  <data name="TrackMenu_LoadingPlaylists" xml:space="preserve"><value>Loading playlists...</value></data>
+  <data name="TrackMenu_NoPlaylists" xml:space="preserve"><value>No playlists found</value></data>
+  <data name="TrackMenu_FailedPlaylists" xml:space="preserve"><value>Failed to load playlists</value></data>
+  <data name="TrackToast_PlayNext" xml:space="preserve"><value>Will play next</value></data>
+  <data name="TrackToast_AddedToQueue" xml:space="preserve"><value>Added to queue</value></data>
+  <data name="TrackToast_Liked" xml:space="preserve"><value>Added to favorites</value></data>
+  <data name="TrackToast_Unliked" xml:space="preserve"><value>Removed from favorites</value></data>
+  <data name="TrackToast_Disliked" xml:space="preserve"><value>Track disliked &amp; skipped</value></data>
+  <data name="TrackToast_Disliked_NoSkip" xml:space="preserve"><value>Track disliked</value></data>
+  <data name="TrackToast_Undisliked" xml:space="preserve"><value>Removed from disliked</value></data>
+  <data name="TrackToast_LinkCopied" xml:space="preserve"><value>Track link copied to clipboard</value></data>
+  <data name="TrackToast_Downloading" xml:space="preserve"><value>Downloading track...</value></data>
+  <data name="TrackToast_DownloadFailed" xml:space="preserve"><value>Failed to get download URL</value></data>
+  <data name="TrackToast_Downloaded" xml:space="preserve"><value>Downloaded to Downloads: {0}</value></data>
+  <data name="TrackToast_DownloadError" xml:space="preserve"><value>Error downloading track</value></data>
+  <data name="TrackToast_AddedToPlaylist" xml:space="preserve"><value>Added to "{0}"</value></data>
+  <data name="TrackToast_AddToPlaylistFailed" xml:space="preserve"><value>Failed to add to playlist</value></data>
+  <data name="TrackToast_AddToPlaylistError" xml:space="preserve"><value>Error adding to playlist</value></data>
+  <data name="TrackDetails_Title" xml:space="preserve"><value>Track details</value></data>
+  <data name="TrackDetails_TrackTitle" xml:space="preserve"><value>Title:</value></data>
+  <data name="TrackDetails_Artist" xml:space="preserve"><value>Artist:</value></data>
+  <data name="TrackDetails_Album" xml:space="preserve"><value>Album:</value></data>
+  <data name="TrackDetails_Duration" xml:space="preserve"><value>Duration:</value></data>
+  <data name="TrackDetails_Quality" xml:space="preserve"><value>Audio stream:</value></data>
+  <data name="TrackDetails_TrackId" xml:space="preserve"><value>Track ID:</value></data>
+  <data name="TrackDetails_Close" xml:space="preserve"><value>Close</value></data>
 
   <!-- Search -->
   <data name="Search_Title" xml:space="preserve"><value>Search</value></data>

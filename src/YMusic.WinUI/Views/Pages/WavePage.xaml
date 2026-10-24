@@ -8,6 +8,7 @@
     xmlns:models="using:YMusic.WinUI.Models"
     xmlns:converters="using:YMusic.WinUI.Converters"
     xmlns:controls="using:YMusic.WinUI.Views.Controls"
+    xmlns:helpers="using:YMusic.WinUI.Helpers"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
     mc:Ignorable="d">
 
@@ -356,6 +357,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:Track">
                             <Border CornerRadius="8"
+                                    helpers:TrackMenuHelper.Track="{x:Bind}"
+                                    Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
                                     Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}"
                                     Margin="0,1">
                                 <Grid Height="48" ColumnSpacing="12" Padding="6,2">

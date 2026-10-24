@@ -8,6 +8,7 @@
     xmlns:models="using:YMusic.WinUI.Models"
     xmlns:controls="using:YMusic.WinUI.Views.Controls"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
+    xmlns:helpers="using:YMusic.WinUI.Helpers"
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
@@ -112,6 +113,8 @@
                     <DataTemplate x:DataType="models:Track">
                         <Border CornerRadius="8"
                                 Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}"
+                                Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
+                                helpers:TrackMenuHelper.Track="{x:Bind}"
                                 Margin="0">
                             <Grid Height="48" Padding="6,4" ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>

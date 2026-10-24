@@ -161,6 +161,8 @@
                                         CornerRadius="10"
                                         Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}"
                                         BorderBrush="Transparent"
+                                        Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
+                                        helpers:TrackMenuHelper.Track="{x:Bind}"
                                         helpers:CursorHelper.UseHandCursor="True">
                                     <Grid Height="44" ColumnSpacing="14">
                                         <Grid.ColumnDefinitions>

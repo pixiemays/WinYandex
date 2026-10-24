@@ -23,6 +23,7 @@ public sealed class YandexMusicService : IYandexMusicService
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly ICredentialStorageService? _credentialStorage;
     private readonly HashSet<string> _likedTrackIds = new();
+    private readonly HashSet<string> _dislikedTrackIds = new();
     private readonly HashSet<long> _likedAlbumIds = new();
     private readonly HashSet<string> _likedPlaylistKeys = new();
     private readonly HashSet<long> _likedArtistIds = new();
@@ -42,10 +43,12 @@ public sealed class YandexMusicService : IYandexMusicService
 
     public event EventHandler? UnauthorizedResponseReceived;
     public event EventHandler<(string TrackId, bool IsLiked)>? TrackLikeChanged;
+    public event EventHandler<(string TrackId, bool IsDisliked)>? TrackDislikeChanged;
     public event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
     public event EventHandler<(long OwnerUid, int Kind, bool IsLiked)>? PlaylistLikeChanged;
     public event EventHandler<(long ArtistId, bool IsLiked)>? ArtistLikeChanged;
     public event EventHandler? LikedTracksLoaded;
+    public event EventHandler? DislikedTracksLoaded;
 
     public string? CurrentToken => _token;
 
@@ -386,6 +389,178 @@ public sealed class YandexMusicService : IYandexMusicService
         }
     }
 
+    public bool IsTrackDisliked(string trackId)
+    {
+        if (string.IsNullOrWhiteSpace(trackId)) return false;
+        string cleanId = trackId.Split(':')[0];
+        lock (_dislikedTrackIds)
+        {
+            return _dislikedTrackIds.Contains(trackId) || _dislikedTrackIds.Contains(cleanId);
+        }
+    }
+
+    public async Task<IReadOnlyList<string>> GetDislikedTrackIdsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var ids = new List<string>();
+        try
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"users/{userId}/dislikes/tracks", null, cancellationToken).ConfigureAwait(false);
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                return ids;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("result", out var resultElement))
+            {
+                return ids;
+            }
+
+            JsonElement tracksElement;
+            if (resultElement.TryGetProperty("library", out var libElement) &&
+                libElement.TryGetProperty("tracks", out tracksElement))
+            {
+            }
+            else if (resultElement.TryGetProperty("tracks", out tracksElement))
+            {
+            }
+            else
+            {
+                tracksElement = resultElement;
+            }
+
+            if (tracksElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in tracksElement.EnumerateArray())
+                {
+                    if (item.TryGetProperty("id", out var idProp))
+                    {
+                        var idStr = idProp.ValueKind == JsonValueKind.String
+                            ? idProp.GetString()
+                            : (idProp.ValueKind == JsonValueKind.Number ? idProp.GetRawText() : null);
+                        if (!string.IsNullOrWhiteSpace(idStr))
+                        {
+                            ids.Add(idStr);
+                        }
+                    }
+                }
+            }
+
+            lock (_dislikedTrackIds)
+            {
+                _dislikedTrackIds.Clear();
+                foreach (var id in ids)
+                {
+                    _dislikedTrackIds.Add(id);
+                    string cleanId = id.Split(':')[0];
+                    if (!string.Equals(cleanId, id, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _dislikedTrackIds.Add(cleanId);
+                    }
+                }
+            }
+            DislikedTracksLoaded?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[GetDislikedTrackIds Error] {ex.Message}");
+        }
+        return ids;
+    }
+
+    public async Task EnsureDislikedTracksLoadedAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_dislikedTrackIds)
+        {
+            if (_dislikedTrackIds.Count > 0) return;
+        }
+
+        string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            await GetDislikedTrackIdsAsync(userId, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<bool> DislikeTrackAsync(string trackId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(trackId)) return false;
+
+        string cleanId = trackId.Split(':')[0];
+        lock (_dislikedTrackIds)
+        {
+            _dislikedTrackIds.Add(trackId);
+            _dislikedTrackIds.Add(cleanId);
+        }
+
+        if (IsTrackLiked(trackId))
+        {
+            _ = UnlikeTrackAsync(trackId, cancellationToken);
+        }
+
+        TrackDislikeChanged?.Invoke(this, (trackId, true));
+
+        try
+        {
+            string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return true;
+            }
+
+            var formValues = new List<KeyValuePair<string, string>>
+            {
+                new("track-ids", cleanId)
+            };
+            using var content = new FormUrlEncodedContent(formValues);
+            using var response = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/dislikes/tracks/add-multiple", content, cancellationToken).ConfigureAwait(false);
+
+            return response != null && response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DislikeTrack Error] {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> UndislikeTrackAsync(string trackId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(trackId)) return false;
+
+        string cleanId = trackId.Split(':')[0];
+        lock (_dislikedTrackIds)
+        {
+            _dislikedTrackIds.Remove(trackId);
+            _dislikedTrackIds.Remove(cleanId);
+        }
+        TrackDislikeChanged?.Invoke(this, (trackId, false));
+
+        try
+        {
+            string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return true;
+            }
+
+            var formValues = new List<KeyValuePair<string, string>>
+            {
+                new("track-ids", cleanId)
+            };
+            using var content = new FormUrlEncodedContent(formValues);
+            using var response = await SendRequestAsync(HttpMethod.Post, $"users/{userId}/dislikes/tracks/remove", content, cancellationToken).ConfigureAwait(false);
+
+            return response != null && response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[UndislikeTrack Error] {ex.Message}");
+            return false;
+        }
+    }
+
     private async Task<string?> GetCurrentUserIdAsync(CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(_cachedUserId))
@@ -525,6 +700,44 @@ public sealed class YandexMusicService : IYandexMusicService
         }
 
         return allPlaylists;
+    }
+
+    public async Task<bool> AddTrackToPlaylistAsync(
+        long ownerUid,
+        int kind,
+        string trackId,
+        string? albumId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var diffJson = albumId != null
+                ? $"[{{\"op\":\"insert\",\"at\":0,\"tracks\":[{{\"id\":\"{trackId}\",\"albumId\":\"{albumId}\"}}]}}]"
+                : $"[{{\"op\":\"insert\",\"at\":0,\"tracks\":[{{\"id\":\"{trackId}\"}}]}}]";
+
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("diff", diffJson)
+            });
+
+            using var response = await SendRequestAsync(
+                HttpMethod.Post,
+                $"users/{ownerUid}/playlists/{kind}/change-relative",
+                content,
+                cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                _playlistWithTracksCache.TryRemove($"{ownerUid}:{kind}", out _);
+                return true;
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AddTrackToPlaylist Error] {ex.Message}");
+            return false;
+        }
     }
 
     public async Task<IReadOnlyList<Album>> GetAlbumsAsync(IEnumerable<long> albumIds, CancellationToken cancellationToken = default)

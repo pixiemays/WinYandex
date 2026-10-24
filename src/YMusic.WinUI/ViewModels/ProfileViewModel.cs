@@ -115,7 +115,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private string _appDataPath = string.Empty;
 
     [ObservableProperty]
-    private string _appVersionText = "v0.9.3";
+    private string _appVersionText = string.Empty;
 
     [ObservableProperty]
     private int _selectedQualityIndex;

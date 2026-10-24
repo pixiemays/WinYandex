@@ -38,6 +38,8 @@ public interface IAudioPlayerService : IDisposable
     Task PlayTrackAsync(Track track, IEnumerable<Track>? newQueue = null);
     Task PlayQueueAsync(IEnumerable<Track> queue, int startIndex = 0);
     void AppendToQueue(IEnumerable<Track> tracks);
+    void PlayNext(Track track);
+    void ReplaceUpcomingQueue(IEnumerable<Track> newUpcomingTracks);
     void Play();
     void Pause();
     void TogglePlayPause();

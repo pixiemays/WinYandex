@@ -1,5 +1,5 @@
-#nullable enable
-
+using System.IO;
+using System.Net.Http;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
@@ -81,13 +81,49 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LikeGlyph))]
     [NotifyPropertyChangedFor(nameof(LikeTooltip))]
+    [NotifyPropertyChangedFor(nameof(LikeBrush))]
     private bool _isCurrentTrackLiked;
 
-    public string LikeGlyph => IsCurrentTrackLiked ? "\uEB52" : "\uEB51";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LikeGlyph))]
+    [NotifyPropertyChangedFor(nameof(LikeTooltip))]
+    [NotifyPropertyChangedFor(nameof(LikeBrush))]
+    [NotifyPropertyChangedFor(nameof(DislikeMenuText))]
+    [NotifyPropertyChangedFor(nameof(DislikeMenuGlyph))]
+    private bool _isCurrentTrackDisliked;
 
-    public string LikeTooltip => IsCurrentTrackLiked 
-        ? (Loc?.CurrentLanguage == "en" ? "Unlike" : "Удалить из избранного") 
-        : (Loc?.CurrentLanguage == "en" ? "Like" : "В избранное");
+    public string LikeGlyph => IsCurrentTrackDisliked ? "\uE006" : (IsCurrentTrackLiked ? "\uEB52" : "\uEB51");
+
+    public string LikeTooltip
+    {
+        get
+        {
+            bool isEn = Loc?.CurrentLanguage == "en";
+            if (IsCurrentTrackDisliked)
+            {
+                return isEn ? "Remove from disliked" : "Убрать из «Не нравится»";
+            }
+            return IsCurrentTrackLiked 
+                ? (isEn ? "Unlike" : "Удалить из избранного") 
+                : (isEn ? "Like" : "В избранное");
+        }
+    }
+
+    public Microsoft.UI.Xaml.Media.Brush LikeBrush
+    {
+        get
+        {
+            if (IsCurrentTrackDisliked)
+            {
+                return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 85, 85));
+            }
+            if (IsCurrentTrackLiked)
+            {
+                return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 51, 102));
+            }
+            return (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"];
+        }
+    }
 
     public string NowPlayingDrawerHeader => Loc?.CurrentLanguage == "en" ? "NOW PLAYING" : "СЕЙЧАС ИГРАЕТ";
     public string SyncToCurrentLineText => Loc?.CurrentLanguage == "en" ? "Sync to current line" : "К текущей строке";
@@ -127,8 +163,37 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         }
     }
     public string VolumeInputTooltip => Loc?.CurrentLanguage == "en" ? "Click to enter volume percentage" : "Нажмите, чтобы ввести процент громкости";
+    public string StartTrackWaveMenuText => Loc?["Wave_ByTrack"] is { } val && !string.IsNullOrEmpty(val) && val != "Wave_ByTrack"
+        ? val
+        : (Loc?.CurrentLanguage == "en" ? "My Wave by track" : "Моя волна по треку");
+    public string PlayNextMenuText => Loc?["TrackMenu_PlayNext"] is { } val && !string.IsNullOrEmpty(val) && val != "TrackMenu_PlayNext"
+        ? val
+        : (Loc?.CurrentLanguage == "en" ? "Play next" : "Слушать следующим");
+    public string AddToQueueMenuText => Loc?["TrackMenu_AddToQueue"] is { } val && !string.IsNullOrEmpty(val) && val != "TrackMenu_AddToQueue"
+        ? val
+        : (Loc?.CurrentLanguage == "en" ? "Add to end of queue" : "В конец очереди");
+    public string DislikeMenuText => IsCurrentTrackDisliked
+        ? (Loc?["TrackMenu_Undislike"] is { } uVal && !string.IsNullOrEmpty(uVal) && uVal != "TrackMenu_Undislike"
+            ? uVal
+            : (Loc?.CurrentLanguage == "en" ? "Remove from disliked" : "Убрать из «Не нравится»"))
+        : (Loc?["TrackMenu_Dislike"] is { } val && !string.IsNullOrEmpty(val) && val != "TrackMenu_Dislike"
+            ? val
+            : (Loc?.CurrentLanguage == "en" ? "I don't like it" : "Не нравится"));
+    public string DislikeMenuGlyph => IsCurrentTrackDisliked ? "\uE006" : "\uE1E0";
+    public string AddToPlaylistMenuText => Loc?["TrackMenu_AddToPlaylist"] is { } val && !string.IsNullOrEmpty(val) && val != "TrackMenu_AddToPlaylist"
+        ? val
+        : (Loc?.CurrentLanguage == "en" ? "Add to playlist" : "Добавить в плейлист");
+    public string ShareMenuText => Loc?["TrackMenu_Share"] is { } val && !string.IsNullOrEmpty(val) && val != "TrackMenu_Share"
+        ? val
+        : (Loc?.CurrentLanguage == "en" ? "Share" : "Поделиться");
+    public string DownloadFileMenuText => Loc?["TrackMenu_DownloadFile"] is { } val && !string.IsNullOrEmpty(val) && val != "TrackMenu_DownloadFile"
+        ? val
+        : (Loc?.CurrentLanguage == "en" ? "Download to file" : "Скачать в файл");
+    public string TrackDetailsMenuText => Loc?["TrackMenu_Details"] is { } val && !string.IsNullOrEmpty(val) && val != "TrackMenu_Details"
+        ? val
+        : (Loc?.CurrentLanguage == "en" ? "Track details" : "Информация о треке");
     public string FckCensorRepoMenuText => Loc?.CurrentLanguage == "en" ? "Original FckCensor project (GitHub)" : "Оригинальный проект FckCensor (GitHub)";
-    public string FckOptionsTooltip => Loc?.CurrentLanguage == "en" ? "Options / FckCensor" : "Дополнительно / FckCensor";
+    public string FckOptionsTooltip => Loc?.CurrentLanguage == "en" ? "More options" : "Дополнительно";
     public string FckRemoveReplacementText => Loc?.CurrentLanguage == "en" ? "Remove replacement (FckCensor)" : "Удалить замену (FckCensor)";
     public string FckChooseAnotherFileText => Loc?.CurrentLanguage == "en" ? "Choose another audio file..." : "Выбрать другой аудиофайл...";
     public string FckReplaceTrackText => Loc?.CurrentLanguage == "en" ? "Replace track (FckCensor)..." : "Подменить трек (FckCensor)...";
@@ -258,7 +323,10 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     private string? _toastMessage;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ToastVisibility))]
     private bool _isToastOpen;
+
+    public Visibility ToastVisibility => IsToastOpen ? Visibility.Visible : Visibility.Collapsed;
 
     private readonly ISettingsService _settingsService;
     private readonly IFckCensorService _fckCensorService;
@@ -364,6 +432,28 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                 }
             });
         };
+
+        _musicService.TrackDislikeChanged += (_, e) =>
+        {
+            RunOnUi(() =>
+            {
+                if (Track.IsSameTrackId(CurrentTrack?.Id, e.TrackId))
+                {
+                    IsCurrentTrackDisliked = e.IsDisliked;
+                }
+            });
+        };
+
+        _musicService.DislikedTracksLoaded += (_, _) =>
+        {
+            RunOnUi(() =>
+            {
+                if (CurrentTrack != null)
+                {
+                    IsCurrentTrackDisliked = _musicService.IsTrackDisliked(CurrentTrack.Id);
+                }
+            });
+        };
     }
 
     private void OnEqualizerChanged(object? sender, EventArgs e)
@@ -414,6 +504,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             HasSyncedLyrics = false;
             IsUserScrolledAway = false;
             IsCurrentTrackLiked = track != null && _musicService.IsTrackLiked(track.Id);
+            IsCurrentTrackDisliked = track != null && _musicService.IsTrackDisliked(track.Id);
             if (track == null)
             {
                 IsNowPlayingDrawerOpen = false;
@@ -769,6 +860,17 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         OnPropertyChanged(nameof(FullscreenTooltip));
         OnPropertyChanged(nameof(ArtistInfoTooltip));
         OnPropertyChanged(nameof(VolumeInputTooltip));
+        OnPropertyChanged(nameof(StartTrackWaveMenuText));
+        OnPropertyChanged(nameof(PlayNextMenuText));
+        OnPropertyChanged(nameof(AddToQueueMenuText));
+        OnPropertyChanged(nameof(DislikeMenuText));
+        OnPropertyChanged(nameof(DislikeMenuGlyph));
+        OnPropertyChanged(nameof(LikeGlyph));
+        OnPropertyChanged(nameof(LikeBrush));
+        OnPropertyChanged(nameof(AddToPlaylistMenuText));
+        OnPropertyChanged(nameof(ShareMenuText));
+        OnPropertyChanged(nameof(DownloadFileMenuText));
+        OnPropertyChanged(nameof(TrackDetailsMenuText));
         OnPropertyChanged(nameof(FckCensorRepoMenuText));
         OnPropertyChanged(nameof(FckOptionsTooltip));
         OnPropertyChanged(nameof(FckRemoveReplacementText));
@@ -841,6 +943,23 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         if (CurrentTrack == null) return;
 
         string trackId = CurrentTrack.Id;
+        var isEn = Loc?.CurrentLanguage == "en";
+
+        if (IsCurrentTrackDisliked)
+        {
+            IsCurrentTrackDisliked = false;
+            bool ok = await _musicService.UndislikeTrackAsync(trackId).ConfigureAwait(false);
+            if (!ok)
+            {
+                RunOnUi(() => IsCurrentTrackDisliked = true);
+            }
+            else
+            {
+                ShowToast(GetLocString("TrackToast_Undisliked", isEn ? "Removed from disliked" : "Удалено из «Не нравится»"));
+            }
+            return;
+        }
+
         bool currentlyLiked = IsCurrentTrackLiked;
         IsCurrentTrackLiked = !currentlyLiked;
 
@@ -853,6 +972,10 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                 {
                     RunOnUi(() => IsCurrentTrackLiked = false);
                 }
+                else
+                {
+                    ShowToast(GetLocString("TrackToast_Liked", isEn ? "Added to favorites" : "Добавлено в избранное"));
+                }
             }
             else
             {
@@ -860,6 +983,10 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                 if (!ok)
                 {
                     RunOnUi(() => IsCurrentTrackLiked = true);
+                }
+                else
+                {
+                    ShowToast(GetLocString("TrackToast_Unliked", isEn ? "Removed from favorites" : "Удалено из избранного"));
                 }
             }
         }
@@ -1024,6 +1151,351 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         try
         {
             await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/Hazzz895/FckCensor"));
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    public async Task StartTrackWaveAsync()
+    {
+        if (CurrentTrack == null) return;
+
+        try
+        {
+            var waveVm = App.GetService<WaveViewModel>();
+            await waveVm.StartWaveForTrackAsync(CurrentTrack).ConfigureAwait(false);
+
+            var isEn = Loc?.CurrentLanguage == "en";
+            ShowToast(isEn
+                ? $"My Wave tuned to \"{CurrentTrack.Title}\""
+                : $"Моя волна настроена по треку «{CurrentTrack.Title}»");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[StartTrackWave Error] {ex.Message}");
+        }
+    }
+
+    private string GetLocString(string key, string fallback) =>
+        Loc?[key] is { } v && !string.IsNullOrEmpty(v) && v != key ? v : fallback;
+
+    [RelayCommand]
+    public void PlayNext()
+    {
+        if (CurrentTrack == null) return;
+        _audioPlayer.PlayNext(CurrentTrack);
+        var isEn = Loc?.CurrentLanguage == "en";
+        ShowToast(GetLocString("TrackToast_PlayNext", isEn ? "Will play next" : "Трек будет воспроизведён следующим"));
+    }
+
+    [RelayCommand]
+    public void AddToQueue()
+    {
+        if (CurrentTrack == null) return;
+        _audioPlayer.AppendToQueue(new[] { CurrentTrack });
+        var isEn = Loc?.CurrentLanguage == "en";
+        ShowToast(GetLocString("TrackToast_AddedToQueue", isEn ? "Added to queue" : "Трек добавлен в конец очереди"));
+    }
+
+    [RelayCommand]
+    public async Task DislikeAndSkipAsync()
+    {
+        if (CurrentTrack == null) return;
+        var track = CurrentTrack;
+        var isEn = Loc?.CurrentLanguage == "en";
+
+        if (IsCurrentTrackDisliked)
+        {
+            IsCurrentTrackDisliked = false;
+            bool ok = await _musicService.UndislikeTrackAsync(track.Id).ConfigureAwait(false);
+            if (!ok)
+            {
+                RunOnUi(() => IsCurrentTrackDisliked = true);
+            }
+            else
+            {
+                ShowToast(GetLocString("TrackToast_Undisliked", isEn ? "Removed from disliked" : "Удалено из «Не нравится»"));
+            }
+            return;
+        }
+
+        try
+        {
+            var waveVm = App.GetService<WaveViewModel>();
+            _ = _musicService.SendRotorFeedbackAsync(
+                "dislike",
+                waveVm.SelectedPreset?.StationType ?? "user",
+                waveVm.SelectedPreset?.StationTag ?? "onyourwave",
+                track.Id);
+
+            IsCurrentTrackDisliked = true;
+            IsCurrentTrackLiked = false;
+            await _musicService.DislikeTrackAsync(track.Id).ConfigureAwait(false);
+
+            ShowToast(GetLocString("TrackToast_Disliked", isEn ? "Track disliked & skipped" : "Не нравится (трек скрыт и пропущен)"));
+
+            await _audioPlayer.NextAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Dislike Error] {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public void ShareTrack()
+    {
+        if (CurrentTrack == null) return;
+
+        string url;
+        if (CurrentTrack.Albums != null && CurrentTrack.Albums.Count > 0 && CurrentTrack.Albums[0].Id > 0)
+        {
+            url = $"https://music.yandex.ru/album/{CurrentTrack.Albums[0].Id}/track/{CurrentTrack.Id}";
+        }
+        else
+        {
+            url = $"https://music.yandex.ru/track/{CurrentTrack.Id}";
+        }
+
+        try
+        {
+            var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            dataPackage.SetText(url);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+
+            var isEn = Loc?.CurrentLanguage == "en";
+            ShowToast(GetLocString("TrackToast_LinkCopied", isEn ? "Track link copied to clipboard" : "Ссылка на трек скопирована"));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Share Error] {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public async Task DownloadTrackFileAsync()
+    {
+        if (CurrentTrack == null) return;
+        var track = CurrentTrack;
+
+        var isEn = Loc?.CurrentLanguage == "en";
+        ShowToast(GetLocString("TrackToast_Downloading", isEn ? "Downloading track..." : "Скачивание трека началось..."));
+
+        try
+        {
+            var (streamUrl, quality) = await _musicService.GetTrackStreamInfoAsync(track.Id).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(streamUrl))
+            {
+                streamUrl = await _musicService.GetTrackDownloadUrlAsync(track.Id).ConfigureAwait(false);
+            }
+
+            if (string.IsNullOrWhiteSpace(streamUrl))
+            {
+                ShowToast(GetLocString("TrackToast_DownloadFailed", isEn ? "Failed to get download URL" : "Не удалось получить ссылку на трек"));
+                return;
+            }
+
+            string ext = string.Equals(quality?.Codec, "aac", StringComparison.OrdinalIgnoreCase) ? "m4a" : "mp3";
+            string rawName = $"{track.ArtistNames} - {track.FullTitle}.{ext}";
+            string cleanName = string.Join("_", rawName.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)).Trim();
+            if (string.IsNullOrWhiteSpace(cleanName)) cleanName = $"Track_{track.Id}.{ext}";
+
+            string downloadsFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string destDir = Path.Combine(downloadsFolder, "Downloads");
+            if (!Directory.Exists(destDir))
+            {
+                Directory.CreateDirectory(destDir);
+            }
+            string destPath = Path.Combine(destDir, cleanName);
+
+            using var httpClient = new HttpClient();
+            using var response = await httpClient.GetAsync(streamUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            await using (var fileStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await response.Content.CopyToAsync(fileStream).ConfigureAwait(false);
+            }
+
+            string downloadTemplate = GetLocString("TrackToast_Downloaded", isEn ? "Downloaded to Downloads: {0}" : "Сохранено в Загрузки: {0}");
+            ShowToast(string.Format(downloadTemplate, cleanName));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DownloadTrackFile Error] {ex.Message}");
+            ShowToast(GetLocString("TrackToast_DownloadError", isEn ? "Error downloading track" : "Ошибка при скачивании трека"));
+        }
+    }
+
+    public async Task<IReadOnlyList<Playlist>> GetUserPlaylistsAsync()
+    {
+        try
+        {
+            var status = await _musicService.GetAccountStatusAsync().ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(status?.UserId))
+            {
+                var playlists = await _musicService.GetUserPlaylistsAsync(status.UserId).ConfigureAwait(false);
+                return playlists ?? Array.Empty<Playlist>();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[GetUserPlaylists Error] {ex.Message}");
+        }
+        return Array.Empty<Playlist>();
+    }
+
+    public async Task AddCurrentTrackToPlaylistAsync(Playlist playlist)
+    {
+        if (CurrentTrack == null) return;
+        var track = CurrentTrack;
+
+        var isEn = Loc?.CurrentLanguage == "en";
+        try
+        {
+            long ownerUid = playlist.Uid > 0 ? playlist.Uid : (playlist.Owner?.Uid ?? 0);
+            string? albumId = track.Albums?.FirstOrDefault()?.Id.ToString();
+            bool success = await _musicService.AddTrackToPlaylistAsync(
+                ownerUid,
+                playlist.Kind,
+                track.Id,
+                albumId).ConfigureAwait(false);
+
+            if (success)
+            {
+                string template = GetLocString("TrackToast_AddedToPlaylist", isEn ? "Added to \"{0}\"" : "Добавлено в плейлист «{0}»");
+                ShowToast(string.Format(template, playlist.Title));
+            }
+            else
+            {
+                ShowToast(GetLocString("TrackToast_AddToPlaylistFailed", isEn ? "Failed to add to playlist" : "Не удалось добавить в плейлист"));
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AddToPlaylist Error] {ex.Message}");
+            ShowToast(GetLocString("TrackToast_AddToPlaylistError", isEn ? "Error adding to playlist" : "Ошибка при добавлении в плейлист"));
+        }
+    }
+
+    public async Task PopulatePlaylistSubItemAsync(MenuFlyoutSubItem? subItem)
+    {
+        if (subItem == null) return;
+        subItem.Items.Clear();
+
+        var isEn = Loc?.CurrentLanguage == "en";
+        var loadingItem = new MenuFlyoutItem
+        {
+            Text = GetLocString("TrackMenu_LoadingPlaylists", isEn ? "Loading playlists..." : "Загрузка плейлистов..."),
+            IsEnabled = false
+        };
+        subItem.Items.Add(loadingItem);
+
+        try
+        {
+            var playlists = await GetUserPlaylistsAsync();
+            subItem.Items.Clear();
+
+            if (playlists == null || playlists.Count == 0)
+            {
+                subItem.Items.Add(new MenuFlyoutItem
+                {
+                    Text = GetLocString("TrackMenu_NoPlaylists", isEn ? "No playlists found" : "Плейлисты не найдены"),
+                    IsEnabled = false
+                });
+                return;
+            }
+
+            foreach (var playlist in playlists)
+            {
+                var item = new MenuFlyoutItem
+                {
+                    Text = playlist.Title,
+                    Icon = new FontIcon { Glyph = "\uE8F4" }
+                };
+                item.Click += async (s, args) =>
+                {
+                    await AddCurrentTrackToPlaylistAsync(playlist);
+                };
+                subItem.Items.Add(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[PopulatePlaylistSubItemAsync Error] {ex.Message}");
+            subItem.Items.Clear();
+            subItem.Items.Add(new MenuFlyoutItem
+            {
+                Text = GetLocString("TrackMenu_FailedPlaylists", isEn ? "Failed to load playlists" : "Ошибка загрузки плейлистов"),
+                IsEnabled = false
+            });
+        }
+    }
+
+    [RelayCommand]
+    public async Task ShowTrackDetailsAsync()
+    {
+        if (CurrentTrack == null) return;
+        var track = CurrentTrack;
+        var isEn = Loc?.CurrentLanguage == "en";
+
+        if (App.MainWindow?.Content?.XamlRoot == null) return;
+
+        string qualityInfo = CurrentQuality != null
+            ? $"{CurrentQuality.Codec?.ToUpperInvariant() ?? "MP3"} • {CurrentQuality.BitrateInKbps} kbps"
+            : (SelectedQualityPreference == AudioQualityPreference.AacPreferred ? "AAC (High Quality)" : "MP3 (320 kbps)");
+
+        string albumInfo = track.Albums != null && track.Albums.Count > 0
+            ? $"{track.Albums[0].Title}{(track.Albums[0].Year.HasValue ? $" ({track.Albums[0].Year})" : "")}"
+            : "—";
+
+        var stack = new StackPanel { Spacing = 10, Margin = new Thickness(0, 10, 0, 0) };
+
+        void AddDetailRow(string label, string value)
+        {
+            var row = new Grid();
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(140) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var lbl = new TextBlock
+            {
+                Text = label,
+                FontSize = 13,
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            };
+            var val = new TextBlock
+            {
+                Text = value,
+                FontSize = 13,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                TextWrapping = TextWrapping.Wrap
+            };
+            Grid.SetColumn(lbl, 0);
+            Grid.SetColumn(val, 1);
+            row.Children.Add(lbl);
+            row.Children.Add(val);
+            stack.Children.Add(row);
+        }
+
+        AddDetailRow(GetLocString("TrackDetails_TrackTitle", isEn ? "Title:" : "Название:"), track.FullTitle);
+        AddDetailRow(GetLocString("TrackDetails_Artist", isEn ? "Artist:" : "Исполнитель:"), track.ArtistNames);
+        AddDetailRow(GetLocString("TrackDetails_Album", isEn ? "Album:" : "Альбом:"), albumInfo);
+        AddDetailRow(GetLocString("TrackDetails_Duration", isEn ? "Duration:" : "Длительность:"), track.FormattedDuration);
+        AddDetailRow(GetLocString("TrackDetails_Quality", isEn ? "Audio Stream:" : "Качество аудио:"), qualityInfo);
+        AddDetailRow(GetLocString("TrackDetails_TrackId", isEn ? "Track ID:" : "ID трека:"), track.Id);
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = App.MainWindow.Content.XamlRoot,
+            Title = GetLocString("TrackDetails_Title", isEn ? "Track Details" : "Информация о треке"),
+            Content = stack,
+            CloseButtonText = GetLocString("TrackDetails_Close", isEn ? "Close" : "Закрыть"),
+            DefaultButton = ContentDialogButton.Close
+        };
+
+        try
+        {
+            await dialog.ShowAsync();
         }
         catch { }
     }

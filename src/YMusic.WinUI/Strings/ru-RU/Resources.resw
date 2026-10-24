@@ -115,6 +115,41 @@
   <data name="Wave_Mood_Sad" xml:space="preserve"><value>Грустное</value></data>
   <data name="Wave_Like" xml:space="preserve"><value>Нравится</value></data>
   <data name="Wave_Dislike" xml:space="preserve"><value>Не нравится</value></data>
+  <data name="Wave_ByTrack" xml:space="preserve"><value>Моя волна по треку</value></data>
+  <data name="TrackMenu_PlayNext" xml:space="preserve"><value>Слушать следующим</value></data>
+  <data name="TrackMenu_AddToQueue" xml:space="preserve"><value>В конец очереди</value></data>
+  <data name="TrackMenu_Dislike" xml:space="preserve"><value>Не нравится</value></data>
+  <data name="TrackMenu_Undislike" xml:space="preserve"><value>Убрать из «Не нравится»</value></data>
+  <data name="TrackMenu_AddToPlaylist" xml:space="preserve"><value>Добавить в плейлист</value></data>
+  <data name="TrackMenu_Share" xml:space="preserve"><value>Поделиться</value></data>
+  <data name="TrackMenu_DownloadFile" xml:space="preserve"><value>Скачать в файл</value></data>
+  <data name="TrackMenu_Details" xml:space="preserve"><value>Информация о треке</value></data>
+  <data name="TrackMenu_LoadingPlaylists" xml:space="preserve"><value>Загрузка плейлистов...</value></data>
+  <data name="TrackMenu_NoPlaylists" xml:space="preserve"><value>Плейлисты не найдены</value></data>
+  <data name="TrackMenu_FailedPlaylists" xml:space="preserve"><value>Ошибка загрузки плейлистов</value></data>
+  <data name="TrackToast_PlayNext" xml:space="preserve"><value>Трек будет воспроизведён следующим</value></data>
+  <data name="TrackToast_AddedToQueue" xml:space="preserve"><value>Трек добавлен в конец очереди</value></data>
+  <data name="TrackToast_Liked" xml:space="preserve"><value>Добавлено в избранное</value></data>
+  <data name="TrackToast_Unliked" xml:space="preserve"><value>Удалено из избранного</value></data>
+  <data name="TrackToast_Disliked" xml:space="preserve"><value>Не нравится (трек скрыт и пропущен)</value></data>
+  <data name="TrackToast_Disliked_NoSkip" xml:space="preserve"><value>Не нравится (трек скрыт)</value></data>
+  <data name="TrackToast_Undisliked" xml:space="preserve"><value>Удалено из «Не нравится»</value></data>
+  <data name="TrackToast_LinkCopied" xml:space="preserve"><value>Ссылка на трек скопирована</value></data>
+  <data name="TrackToast_Downloading" xml:space="preserve"><value>Скачивание трека началось...</value></data>
+  <data name="TrackToast_DownloadFailed" xml:space="preserve"><value>Не удалось получить ссылку на трек</value></data>
+  <data name="TrackToast_Downloaded" xml:space="preserve"><value>Сохранено в Загрузки: {0}</value></data>
+  <data name="TrackToast_DownloadError" xml:space="preserve"><value>Ошибка при скачивании трека</value></data>
+  <data name="TrackToast_AddedToPlaylist" xml:space="preserve"><value>Добавлено в плейлист «{0}»</value></data>
+  <data name="TrackToast_AddToPlaylistFailed" xml:space="preserve"><value>Не удалось добавить в плейлист</value></data>
+  <data name="TrackToast_AddToPlaylistError" xml:space="preserve"><value>Ошибка при добавлении в плейлист</value></data>
+  <data name="TrackDetails_Title" xml:space="preserve"><value>Информация о треке</value></data>
+  <data name="TrackDetails_TrackTitle" xml:space="preserve"><value>Название:</value></data>
+  <data name="TrackDetails_Artist" xml:space="preserve"><value>Исполнитель:</value></data>
+  <data name="TrackDetails_Album" xml:space="preserve"><value>Альбом:</value></data>
+  <data name="TrackDetails_Duration" xml:space="preserve"><value>Длительность:</value></data>
+  <data name="TrackDetails_Quality" xml:space="preserve"><value>Качество аудио:</value></data>
+  <data name="TrackDetails_TrackId" xml:space="preserve"><value>ID трека:</value></data>
+  <data name="TrackDetails_Close" xml:space="preserve"><value>Закрыть</value></data>
 
   <!-- Search -->
   <data name="Search_Title" xml:space="preserve"><value>Поиск</value></data>

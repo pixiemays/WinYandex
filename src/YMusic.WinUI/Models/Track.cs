@@ -25,6 +25,18 @@ public sealed partial class Track : ObservableObject
 
     [ObservableProperty]
     [property: JsonIgnore]
+    [NotifyPropertyChangedFor(nameof(TrackOpacity))]
+    [NotifyPropertyChangedFor(nameof(IsDimmed))]
+    private bool _isDisliked;
+
+    [JsonIgnore]
+    public double TrackOpacity => IsDisliked ? 0.38 : 1.0;
+
+    [JsonIgnore]
+    public bool IsDimmed => IsDisliked;
+
+    [ObservableProperty]
+    [property: JsonIgnore]
     private bool _isReplaced;
 
     [ObservableProperty]

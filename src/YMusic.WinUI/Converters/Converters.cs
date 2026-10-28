@@ -510,3 +510,55 @@ public sealed class ActiveLyricToForegroundConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+public sealed class BoolToPreSaveBadgeBackgroundConverter : IValueConverter
+{
+    private static readonly SolidColorBrush PreSaveBrush = new(Windows.UI.Color.FromArgb(42, 139, 92, 246));
+
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool b && b)
+        {
+            return PreSaveBrush;
+        }
+
+        return (Brush)Application.Current.Resources["SubtleFillColorSecondaryBrush"];
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
+public sealed class BoolToPreSaveBadgeForegroundConverter : IValueConverter
+{
+    private static readonly SolidColorBrush LavenderBrush = new(Windows.UI.Color.FromArgb(255, 196, 181, 253));
+
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool b && b)
+        {
+            return LavenderBrush;
+        }
+
+        return (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"];
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
+public sealed class BoolToPreSaveBadgeBorderConverter : IValueConverter
+{
+    private static readonly SolidColorBrush PreSaveBorderBrush = new(Windows.UI.Color.FromArgb(70, 139, 92, 246));
+    private static readonly SolidColorBrush TransparentBrush = new(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool b && b)
+        {
+            return PreSaveBorderBrush;
+        }
+
+        return TransparentBrush;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}

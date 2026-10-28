@@ -47,6 +47,7 @@
                 <AutoSuggestBox x:Name="NavAutoSuggestBox"
                                 QueryIcon="Find"
                                 PlaceholderText="{x:Bind ViewModel.SearchPlaceholderText, Mode=OneWay}"
+                                TextChanged="NavAutoSuggestBox_TextChanged"
                                 QuerySubmitted="NavAutoSuggestBox_QuerySubmitted" />
             </NavigationView.AutoSuggestBox>
 

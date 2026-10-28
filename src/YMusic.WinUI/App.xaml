@@ -38,6 +38,9 @@
             <converters:BoolToPinForegroundBrushConverter x:Key="BoolToPinForegroundBrushConverter" />
             <converters:BoolToSubtleHighlightBrushConverter x:Key="BoolToSubtleHighlightBrushConverter" />
             <converters:ActiveLyricToForegroundConverter x:Key="ActiveLyricToForegroundConverter" />
+            <converters:BoolToPreSaveBadgeBackgroundConverter x:Key="BoolToPreSaveBadgeBackgroundConverter" />
+            <converters:BoolToPreSaveBadgeForegroundConverter x:Key="BoolToPreSaveBadgeForegroundConverter" />
+            <converters:BoolToPreSaveBadgeBorderConverter x:Key="BoolToPreSaveBadgeBorderConverter" />
 
             <Style TargetType="Button">
                 <Setter Property="helpers:CursorHelper.UseHandCursor" Value="True" />

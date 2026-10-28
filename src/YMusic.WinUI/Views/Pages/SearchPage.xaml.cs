@@ -22,6 +22,9 @@ public sealed partial class SearchPage : Page
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
+        var focused = XamlRoot != null ? Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(XamlRoot) : null;
+        if (focused is AutoSuggestBox) return;
+
         if (string.IsNullOrWhiteSpace(ViewModel.Query))
         {
             SearchInputBox.Focus(FocusState.Programmatic);

@@ -21,10 +21,21 @@
 
         <!-- 1. Ambient Background Layer (Apple Music / Yandex Music liquid glow) -->
         <Grid IsHitTestVisible="False">
-            <!-- Scaled HD Album Art for deep ambient color glow -->
-            <Image Source="{x:Bind ViewModel.HdCoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
+            <!-- Scaled HD Album Art for deep ambient color glow (Two layers for true crossfade) -->
+            <Image x:Name="AmbientGlowCurrent"
+                   Source="{x:Bind ViewModel.HdCoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
                    Stretch="UniformToFill"
                    Opacity="0.40"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   RenderTransformOrigin="0.5,0.5">
+                <Image.RenderTransform>
+                    <ScaleTransform ScaleX="1.35" ScaleY="1.35" />
+                </Image.RenderTransform>
+            </Image>
+            <Image x:Name="AmbientGlowNext"
+                   Stretch="UniformToFill"
+                   Opacity="0.0"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    RenderTransformOrigin="0.5,0.5">
@@ -200,13 +211,18 @@
                                           Foreground="#50FFFFFF"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Center" />
-                                <Image Source="{x:Bind ViewModel.HdCoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
-                                       Stretch="UniformToFill" />
+                                <Image x:Name="CoverImageCurrent"
+                                       Source="{x:Bind ViewModel.HdCoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
+                                       Stretch="UniformToFill"
+                                       Opacity="1.0" />
+                                <Image x:Name="CoverImageNext"
+                                       Stretch="UniformToFill"
+                                       Opacity="0.0" />
                             </Grid>
                         </Border>
 
                         <!-- Track Title & Artists (Interactive: Title opens album, Artist opens artist card) -->
-                        <StackPanel Spacing="4" HorizontalAlignment="Left" Width="340">
+                        <StackPanel x:Name="TrackInfoPanel" Spacing="4" HorizontalAlignment="Left" Width="340">
                             <HyperlinkButton Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
                                              Padding="0"
                                              Margin="0"

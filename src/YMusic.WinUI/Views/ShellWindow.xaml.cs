@@ -46,10 +46,60 @@ public sealed partial class ShellWindow : Window
                         e.Handled = true;
                     }
                 }
+                else if (e.Key == Windows.System.VirtualKey.F11)
+                {
+                    ToggleFullScreen();
+                    e.Handled = true;
+                }
+                else if (e.Key == Windows.System.VirtualKey.Space && rootElement.XamlRoot != null)
+                {
+                    var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(rootElement.XamlRoot);
+                    if (focused is not TextBox && focused is not PasswordBox && focused is not AutoSuggestBox && focused is not RichEditBox)
+                    {
+                        if (ViewModel.PlayerBar.HasTrack)
+                        {
+                            ViewModel.PlayerBar.TogglePlayPauseCommand.Execute(null);
+                            e.Handled = true;
+                        }
+                    }
+                }
+                else if (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down))
+                {
+                    if (e.Key == Windows.System.VirtualKey.Right)
+                    {
+                        if (ViewModel.PlayerBar.HasTrack)
+                        {
+                            ViewModel.PlayerBar.NextCommand.Execute(null);
+                            e.Handled = true;
+                        }
+                    }
+                    else if (e.Key == Windows.System.VirtualKey.Left)
+                    {
+                        if (ViewModel.PlayerBar.HasTrack)
+                        {
+                            ViewModel.PlayerBar.PreviousCommand.Execute(null);
+                            e.Handled = true;
+                        }
+                    }
+                    else if (e.Key == Windows.System.VirtualKey.L)
+                    {
+                        if (ViewModel.PlayerBar.HasTrack)
+                        {
+                            ViewModel.PlayerBar.ToggleLikeCommand.Execute(null);
+                            e.Handled = true;
+                        }
+                    }
+                    else if (e.Key == Windows.System.VirtualKey.F || e.Key == Windows.System.VirtualKey.K)
+                    {
+                        NavigateToTag("Search");
+                        NavAutoSuggestBox?.Focus(FocusState.Programmatic);
+                        e.Handled = true;
+                    }
+                }
                 else if (e.Key == Windows.System.VirtualKey.L && rootElement.XamlRoot != null)
                 {
                     var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(rootElement.XamlRoot);
-                    if (focused is not TextBox && focused is not PasswordBox)
+                    if (focused is not TextBox && focused is not PasswordBox && focused is not AutoSuggestBox && focused is not RichEditBox)
                     {
                         if (ViewModel.PlayerBar.HasTrack)
                         {
@@ -57,13 +107,6 @@ public sealed partial class ShellWindow : Window
                             e.Handled = true;
                         }
                     }
-                }
-                else if ((e.Key == Windows.System.VirtualKey.F || e.Key == Windows.System.VirtualKey.K) &&
-                         Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down))
-                {
-                    NavigateToTag("Search");
-                    NavAutoSuggestBox?.Focus(FocusState.Programmatic);
-                    e.Handled = true;
                 }
             };
         }
@@ -78,6 +121,24 @@ public sealed partial class ShellWindow : Window
                 DispatcherQueue.TryEnqueue(UpdatePlayerBarVisibility);
             }
         };
+
+        var searchVm = App.GetService<SearchViewModel>();
+        if (searchVm != null)
+        {
+            searchVm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(SearchViewModel.Query))
+                {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (NavAutoSuggestBox != null && NavAutoSuggestBox.Text != searchVm.Query)
+                        {
+                            NavAutoSuggestBox.Text = searchVm.Query ?? string.Empty;
+                        }
+                    });
+                }
+            };
+        }
 
         ViewModel.PlayerBar.PropertyChanged += (s, e) =>
         {
@@ -221,14 +282,40 @@ public sealed partial class ShellWindow : Window
         NavigateToTag(tag);
     }
 
+    private void NavAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            string query = sender.Text ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(query))
+            {
+                if (CurrentPageTag != "Search")
+                {
+                    NavigateToTag("Search");
+                    sender.Focus(FocusState.Programmatic);
+                }
+            }
+
+            var searchVm = App.GetService<SearchViewModel>();
+            if (searchVm != null && searchVm.Query != query)
+            {
+                searchVm.Query = query;
+            }
+        }
+    }
+
     private void NavAutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
         string query = args.QueryText?.Trim() ?? string.Empty;
-        NavigateToTag("Search");
+        if (CurrentPageTag != "Search")
+        {
+            NavigateToTag("Search");
+        }
         if (!string.IsNullOrWhiteSpace(query))
         {
             var searchVm = App.GetService<SearchViewModel>();
-            searchVm.SetQueryAndSearch(query);
+            searchVm?.SetQueryAndSearch(query);
         }
     }
 

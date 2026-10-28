@@ -30,10 +30,18 @@ public sealed partial class Track : ObservableObject
     private bool _isDisliked;
 
     [JsonIgnore]
-    public double TrackOpacity => IsDisliked ? 0.38 : 1.0;
+    public double TrackOpacity => IsDisliked ? 0.38 : (Available ? 1.0 : 0.45);
 
     [JsonIgnore]
-    public bool IsDimmed => IsDisliked;
+    public bool IsDimmed => IsDisliked || !Available;
+
+    [JsonIgnore]
+    public string UnavailableBadgeText => App.Loc?.CurrentLanguage == "en" ? "UNRELEASED" : "НЕ ВЫШЕЛ";
+
+    [JsonIgnore]
+    public string UnavailableTooltip => App.Loc?.CurrentLanguage == "en"
+        ? "This track will be available on the album's release day"
+        : "Этот трек станет доступен в день выхода альбома";
 
     [ObservableProperty]
     [property: JsonIgnore]
@@ -108,11 +116,23 @@ public sealed partial class Track : ObservableObject
     [JsonPropertyName("version")]
     public string? Version { get; set; }
 
+    [JsonPropertyName("error")]
+    public string? Error { get; set; }
+
     [JsonPropertyName("available")]
     public bool Available
     {
         get => _available || IsReplaced;
-        set => _available = value;
+        set
+        {
+            if (_available != value)
+            {
+                _available = value;
+                OnPropertyChanged(nameof(Available));
+                OnPropertyChanged(nameof(TrackOpacity));
+                OnPropertyChanged(nameof(IsDimmed));
+            }
+        }
     }
     private bool _available = true;
 
@@ -160,9 +180,19 @@ public sealed partial class Track : ObservableObject
     public TimeSpan Duration => TimeSpan.FromMilliseconds(DurationMs);
 
     [JsonIgnore]
-    public string FormattedDuration => Duration.Hours > 0
-        ? Duration.ToString(@"h\:mm\:ss")
-        : Duration.ToString(@"m\:ss");
+    public string FormattedDuration
+    {
+        get
+        {
+            if (!Available && DurationMs == 0)
+            {
+                return "--:--";
+            }
+            return Duration.Hours > 0
+                ? Duration.ToString(@"h\:mm\:ss")
+                : Duration.ToString(@"m\:ss");
+        }
+    }
 
     [JsonIgnore]
     public string FckBadgeTooltip => App.Loc?.CurrentLanguage == "en"

@@ -62,6 +62,10 @@ public sealed partial class NowPlayingDrawerControl : UserControl
                     }
                 });
             }
+            else if (e.PropertyName == nameof(PlayerBarViewModel.CurrentTrack))
+            {
+                DispatcherQueue.TryEnqueue(AnimateTrackChange);
+            }
         };
 
         SeekSlider.AddHandler(UIElement.PointerPressedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(SeekSlider_PointerPressed), true);
@@ -362,6 +366,148 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         };
 
         _currentTransition = sb;
+        sb.Begin();
+    }
+
+    private Storyboard? _crossfadeStoryboard;
+    private string? _currentDisplayedCoverUrl;
+
+    public void AnimateTrackChange()
+    {
+        string? newUrl = ViewModel.HdCoverUrl;
+
+        // If drawer is closed or not visible, keep in sync immediately without animations
+        if (!ViewModel.IsNowPlayingDrawerOpen || Visibility != Visibility.Visible)
+        {
+            _currentDisplayedCoverUrl = newUrl;
+            _crossfadeStoryboard?.Stop();
+            _crossfadeStoryboard = null;
+            CoverImageNext.Opacity = 0.0;
+            CoverImageNext.Source = null;
+            AmbientGlowNext.Opacity = 0.0;
+            AmbientGlowNext.Source = null;
+            return;
+        }
+
+        // If URL hasn't changed, don't re-animate
+        if (string.Equals(_currentDisplayedCoverUrl, newUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        // Gentle text refresh: opacity from 0.65 -> 1.0 (no vertical bouncing!)
+        AnimateTextSoftRefresh();
+
+        if (string.IsNullOrWhiteSpace(newUrl))
+        {
+            _currentDisplayedCoverUrl = null;
+            CoverImageCurrent.Source = null;
+            AmbientGlowCurrent.Source = null;
+            return;
+        }
+
+        StartTwoLayerCrossfade(newUrl);
+    }
+
+    private void StartTwoLayerCrossfade(string newUrl)
+    {
+        _crossfadeStoryboard?.Stop();
+        _crossfadeStoryboard = null;
+
+        if (!Uri.TryCreate(newUrl, UriKind.Absolute, out var uri))
+        {
+            return;
+        }
+
+        var newBitmap = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri);
+        CoverImageNext.Opacity = 0.0;
+        CoverImageNext.Source = newBitmap;
+
+        AmbientGlowNext.Opacity = 0.0;
+        AmbientGlowNext.Source = newBitmap;
+
+        bool hasFaded = false;
+
+        void TriggerFade()
+        {
+            if (hasFaded) return;
+            hasFaded = true;
+
+            var sb = new Storyboard();
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+            // 1. CoverImageNext: 0.0 -> 1.0 (smoothly dissolves over old cover)
+            var coverAnim = new DoubleAnimation
+            {
+                From = 0.0,
+                To = 1.0,
+                Duration = TimeSpan.FromMilliseconds(420),
+                EasingFunction = ease
+            };
+            Storyboard.SetTarget(coverAnim, CoverImageNext);
+            Storyboard.SetTargetProperty(coverAnim, "Opacity");
+            sb.Children.Add(coverAnim);
+
+            // 2. AmbientGlowNext: 0.0 -> 0.40 (smoothly dissolves over old glow)
+            var glowAnim = new DoubleAnimation
+            {
+                From = 0.0,
+                To = 0.40,
+                Duration = TimeSpan.FromMilliseconds(480),
+                EasingFunction = ease
+            };
+            Storyboard.SetTarget(glowAnim, AmbientGlowNext);
+            Storyboard.SetTargetProperty(glowAnim, "Opacity");
+            sb.Children.Add(glowAnim);
+
+            sb.Completed += (s, e) =>
+            {
+                _crossfadeStoryboard = null;
+                // Swap: CoverImageCurrent now displays the new bitmap, and Next is hidden
+                CoverImageCurrent.Source = newBitmap;
+                CoverImageNext.Opacity = 0.0;
+                CoverImageNext.Source = null;
+
+                AmbientGlowCurrent.Source = newBitmap;
+                AmbientGlowNext.Opacity = 0.0;
+                AmbientGlowNext.Source = null;
+
+                _currentDisplayedCoverUrl = newUrl;
+            };
+
+            _crossfadeStoryboard = sb;
+            sb.Begin();
+        }
+
+        newBitmap.ImageOpened += (s, e) =>
+        {
+            DispatcherQueue.TryEnqueue(TriggerFade);
+        };
+
+        // Fallback: If image fails to load or ImageOpened doesn't fire, trigger fade after 120ms
+        var fallbackTimer = DispatcherQueue.CreateTimer();
+        fallbackTimer.Interval = TimeSpan.FromMilliseconds(120);
+        fallbackTimer.Tick += (s, e) =>
+        {
+            fallbackTimer.Stop();
+            TriggerFade();
+        };
+        fallbackTimer.Start();
+    }
+
+    private void AnimateTextSoftRefresh()
+    {
+        var sb = new Storyboard();
+        var textAnim = new DoubleAnimation
+        {
+            From = 0.65,
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(220),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(textAnim, TrackInfoPanel);
+        Storyboard.SetTargetProperty(textAnim, "Opacity");
+        sb.Children.Add(textAnim);
         sb.Begin();
     }
 

@@ -391,10 +391,27 @@
                                             <Grid>
                                                 <Image Source="{x:Bind CoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
                                                 <Border Background="#20000000" CornerRadius="10" />
+
+                                                <!-- Pre-save Badge Overlay -->
+                                                <Border HorizontalAlignment="Left"
+                                                        VerticalAlignment="Top"
+                                                        Margin="8"
+                                                        Padding="6,3"
+                                                        CornerRadius="6"
+                                                        Background="#D01E1B2E"
+                                                        BorderBrush="#458B5CF6"
+                                                        BorderThickness="1"
+                                                        Visibility="{x:Bind IsPreSave, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <FontIcon Glyph="&#xEA8F;" FontSize="10" Foreground="#C4B5FD" />
+                                                        <TextBlock Text="{x:Bind PreSaveBadgeText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold" Foreground="#C4B5FD" />
+                                                    </StackPanel>
+                                                </Border>
                                             </Grid>
                                         </Border>
                                         <TextBlock Text="{x:Bind Title, Mode=OneWay}" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                        <TextBlock Text="{x:Bind Year, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="{x:Bind FormattedReleaseDate, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource AccentFillColorDefaultBrush}" FontWeight="SemiBold" Visibility="{x:Bind IsPreSave, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                        <TextBlock Text="{x:Bind Year, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="{x:Bind IsPreSave, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=invert}" />
                                         <TextBlock Text="{x:Bind FormattedTrackCount, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                     </StackPanel>
                                 </Button>

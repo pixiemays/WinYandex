@@ -335,7 +335,7 @@ public sealed partial class PlaylistsPage : Page
 
     private async void DirectPlayAlbum_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button button && button.Tag is Album album)
+        if (sender is FrameworkElement element && element.Tag is Album album)
         {
             await ViewModel.PlayAlbumDirectCommand.ExecuteAsync(album);
         }
@@ -345,6 +345,14 @@ public sealed partial class PlaylistsPage : Page
     {
         if (e.ClickedItem is Track track)
         {
+            if (!track.Available)
+            {
+                var isEn = App.Loc?.CurrentLanguage == "en";
+                App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
+                    ? "This track will be available on the album's release day"
+                    : "Этот трек станет доступен в день выхода альбома");
+                return;
+            }
             await ViewModel.PlayTrackCommand.ExecuteAsync(track);
         }
     }

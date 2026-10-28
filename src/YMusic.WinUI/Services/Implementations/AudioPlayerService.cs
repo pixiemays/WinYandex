@@ -476,6 +476,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public async Task PlayTrackAsync(Track track, IEnumerable<Track>? newQueue = null)
     {
+        if (track == null || !track.Available) return;
+
         if (newQueue != null)
         {
             _queue.Clear();
@@ -528,6 +530,19 @@ public sealed class AudioPlayerService : IAudioPlayerService
         QueueChanged?.Invoke(this, EventArgs.Empty);
 
         int targetIndex = Math.Clamp(startIndex, 0, _queue.Count - 1);
+        if (!_queue[targetIndex].Available)
+        {
+            int firstAvailable = _queue.FindIndex(targetIndex, t => t.Available);
+            if (firstAvailable < 0) firstAvailable = _queue.FindIndex(t => t.Available);
+            if (firstAvailable >= 0)
+            {
+                targetIndex = firstAvailable;
+            }
+            else
+            {
+                return;
+            }
+        }
         _orderIndex = _playOrder.IndexOf(targetIndex);
 
         var trackToPlay = _queue[targetIndex];

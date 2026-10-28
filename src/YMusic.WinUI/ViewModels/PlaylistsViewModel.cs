@@ -20,6 +20,46 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     public ObservableCollection<Playlist> Playlists { get; } = new();
     public ObservableCollection<Album> LikedAlbums { get; } = new();
     public ObservableCollection<Track> SelectedPlaylistTracks { get; } = new();
+    private readonly List<Track> _allSelectedTracks = new();
+
+    [ObservableProperty]
+    private string _searchFilter = string.Empty;
+
+    public string FilterPlaceholder => Loc?.CurrentLanguage == "en" ? "Filter tracks..." : "Поиск по трекам...";
+
+    public string PreSaveBannerTitle => Loc?.CurrentLanguage == "en" ? "Album Coming Soon" : "Альбом ещё не вышел";
+    public string PreSaveBannerDescription => Loc?.CurrentLanguage == "en"
+        ? "Pre-save this album to have it automatically added to your library the moment it drops."
+        : "Оформите пресейв, чтобы не пропустить релиз. Альбом автоматически добавится в вашу медиатеку в день выхода.";
+
+    public bool HasFormattedDuration => !string.IsNullOrEmpty(FormattedDuration) && SelectedPlaylistTracks.Any(t => t.DurationMs > 0);
+    public bool HasTrackCountOrDuration => !string.IsNullOrWhiteSpace(FormattedTrackCount) || HasFormattedDuration;
+    public bool IsPreSaveEmptyState => IsDetailPreSave && SelectedPlaylistTracks.Count == 0;
+
+    partial void OnSearchFilterChanged(string value)
+    {
+        RunOnUi(ApplyTrackFilter);
+    }
+
+    private void ApplyTrackFilter()
+    {
+        SelectedPlaylistTracks.Clear();
+        var query = SearchFilter?.Trim();
+
+        var filtered = string.IsNullOrWhiteSpace(query)
+            ? _allSelectedTracks
+            : _allSelectedTracks.Where(t =>
+                t.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                t.ArtistNames.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                t.AlbumTitle.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var track in filtered)
+        {
+            SelectedPlaylistTracks.Add(track);
+        }
+
+        _playbackCoordinator.Sync(SelectedPlaylistTracks);
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DetailTitle))]
@@ -39,9 +79,13 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(DetailDescription))]
     [NotifyPropertyChangedFor(nameof(DetailTypeBadge))]
     [NotifyPropertyChangedFor(nameof(DetailPlayButtonText))]
+    [NotifyPropertyChangedFor(nameof(DetailPlayButtonGlyph))]
+    [NotifyPropertyChangedFor(nameof(IsDetailPreSave))]
     [NotifyPropertyChangedFor(nameof(IsDetailPinned))]
     [NotifyPropertyChangedFor(nameof(IsDetailLiked))]
     private Album? _selectedAlbum;
+
+    public bool IsDetailPreSave => SelectedAlbum?.IsPreSave == true;
 
     public bool IsDetailPinned =>
         SelectedPlaylist != null
@@ -66,6 +110,8 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         }
         OnPropertyChanged(nameof(IsDetailPinned));
         OnPropertyChanged(nameof(IsDetailLiked));
+        OnPropertyChanged(nameof(DetailPlayButtonText));
+        OnPropertyChanged(nameof(DetailPlayButtonGlyph));
     }
 
     partial void OnSelectedAlbumChanged(Album? value)
@@ -77,7 +123,14 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         }
         OnPropertyChanged(nameof(IsDetailPinned));
         OnPropertyChanged(nameof(IsDetailLiked));
+        OnPropertyChanged(nameof(IsDetailPreSave));
+        OnPropertyChanged(nameof(DetailPlayButtonText));
+        OnPropertyChanged(nameof(DetailPlayButtonGlyph));
+        OnPropertyChanged(nameof(IsDetailLikeButtonVisible));
     }
+
+    public bool IsDetailLikeButtonVisible => !(IsDetailPreSave && SelectedAlbum?.HasPlayableTracks == false);
+    public bool HasTracksToFilter => _allSelectedTracks.Count > 1;
 
     public string DetailTitle => SelectedPlaylist?.Title ?? SelectedAlbum?.Title ?? string.Empty;
     public string DetailSubtitle
@@ -90,10 +143,19 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                 var parts = new List<string>();
                 if (!string.IsNullOrWhiteSpace(SelectedAlbum.ArtistNames))
                     parts.Add(SelectedAlbum.ArtistNames);
-                if (SelectedAlbum.Year.HasValue)
+
+                if (SelectedAlbum.IsPreSave)
+                {
+                    parts.Add(SelectedAlbum.FormattedReleaseDate);
+                }
+                else if (SelectedAlbum.Year.HasValue)
+                {
                     parts.Add(SelectedAlbum.Year.Value.ToString());
+                }
+
                 if (!string.IsNullOrWhiteSpace(SelectedAlbum.Genre))
                     parts.Add(SelectedAlbum.Genre);
+
                 return string.Join(" • ", parts);
             }
             return string.Empty;
@@ -101,12 +163,55 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     }
     public string? DetailCoverUrl => SelectedPlaylist?.CoverUrl ?? SelectedAlbum?.CoverUrl;
     public string? DetailDescription => SelectedPlaylist?.Description ?? SelectedAlbum?.Description;
-    public string DetailTypeBadge => Loc?.CurrentLanguage == "en"
-        ? (SelectedPlaylist != null ? "PLAYLIST" : "ALBUM")
-        : (SelectedPlaylist != null ? "ПЛЕЙЛИСТ" : "АЛЬБОМ");
-    public string DetailPlayButtonText => Loc?.CurrentLanguage == "en"
-        ? (SelectedPlaylist != null ? "Play Playlist" : "Play Album")
-        : (SelectedPlaylist != null ? "Слушать плейлист" : "Слушать альбом");
+    public string DetailTypeBadge
+    {
+        get
+        {
+            if (SelectedPlaylist != null)
+                return Loc?.CurrentLanguage == "en" ? "PLAYLIST" : "ПЛЕЙЛИСТ";
+
+            if (SelectedAlbum != null)
+            {
+                if (SelectedAlbum.IsPreSave)
+                    return Loc?.CurrentLanguage == "en" ? "PRE-SAVE" : "ПРЕСЕЙВ";
+
+                return Loc?.CurrentLanguage == "en" ? "ALBUM" : "АЛЬБОМ";
+            }
+
+            return string.Empty;
+        }
+    }
+    public string DetailPlayButtonText
+    {
+        get
+        {
+            bool isEn = Loc?.CurrentLanguage == "en";
+            if (SelectedPlaylist != null)
+            {
+                return isEn ? "Play Playlist" : "Слушать плейлист";
+            }
+            if (SelectedAlbum != null)
+            {
+                if (SelectedAlbum.IsPreSave)
+                {
+                    if (SelectedAlbum.HasPlayableTracks)
+                    {
+                        return isEn ? "Play Available Singles" : "Слушать доступные синглы";
+                    }
+                    return IsDetailLiked
+                        ? (isEn ? "Pre-save Added ✓" : "Пресейв добавлен ✓")
+                        : (isEn ? "Pre-save Album" : "Предсохранить альбом");
+                }
+                return isEn ? "Play Album" : "Слушать альбом";
+            }
+            return isEn ? "Play" : "Слушать";
+        }
+    }
+
+    public string DetailPlayButtonGlyph =>
+        (SelectedAlbum?.IsPreSave == true && !SelectedAlbum.HasPlayableTracks)
+            ? (IsDetailLiked ? "\uE73E" : "\uEA8F")
+            : "\uE768";
 
     public string PageTitle => Loc?.CurrentLanguage == "en" ? "Library" : (Loc?.GetString("Nav_Playlists") ?? "Плейлисты и альбомы");
     public string PlaylistsTabText => Loc?.CurrentLanguage == "en" ? "Playlists" : "Плейлисты";
@@ -155,7 +260,11 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         OnPropertyChanged(nameof(PlayMenuText));
         OnPropertyChanged(nameof(DetailTypeBadge));
         OnPropertyChanged(nameof(DetailPlayButtonText));
+        OnPropertyChanged(nameof(DetailPlayButtonGlyph));
         OnPropertyChanged(nameof(BackButtonText));
+        OnPropertyChanged(nameof(FilterPlaceholder));
+        OnPropertyChanged(nameof(PreSaveBannerTitle));
+        OnPropertyChanged(nameof(PreSaveBannerDescription));
     }
 
     [ObservableProperty]
@@ -283,6 +392,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                 var sortedAlbums = albums
                     .OrderByDescending(a => a.IsPinned)
                     .ThenBy(a => _pinnedItemsService.GetPinOrder(a.PinKey))
+                    .ThenByDescending(a => a.IsPreSave)
                     .ToList();
 
                 LikedAlbums.Clear();
@@ -318,7 +428,12 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
 
         if (playlist == null)
         {
-            RunOnUi(() => SelectedPlaylistTracks.Clear());
+            RunOnUi(() =>
+            {
+                _allSelectedTracks.Clear();
+                SearchFilter = string.Empty;
+                SelectedPlaylistTracks.Clear();
+            });
             return;
         }
 
@@ -356,12 +471,13 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                     OnPropertyChanged(nameof(IsDetailPinned));
                     OnPropertyChanged(nameof(IsDetailLiked));
                 }
-                SelectedPlaylistTracks.Clear();
+                _allSelectedTracks.Clear();
                 foreach (var t in tracks)
                 {
-                    SelectedPlaylistTracks.Add(t);
+                    _allSelectedTracks.Add(t);
                 }
-                _playbackCoordinator.Sync(SelectedPlaylistTracks);
+                SearchFilter = string.Empty;
+                ApplyTrackFilter();
             });
         }
         catch (Exception ex)
@@ -411,13 +527,22 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         }
 
         album.IsPinned = _pinnedItemsService.IsAlbumPinned(album.Id);
-        album.IsLiked = _musicService.IsAlbumLiked(album.Id);
+        album.IsLiked = _musicService.IsAlbumLiked(album.Id) || _musicService.IsAlbumPresaved(album.Id);
         SelectedAlbum = album;
         SelectedPlaylist = null;
         IsDetailOpen = true;
         FormattedTrackCount = album.FormattedTrackCount;
         OnPropertyChanged(nameof(IsDetailPinned));
         OnPropertyChanged(nameof(IsDetailLiked));
+        OnPropertyChanged(nameof(DetailTitle));
+        OnPropertyChanged(nameof(DetailSubtitle));
+        OnPropertyChanged(nameof(DetailCoverUrl));
+        OnPropertyChanged(nameof(DetailDescription));
+        OnPropertyChanged(nameof(DetailTypeBadge));
+        OnPropertyChanged(nameof(DetailPlayButtonText));
+        OnPropertyChanged(nameof(DetailPlayButtonGlyph));
+        OnPropertyChanged(nameof(IsDetailPreSave));
+        OnPropertyChanged(nameof(IsPreSaveEmptyState));
 
         SetBusy(true);
         ClearError();
@@ -427,7 +552,68 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
             await _musicService.EnsureLikedTracksLoadedAsync().ConfigureAwait(false);
             await _musicService.EnsureLikedAlbumsLoadedAsync().ConfigureAwait(false);
             var fullAlbum = await _musicService.GetAlbumWithTracksAsync(album.Id).ConfigureAwait(false);
+            if (fullAlbum == null || fullAlbum.IsNotFound || string.IsNullOrWhiteSpace(fullAlbum.Title))
+            {
+                fullAlbum = await _musicService.GetAlbumAsync(album.Id).ConfigureAwait(false);
+            }
+
+            if (fullAlbum != null && !fullAlbum.IsNotFound && !string.IsNullOrWhiteSpace(fullAlbum.Title))
+            {
+                if (album.IsPreorder == true) fullAlbum.IsPreorder = true;
+                if (album.Preorder == true) fullAlbum.Preorder = true;
+                if (album.AvailablePartially == true) fullAlbum.AvailablePartially = true;
+
+                if (string.IsNullOrWhiteSpace(fullAlbum.CoverUri) && !string.IsNullOrWhiteSpace(album.CoverUri))
+                    fullAlbum.CoverUri = album.CoverUri;
+                if ((fullAlbum.Artists == null || fullAlbum.Artists.Count == 0) && album.Artists != null && album.Artists.Count > 0)
+                    fullAlbum.Artists = new List<Artist>(album.Artists);
+                if (string.IsNullOrWhiteSpace(fullAlbum.ReleaseDate) && !string.IsNullOrWhiteSpace(album.ReleaseDate))
+                    fullAlbum.ReleaseDate = album.ReleaseDate;
+            }
+            else
+            {
+                fullAlbum = album;
+            }
+
+            // Fallback: If title or cover is still missing, try presaves cache/API
+            if (string.IsNullOrWhiteSpace(fullAlbum.Title) || string.IsNullOrWhiteSpace(fullAlbum.CoverUri) || (fullAlbum.Artists == null || fullAlbum.Artists.Count == 0))
+            {
+                try
+                {
+                    var presaves = await _musicService.GetPresavesAsync().ConfigureAwait(false);
+                    var presavedAlbum = presaves?.UpcomingAlbums?.FirstOrDefault(a => a.Id == album.Id);
+                    if (presavedAlbum != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(fullAlbum.Title)) fullAlbum.Title = presavedAlbum.Title;
+                        if (string.IsNullOrWhiteSpace(fullAlbum.CoverUri)) fullAlbum.CoverUri = presavedAlbum.CoverUri;
+                        if ((fullAlbum.Artists == null || fullAlbum.Artists.Count == 0) && presavedAlbum.Artists != null && presavedAlbum.Artists.Count > 0)
+                            fullAlbum.Artists = new List<Artist>(presavedAlbum.Artists);
+                        if (string.IsNullOrWhiteSpace(fullAlbum.ReleaseDate)) fullAlbum.ReleaseDate = presavedAlbum.ReleaseDate;
+                        fullAlbum.IsPreorder = true;
+                    }
+                }
+                catch { }
+            }
+
             var tracks = fullAlbum?.AllTracks != null ? new List<Track>(fullAlbum.AllTracks) : new List<Track>();
+
+            // Generate placeholders if tracks are not yet published for this upcoming album
+            if (fullAlbum != null && fullAlbum.IsPreSave && tracks.Count == 0 && fullAlbum.TrackCount > 0)
+            {
+                bool isEn = Loc?.CurrentLanguage == "en";
+                for (int i = 1; i <= fullAlbum.TrackCount; i++)
+                {
+                    tracks.Add(new Track
+                    {
+                        Id = $"placeholder:{fullAlbum.Id}:{i}",
+                        Title = isEn ? $"Track {i}" : $"Трек {i}",
+                        Available = false,
+                        DurationMs = 0,
+                        Albums = new List<Album> { fullAlbum },
+                        Artists = fullAlbum.Artists != null ? new List<Artist>(fullAlbum.Artists) : new List<Artist>()
+                    });
+                }
+            }
 
             // FckCensor: Restore censored/deleted album tracks if present in album spoofs
             var fckCensor = App.GetService<YMusic.WinUI.Services.Interfaces.IFckCensorService>();
@@ -504,7 +690,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
             {
                 if (fullAlbum != null)
                 {
-                    fullAlbum.IsLiked = _musicService.IsAlbumLiked(fullAlbum.Id);
+                    fullAlbum.IsLiked = _musicService.IsAlbumLiked(fullAlbum.Id) || _musicService.IsAlbumPresaved(fullAlbum.Id);
                     fullAlbum.IsPinned = _pinnedItemsService.IsAlbumPinned(fullAlbum.Id);
                     SelectedAlbum = fullAlbum;
                     FormattedTrackCount = fullAlbum.FormattedTrackCount;
@@ -512,18 +698,19 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                     OnPropertyChanged(nameof(IsDetailLiked));
                 }
 
-                SelectedPlaylistTracks.Clear();
+                _allSelectedTracks.Clear();
                 long totalMs = 0;
                 foreach (var t in tracks)
                 {
-                    SelectedPlaylistTracks.Add(t);
+                    _allSelectedTracks.Add(t);
                     totalMs += t.DurationMs;
                 }
 
                 var totalSpan = TimeSpan.FromMilliseconds(totalMs);
-                FormattedDuration = PluralizationHelper.FormatDuration(totalSpan);
+                FormattedDuration = totalMs > 0 ? PluralizationHelper.FormatDuration(totalSpan) : string.Empty;
 
-                _playbackCoordinator.Sync(SelectedPlaylistTracks);
+                SearchFilter = string.Empty;
+                ApplyTrackFilter();
 
                 OnPropertyChanged(nameof(DetailTitle));
                 OnPropertyChanged(nameof(DetailSubtitle));
@@ -531,6 +718,13 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
                 OnPropertyChanged(nameof(DetailDescription));
                 OnPropertyChanged(nameof(DetailTypeBadge));
                 OnPropertyChanged(nameof(DetailPlayButtonText));
+                OnPropertyChanged(nameof(DetailPlayButtonGlyph));
+                OnPropertyChanged(nameof(IsDetailPreSave));
+                OnPropertyChanged(nameof(IsDetailLikeButtonVisible));
+                OnPropertyChanged(nameof(HasTracksToFilter));
+                OnPropertyChanged(nameof(HasFormattedDuration));
+                OnPropertyChanged(nameof(HasTrackCountOrDuration));
+                OnPropertyChanged(nameof(IsPreSaveEmptyState));
             });
         }
         catch (Exception ex)
@@ -553,6 +747,8 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         IsBackButtonVisible = true;
         SelectedPlaylist = null;
         SelectedAlbum = null;
+        SearchFilter = string.Empty;
+        _allSelectedTracks.Clear();
         SelectedPlaylistTracks.Clear();
 
         if (!string.IsNullOrEmpty(returnTag))
@@ -577,11 +773,18 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     public async Task PlayAlbumDirectAsync(Album? album)
     {
         if (album == null) return;
+        if (album.IsPreSave && !album.HasPlayableTracks)
+        {
+            await ToggleAlbumLikeAsync(album).ConfigureAwait(false);
+            return;
+        }
+
         await OpenAlbumAsync(album);
-        if (SelectedPlaylistTracks.Count > 0)
+        var playable = SelectedPlaylistTracks.Where(t => t.Available).ToList();
+        if (playable.Count > 0)
         {
             _audioPlayer.CurrentPlaybackMode = PlaybackMode.Album;
-            await _audioPlayer.PlayQueueAsync(SelectedPlaylistTracks.ToList(), 0);
+            await _audioPlayer.PlayQueueAsync(playable, 0);
         }
     }
 
@@ -602,10 +805,24 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         }
         else if (SelectedAlbum != null)
         {
-            if (SelectedPlaylistTracks.Count > 0)
+            if (SelectedAlbum.IsPreSave && !SelectedAlbum.HasPlayableTracks)
+            {
+                await ToggleCurrentDetailLikeAsync().ConfigureAwait(false);
+                return;
+            }
+
+            var playableTracks = SelectedPlaylistTracks.Where(t => t.Available).ToList();
+            if (playableTracks.Count > 0)
             {
                 _audioPlayer.CurrentPlaybackMode = PlaybackMode.Album;
-                await _audioPlayer.PlayQueueAsync(SelectedPlaylistTracks.ToList(), 0);
+                await _audioPlayer.PlayQueueAsync(playableTracks, 0);
+            }
+            else
+            {
+                var isEn = Loc?.CurrentLanguage == "en";
+                App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
+                    ? "This album will be available on release day"
+                    : "Этот альбом станет доступен в день выхода");
             }
         }
     }
@@ -633,6 +850,15 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     {
         if (track == null || SelectedPlaylistTracks.Count == 0)
         {
+            return;
+        }
+
+        if (!track.Available)
+        {
+            var isEn = Loc?.CurrentLanguage == "en";
+            App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
+                ? "This track will be available on the album's release day"
+                : "Этот трек станет доступен в день выхода альбома");
             return;
         }
 
@@ -746,16 +972,39 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         bool willLike = !album.IsLiked;
         album.IsLiked = willLike;
         OnPropertyChanged(nameof(IsDetailLiked));
+        OnPropertyChanged(nameof(DetailPlayButtonText));
+        OnPropertyChanged(nameof(DetailPlayButtonGlyph));
 
         try
         {
-            if (willLike)
+            var isEn = Loc?.CurrentLanguage == "en";
+            if (album.IsPreSave)
             {
-                await _musicService.LikeAlbumAsync(album.Id).ConfigureAwait(false);
+                if (willLike)
+                {
+                    await _musicService.AddAlbumPresaveAsync(album.Id).ConfigureAwait(false);
+                    App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
+                        ? "Album pre-saved! It will be added to your library on release."
+                        : "Альбом предсохранён! Он появится в вашей медиатеке в день релиза.");
+                }
+                else
+                {
+                    await _musicService.RemoveAlbumPresaveAsync(album.Id).ConfigureAwait(false);
+                    App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
+                        ? "Pre-save removed"
+                        : "Пресейв отменён");
+                }
             }
             else
             {
-                await _musicService.UnlikeAlbumAsync(album.Id).ConfigureAwait(false);
+                if (willLike)
+                {
+                    await _musicService.LikeAlbumAsync(album.Id).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _musicService.UnlikeAlbumAsync(album.Id).ConfigureAwait(false);
+                }
             }
         }
         catch (Exception ex)
@@ -763,6 +1012,8 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
             System.Diagnostics.Debug.WriteLine($"[ToggleAlbumLike Error] {ex.Message}");
             album.IsLiked = !willLike;
             OnPropertyChanged(nameof(IsDetailLiked));
+            OnPropertyChanged(nameof(DetailPlayButtonText));
+            OnPropertyChanged(nameof(DetailPlayButtonGlyph));
         }
     }
 
@@ -787,6 +1038,8 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
             {
                 SelectedAlbum.IsLiked = e.IsLiked;
                 OnPropertyChanged(nameof(IsDetailLiked));
+                OnPropertyChanged(nameof(DetailPlayButtonText));
+                OnPropertyChanged(nameof(DetailPlayButtonGlyph));
             }
             var inList = LikedAlbums.FirstOrDefault(a => a.Id == e.AlbumId);
             if (inList != null)

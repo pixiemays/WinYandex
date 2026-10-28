@@ -361,12 +361,44 @@ public sealed partial class ArtistViewModel : BaseViewModel
                     _playbackCoordinator.Sync(PopularTracks);
                 }
 
+                // Load upcoming / preorder releases if provided in brief-info
+                var upcomingList = new List<Album>();
+                if (briefInfo?.UpcomingAlbum != null)
+                {
+                    briefInfo.UpcomingAlbum.IsPreorder = true;
+                    upcomingList.Add(briefInfo.UpcomingAlbum);
+                }
+                if (briefInfo?.UpcomingAlbums != null)
+                {
+                    foreach (var ua in briefInfo.UpcomingAlbums)
+                    {
+                        ua.IsPreorder = true;
+                        if (upcomingList.All(x => x.Id != ua.Id))
+                        {
+                            upcomingList.Add(ua);
+                        }
+                    }
+                }
+
                 // Load all direct releases (albums, singles, EPs). Fallback to briefInfo.Albums if directAlbums is empty.
-                var albumsToLoad = directAlbums != null && directAlbums.Count > 0
+                var baseAlbums = directAlbums != null && directAlbums.Count > 0
                     ? directAlbums
                     : (briefInfo?.Albums ?? new List<Album>());
 
-                foreach (var album in albumsToLoad)
+                var combinedAlbums = new List<Album>();
+                foreach (var up in upcomingList)
+                {
+                    combinedAlbums.Add(up);
+                }
+                foreach (var alb in baseAlbums)
+                {
+                    if (combinedAlbums.All(a => a.Id != alb.Id))
+                    {
+                        combinedAlbums.Add(alb);
+                    }
+                }
+
+                foreach (var album in combinedAlbums)
                 {
                     AllAlbums.Add(album);
                 }
@@ -429,11 +461,13 @@ public sealed partial class ArtistViewModel : BaseViewModel
 
         var sorted = IsSortDescending
             ? filtered
-                .OrderByDescending(a => a.Year ?? 0)
+                .OrderByDescending(a => a.IsPreSave ? 1 : 0)
+                .ThenByDescending(a => a.Year ?? 0)
                 .ThenByDescending(a => a.ParsedReleaseDate ?? DateTime.MinValue)
                 .ThenByDescending(a => a.Id)
             : filtered
-                .OrderBy(a => a.Year ?? 9999)
+                .OrderBy(a => a.IsPreSave ? 1 : 0)
+                .ThenBy(a => a.Year ?? 9999)
                 .ThenBy(a => a.ParsedReleaseDate ?? DateTime.MaxValue)
                 .ThenBy(a => a.Id);
 
@@ -470,14 +504,31 @@ public sealed partial class ArtistViewModel : BaseViewModel
     {
         if (PopularTracks.Count == 0) return;
 
+        var playable = PopularTracks.Where(t => t.Available).ToList();
+        if (playable.Count == 0)
+        {
+            var isEn = Loc?.CurrentLanguage == "en";
+            App.GetService<PlayerBarViewModel>()?.ShowToast(isEn ? "No playable tracks available yet" : "Пока нет доступных треков для воспроизведения");
+            return;
+        }
+
         _audioPlayer.CurrentPlaybackMode = PlaybackMode.Custom;
-        await _audioPlayer.PlayQueueAsync(PopularTracks.ToList(), 0).ConfigureAwait(false);
+        await _audioPlayer.PlayQueueAsync(playable, 0).ConfigureAwait(false);
     }
 
     [RelayCommand]
     public async Task PlayTrackAsync(Track? track)
     {
         if (track == null || PopularTracks.Count == 0) return;
+
+        if (!track.Available)
+        {
+            var isEn = Loc?.CurrentLanguage == "en";
+            App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
+                ? "This track will be available on the album's release day"
+                : "Этот трек станет доступен в день выхода альбома");
+            return;
+        }
 
         if (Track.IsSameTrackId(track.Id, _audioPlayer.CurrentTrack?.Id))
         {

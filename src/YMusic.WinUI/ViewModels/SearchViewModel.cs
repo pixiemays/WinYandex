@@ -183,7 +183,7 @@ public sealed partial class SearchViewModel : BaseViewModel
         if (dispatcher != null)
         {
             _debounceTimer = dispatcher.CreateTimer();
-            _debounceTimer.Interval = TimeSpan.FromMilliseconds(320);
+            _debounceTimer.Interval = TimeSpan.FromMilliseconds(240);
             _debounceTimer.Tick += (s, e) =>
             {
                 _debounceTimer.Stop();
@@ -282,6 +282,86 @@ public sealed partial class SearchViewModel : BaseViewModel
             var result = await _musicService.SearchAsync(text, "all", 0, token).ConfigureAwait(false);
             if (token.IsCancellationRequested) return;
 
+            // Find matching upcoming / pre-save albums (since Yandex API search does not index unreleased releases)
+            var matchingUpcomingAlbums = new List<Album>();
+            var seenUpcomingIds = new HashSet<long>();
+
+            void TryAddUpcomingAlbum(Album? album)
+            {
+                if (album == null || !seenUpcomingIds.Add(album.Id)) return;
+
+                bool matchesTitle = !string.IsNullOrWhiteSpace(album.Title) &&
+                    (album.Title.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     text.IndexOf(album.Title, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                bool matchesArtist = album.Artists != null && album.Artists.Any(a =>
+                    !string.IsNullOrWhiteSpace(a.Name) &&
+                    (a.Name.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     text.IndexOf(a.Name, StringComparison.OrdinalIgnoreCase) >= 0));
+
+                if (matchesTitle || matchesArtist)
+                {
+                    album.IsPreorder = true;
+                    album.IsLiked = _musicService.IsAlbumLiked(album.Id) || _musicService.IsAlbumPresaved(album.Id);
+                    matchingUpcomingAlbums.Add(album);
+                }
+            }
+
+            // 1. Check known upcoming albums cache
+            foreach (var alb in _musicService.GetKnownUpcomingAlbums())
+            {
+                TryAddUpcomingAlbum(alb);
+            }
+
+            // 2. Check user's presaved albums
+            try
+            {
+                var presaves = await _musicService.GetPresavesAsync(token).ConfigureAwait(false);
+                if (presaves?.UpcomingAlbums != null)
+                {
+                    foreach (var alb in presaves.UpcomingAlbums)
+                    {
+                        TryAddUpcomingAlbum(alb);
+                    }
+                }
+            }
+            catch { }
+
+            // 3. If search result contains artists, check their brief-info for upcoming albums
+            var candidateArtists = new List<Artist>();
+            if (result?.Best?.Type == "artist" && result.Best.Artist != null)
+            {
+                candidateArtists.Add(result.Best.Artist);
+            }
+            if (result?.Artists?.Results != null)
+            {
+                foreach (var a in result.Artists.Results.Take(3))
+                {
+                    if (candidateArtists.All(c => c.Id != a.Id)) candidateArtists.Add(a);
+                }
+            }
+
+            foreach (var artist in candidateArtists)
+            {
+                if (token.IsCancellationRequested) break;
+                try
+                {
+                    var brief = await _musicService.GetArtistBriefInfoAsync(artist.Id, token).ConfigureAwait(false);
+                    if (brief?.UpcomingAlbum != null)
+                    {
+                        TryAddUpcomingAlbum(brief.UpcomingAlbum);
+                    }
+                    if (brief?.UpcomingAlbums != null)
+                    {
+                        foreach (var ua in brief.UpcomingAlbums)
+                        {
+                            TryAddUpcomingAlbum(ua);
+                        }
+                    }
+                }
+                catch { }
+            }
+
             RunOnUi(() =>
             {
                 if (token.IsCancellationRequested) return;
@@ -289,16 +369,16 @@ public sealed partial class SearchViewModel : BaseViewModel
                 ResetResults();
                 HasSearched = true;
 
-                if (result != null)
+                if (result != null || matchingUpcomingAlbums.Count > 0)
                 {
-                    BestResult = result.Best;
+                    BestResult = result?.Best;
 
-                    TracksTotal = result.Tracks?.Total ?? 0;
-                    ArtistsTotal = result.Artists?.Total ?? 0;
-                    AlbumsTotal = result.Albums?.Total ?? 0;
-                    PlaylistsTotal = result.Playlists?.Total ?? 0;
+                    TracksTotal = result?.Tracks?.Total ?? 0;
+                    ArtistsTotal = result?.Artists?.Total ?? 0;
+                    AlbumsTotal = (result?.Albums?.Total ?? 0) + matchingUpcomingAlbums.Count;
+                    PlaylistsTotal = result?.Playlists?.Total ?? 0;
 
-                    if (result.Tracks?.Results != null)
+                    if (result?.Tracks?.Results != null)
                     {
                         foreach (var track in result.Tracks.Results)
                         {
@@ -311,7 +391,7 @@ public sealed partial class SearchViewModel : BaseViewModel
                         }
                     }
 
-                    if (result.Artists?.Results != null)
+                    if (result?.Artists?.Results != null)
                     {
                         foreach (var artist in result.Artists.Results)
                         {
@@ -319,7 +399,7 @@ public sealed partial class SearchViewModel : BaseViewModel
                         }
                     }
 
-                    if (result.Albums?.Results != null)
+                    if (result?.Albums?.Results != null)
                     {
                         foreach (var album in result.Albums.Results)
                         {
@@ -327,7 +407,46 @@ public sealed partial class SearchViewModel : BaseViewModel
                         }
                     }
 
-                    if (result.Playlists?.Results != null)
+                    // Add matching pre-save albums to Albums collection!
+                    foreach (var upcomingAlbum in matchingUpcomingAlbums)
+                    {
+                        if (Albums.All(a => a.Id != upcomingAlbum.Id))
+                        {
+                            bool isCloseTitleMatch = !string.IsNullOrWhiteSpace(upcomingAlbum.Title) &&
+                                (string.Equals(upcomingAlbum.Title, text, StringComparison.OrdinalIgnoreCase) ||
+                                 upcomingAlbum.Title.StartsWith(text, StringComparison.OrdinalIgnoreCase) ||
+                                 text.IndexOf(upcomingAlbum.Title, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                            if (isCloseTitleMatch)
+                            {
+                                Albums.Insert(0, upcomingAlbum);
+                            }
+                            else
+                            {
+                                Albums.Add(upcomingAlbum);
+                            }
+                        }
+                    }
+
+                    // If user searched directly for an album title that matches an upcoming album,
+                    // and BestResult is not an artist, make the upcoming album the Best Result!
+                    var bestUpcomingMatch = matchingUpcomingAlbums.FirstOrDefault(ua =>
+                        !string.IsNullOrWhiteSpace(ua.Title) &&
+                        (string.Equals(ua.Title, text, StringComparison.OrdinalIgnoreCase) ||
+                         ua.Title.StartsWith(text, StringComparison.OrdinalIgnoreCase) ||
+                         text.IndexOf(ua.Title, StringComparison.OrdinalIgnoreCase) >= 0));
+
+                    if (bestUpcomingMatch != null && (BestResult == null || BestResult.Type != "artist"))
+                    {
+                        BestResult = new SearchBestResult
+                        {
+                            Type = "album",
+                            Album = bestUpcomingMatch,
+                            Text = text
+                        };
+                    }
+
+                    if (result?.Playlists?.Results != null)
                     {
                         foreach (var playlist in result.Playlists.Results)
                         {
@@ -342,7 +461,7 @@ public sealed partial class SearchViewModel : BaseViewModel
                     VisiblePreviewCovers.Clear();
                     HasBestResultPreviewCovers = false;
 
-                    if (result.Best?.Type == "artist" && result.Best.Artist != null)
+                    if (result?.Best?.Type == "artist" && result.Best.Artist != null)
                     {
                         long artistId = result.Best.Artist.Id;
                         var seenCovers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

@@ -4,6 +4,27 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.5] — 2026-10-28
+
+### Pre-Save Albums (Upcoming Releases)
+* Added full support for upcoming and unreleased albums across the entire application.
+* **Pre-save album page**: dedicated view featuring cover art, artist credits, release date countdown, and one-click pre-save action.
+* **Liked Albums integration**: user pre-saved albums appear directly at the top of "Liked Albums" with high priority placement, clear `PRE-SAVE` status badge, and instant state toggle.
+* **Search integration**: upcoming and pre-saved albums can now be found directly via Search, including in the Albums section and as the Best Result.
+* **Fluent Design styling**: translucent acrylic violet styling with subtle borders and badges (`#2A8B5CF6` / `#C4B5FD`) designed to blend seamlessly into the UI.
+
+### Instant Live Search in Navigation Bar
+* **Search on first keystroke**: typing even a single character in the sidebar search box immediately triggers a search without requiring Enter.
+* **Seamless navigation & persistent focus**: automatically routes to the Search page without losing keyboard focus or interrupting typing.
+* **Bidirectional synchronization**: search queries stay perfectly synced in real time between the sidebar and the Search page input.
+* **Fast response**: reduced search debounce to 240ms with immediate cancellation of stale queries for snappy results.
+
+### Playback & Visual Transitions
+* Replaced abrupt strobe track switching in Now Playing drawer with a smooth crossfade and subtle zoom transition.
+* Added IDE F5 debugging configuration in `.vscode` (`tasks.json` and `launch.json`).
+
+---
+
 ## [0.9.4] — 2026-10-24
 
 ### Track Context Menu

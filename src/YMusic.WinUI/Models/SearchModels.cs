@@ -50,7 +50,9 @@ public sealed class SearchBestResult
     {
         "artist" => !string.IsNullOrWhiteSpace(Artist?.GenresString) ? Artist.GenresString : (App.Loc?.CurrentLanguage == "en" ? "Artist" : "Артист"),
         "track" => Track?.ArtistNames ?? (App.Loc?.CurrentLanguage == "en" ? "Track" : "Трек"),
-        "album" => Album?.ArtistNames ?? (App.Loc?.CurrentLanguage == "en" ? "Album" : "Альбом"),
+        "album" => Album?.IsPreSave == true
+            ? (!string.IsNullOrWhiteSpace(Album.ArtistNames) ? $"{Album.ArtistNames} • {Album.FormattedReleaseDate}" : Album.FormattedReleaseDate)
+            : (Album?.ArtistNames ?? (App.Loc?.CurrentLanguage == "en" ? "Album" : "Альбом")),
         "playlist" => Playlist?.OwnerName ?? (App.Loc?.CurrentLanguage == "en" ? "Playlist" : "Плейлист"),
         _ => string.Empty
     };
@@ -69,7 +71,7 @@ public sealed class SearchBestResult
         {
             "artist" => "ARTIST",
             "track" => "TRACK",
-            "album" => "ALBUM",
+            "album" => (Album?.IsPreSave == true ? "PRE-SAVE" : "ALBUM"),
             "playlist" => "PLAYLIST",
             _ => Type.ToUpperInvariant()
         })
@@ -77,7 +79,7 @@ public sealed class SearchBestResult
         {
             "artist" => "АРТИСТ",
             "track" => "ТРЕК",
-            "album" => "АЛЬБОМ",
+            "album" => (Album?.IsPreSave == true ? "ПРЕСЕЙВ" : "АЛЬБОМ"),
             "playlist" => "ПЛЕЙЛИСТ",
             _ => Type.ToUpperInvariant()
         });

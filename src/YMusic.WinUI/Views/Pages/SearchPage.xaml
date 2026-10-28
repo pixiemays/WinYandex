@@ -533,7 +533,24 @@
                                                     helpers:CursorHelper.UseHandCursor="True">
                                                 <StackPanel Spacing="10">
                                                     <Border Width="140" Height="140" CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                                                        <Image Source="{x:Bind CoverUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
+                                                        <Grid>
+                                                            <Image Source="{x:Bind CoverUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
+                                                            <!-- Pre-save Badge Overlay -->
+                                                            <Border HorizontalAlignment="Left"
+                                                                    VerticalAlignment="Top"
+                                                                    Margin="6"
+                                                                    Padding="5,2"
+                                                                    CornerRadius="6"
+                                                                    Background="#D01E1B2E"
+                                                                    BorderBrush="#458B5CF6"
+                                                                    BorderThickness="1"
+                                                                    Visibility="{x:Bind IsPreSave, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                                    <FontIcon Glyph="&#xEA8F;" FontSize="9" Foreground="#C4B5FD" />
+                                                                    <TextBlock Text="{x:Bind PreSaveBadgeText, Mode=OneWay}" FontSize="9" FontWeight="SemiBold" Foreground="#C4B5FD" />
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </Grid>
                                                     </Border>
                                                     <TextBlock Text="{x:Bind Title}" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" />
                                                     <TextBlock Text="{x:Bind ArtistNames}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
@@ -747,7 +764,24 @@
                                             helpers:CursorHelper.UseHandCursor="True">
                                         <StackPanel Spacing="10">
                                             <Border Width="162" Height="162" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                                                <Image Source="{x:Bind CoverUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
+                                                <Grid>
+                                                    <Image Source="{x:Bind CoverUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
+                                                    <!-- Pre-save Badge Overlay -->
+                                                    <Border HorizontalAlignment="Left"
+                                                            VerticalAlignment="Top"
+                                                            Margin="8"
+                                                            Padding="6,3"
+                                                            CornerRadius="6"
+                                                            Background="#D01E1B2E"
+                                                            BorderBrush="#458B5CF6"
+                                                            BorderThickness="1"
+                                                            Visibility="{x:Bind IsPreSave, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                                            <FontIcon Glyph="&#xEA8F;" FontSize="10" Foreground="#C4B5FD" />
+                                                            <TextBlock Text="{x:Bind PreSaveBadgeText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold" Foreground="#C4B5FD" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Grid>
                                             </Border>
                                             <TextBlock Text="{x:Bind Title}" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Text="{x:Bind ArtistNames}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />

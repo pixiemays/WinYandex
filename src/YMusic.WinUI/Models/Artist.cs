@@ -136,6 +136,12 @@ public sealed class ArtistBriefInfoResult
 
     [JsonPropertyName("stats")]
     public ArtistStats? Stats { get; set; }
+
+    [JsonPropertyName("upcomingAlbum")]
+    public Album? UpcomingAlbum { get; set; }
+
+    [JsonPropertyName("upcomingAlbums")]
+    public List<Album>? UpcomingAlbums { get; set; }
 }
 
 public sealed class ArtistAlbumsResponse

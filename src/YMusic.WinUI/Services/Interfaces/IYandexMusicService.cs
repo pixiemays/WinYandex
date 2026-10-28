@@ -36,11 +36,18 @@ public interface IYandexMusicService
     Task<bool> AddTrackToPlaylistAsync(long ownerUid, int kind, string trackId, string? albumId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Album>> GetLikedAlbumsAsync(string userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Album>> GetAlbumsAsync(IEnumerable<long> albumIds, CancellationToken cancellationToken = default);
+    Task<Album?> GetAlbumAsync(long albumId, CancellationToken cancellationToken = default);
     Task<bool> LikeAlbumAsync(long albumId, CancellationToken cancellationToken = default);
     Task<bool> UnlikeAlbumAsync(long albumId, CancellationToken cancellationToken = default);
     bool IsAlbumLiked(long albumId);
     Task EnsureLikedAlbumsLoadedAsync(CancellationToken cancellationToken = default);
     event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
+
+    Task<bool> AddAlbumPresaveAsync(long albumId, CancellationToken cancellationToken = default);
+    Task<bool> RemoveAlbumPresaveAsync(long albumId, CancellationToken cancellationToken = default);
+    Task<PresavesResult?> GetPresavesAsync(CancellationToken cancellationToken = default);
+    bool IsAlbumPresaved(long albumId);
+    IReadOnlyCollection<Album> GetKnownUpcomingAlbums();
 
     Task<bool> LikePlaylistAsync(long ownerUid, int kind, CancellationToken cancellationToken = default);
     Task<bool> UnlikePlaylistAsync(long ownerUid, int kind, CancellationToken cancellationToken = default);

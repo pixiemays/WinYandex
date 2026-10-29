@@ -4,6 +4,12 @@
     <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>YMusic.WinUI</RootNamespace>
+    <AssemblyName>WinYandex</AssemblyName>
+    <AssemblyTitle>WinYandex</AssemblyTitle>
+    <Product>WinYandex</Product>
+    <Description>Modern native desktop client for Yandex Music on Windows 10/11</Description>
+    <Company>WinYandex</Company>
+    <Copyright>Copyright (c) 2026 WinYandex</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon Condition="Exists('Assets\AppIcon.ico')">Assets\AppIcon.ico</ApplicationIcon>
     <Platforms>x86;x64;ARM64</Platforms>
@@ -16,7 +22,7 @@
     <EnableMsixTooling>false</EnableMsixTooling>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.9.5</Version>
+    <Version>0.9.51</Version>
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <NoWarn>$(NoWarn);MVVMTK0045</NoWarn>
   </PropertyGroup>

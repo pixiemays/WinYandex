@@ -38,7 +38,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
     private Track? _currentTrack;
     private StreamAudioQuality? _currentQuality;
     private (string TrackId, string StreamUrl, StreamAudioQuality? Quality)? _preloadedTrack;
-    private bool _isPreloading;
+    private int _playRequestId = 0;
+    private CancellationTokenSource? _preloadCts;
     private bool _isPlaying;
     private RepeatMode _repeatMode = RepeatMode.None;
     private bool _isShuffle;
@@ -474,18 +475,38 @@ public sealed class AudioPlayerService : IAudioPlayerService
         return Math.Pow(10.0, clampedDb / 20.0);
     }
 
+    private static bool IsSameQueue(List<Track> current, IList<Track> incoming)
+    {
+        if (ReferenceEquals(current, incoming)) return true;
+        if (current.Count == 0 || incoming.Count == 0) return false;
+        if (current.Count != incoming.Count) return false;
+
+        if (!Track.IsSameTrackId(current[0].Id, incoming[0].Id)) return false;
+        if (!Track.IsSameTrackId(current[^1].Id, incoming[^1].Id)) return false;
+        int mid = current.Count / 2;
+        if (!Track.IsSameTrackId(current[mid].Id, incoming[mid].Id)) return false;
+
+        return true;
+    }
+
     public async Task PlayTrackAsync(Track track, IEnumerable<Track>? newQueue = null)
     {
         if (track == null || !track.Available) return;
 
         if (newQueue != null)
         {
-            _queue.Clear();
-            _queue.AddRange(newQueue);
-            RebuildPlayOrder();
-            QueueChanged?.Invoke(this, EventArgs.Empty);
+            var newQueueList = newQueue as IList<Track> ?? newQueue.ToList();
+            bool isSame = IsSameQueue(_queue, newQueueList);
 
-            int trackIndex = _queue.FindIndex(t => t.Id == track.Id);
+            if (!isSame)
+            {
+                _queue.Clear();
+                _queue.AddRange(newQueueList);
+                RebuildPlayOrder();
+                QueueChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            int trackIndex = _queue.FindIndex(t => Track.IsSameTrackId(t.Id, track.Id));
             if (trackIndex >= 0)
             {
                 _orderIndex = _playOrder.IndexOf(trackIndex);
@@ -495,11 +516,12 @@ public sealed class AudioPlayerService : IAudioPlayerService
                 _queue.Insert(0, track);
                 RebuildPlayOrder();
                 _orderIndex = 0;
+                QueueChanged?.Invoke(this, EventArgs.Empty);
             }
         }
         else
         {
-            int existing = _queue.FindIndex(t => t.Id == track.Id);
+            int existing = _queue.FindIndex(t => Track.IsSameTrackId(t.Id, track.Id));
             if (existing >= 0)
             {
                 _orderIndex = _playOrder.IndexOf(existing);
@@ -518,16 +540,20 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public async Task PlayQueueAsync(IEnumerable<Track> queue, int startIndex = 0)
     {
-        var tracks = queue.ToList();
+        var tracks = queue as IList<Track> ?? queue.ToList();
         if (tracks.Count == 0)
         {
             return;
         }
 
-        _queue.Clear();
-        _queue.AddRange(tracks);
-        RebuildPlayOrder();
-        QueueChanged?.Invoke(this, EventArgs.Empty);
+        bool isSame = IsSameQueue(_queue, tracks);
+        if (!isSame)
+        {
+            _queue.Clear();
+            _queue.AddRange(tracks);
+            RebuildPlayOrder();
+            QueueChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         int targetIndex = Math.Clamp(startIndex, 0, _queue.Count - 1);
         if (!_queue[targetIndex].Available)
@@ -912,6 +938,113 @@ public sealed class AudioPlayerService : IAudioPlayerService
         }
     }
 
+    private void TriggerUpcomingTracksPreload()
+    {
+        if (!IsPreloadingEnabled)
+        {
+            return;
+        }
+
+        _preloadCts?.Cancel();
+        _preloadCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _preloadCts = cts;
+        var token = cts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                // Debounce slightly (1000 ms) so rapid skipping doesn't thrash network
+                await Task.Delay(1000, token).ConfigureAwait(false);
+                if (token.IsCancellationRequested) return;
+
+                await PreloadUpcomingTracksInternalAsync(token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AudioPlayerService] Preload error: {ex.Message}");
+            }
+        }, token);
+    }
+
+    private async Task PreloadUpcomingTracksInternalAsync(CancellationToken token)
+    {
+        if (_queue.Count == 0 || _playOrder.Count == 0) return;
+
+        // 1. Resolve upcoming track 1 (orderIndex + 1)
+        int nextOrderIndex = _orderIndex + 1;
+        if (nextOrderIndex >= _playOrder.Count)
+        {
+            if (_repeatMode == RepeatMode.All)
+            {
+                nextOrderIndex = 0;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        if (nextOrderIndex < 0 || nextOrderIndex >= _playOrder.Count) return;
+
+        int nextTrackIndex = _playOrder[nextOrderIndex];
+        if (nextTrackIndex < 0 || nextTrackIndex >= _queue.Count) return;
+
+        var nextTrack = _queue[nextTrackIndex];
+        if (token.IsCancellationRequested) return;
+
+        // Prefetch lyrics in background
+        _ = _yandexMusicService.GetTrackLyricsAsync(
+            nextTrack.Id,
+            nextTrack.Title,
+            nextTrack.ArtistNames,
+            nextTrack.Duration.TotalSeconds,
+            token);
+
+        // Check if nextTrack is in cache or resolve and enqueue
+        string? cachedPath = null;
+        StreamAudioQuality? cachedQuality = null;
+        bool isNextCached = _audioCacheService != null && _audioCacheService.TryGetCachedTrack(nextTrack.Id, out cachedPath, out cachedQuality);
+        if (isNextCached && !string.IsNullOrEmpty(cachedPath))
+        {
+            _preloadedTrack = (nextTrack.Id, cachedPath, cachedQuality);
+        }
+        else
+        {
+            var (url, quality) = await ResolveTrackStreamAsync(nextTrack.Id).ConfigureAwait(false);
+            if (token.IsCancellationRequested) return;
+
+            if (!string.IsNullOrEmpty(url))
+            {
+                _preloadedTrack = (nextTrack.Id, url, quality);
+            }
+        }
+
+        if (token.IsCancellationRequested) return;
+
+        // 2. Resolve upcoming track 2 (orderIndex + 2) to pre-cache as well
+        int nextNextOrderIndex = nextOrderIndex + 1;
+        if (nextNextOrderIndex >= _playOrder.Count && _repeatMode == RepeatMode.All)
+        {
+            nextNextOrderIndex = 0;
+        }
+
+        if (nextNextOrderIndex >= 0 && nextNextOrderIndex < _playOrder.Count && nextNextOrderIndex != _orderIndex)
+        {
+            int nextNextTrackIndex = _playOrder[nextNextOrderIndex];
+            if (nextNextTrackIndex >= 0 && nextNextTrackIndex < _queue.Count)
+            {
+                var nextNextTrack = _queue[nextNextTrackIndex];
+                if (_audioCacheService != null && !_audioCacheService.IsTrackCached(nextNextTrack.Id))
+                {
+                    _ = ResolveTrackStreamAsync(nextNextTrack.Id);
+                }
+            }
+        }
+    }
+
     private void CheckPreloadNextTrack(TimeSpan pos)
     {
         if (!IsPreloadingEnabled)
@@ -920,56 +1053,17 @@ public sealed class AudioPlayerService : IAudioPlayerService
         }
 
         var duration = Duration;
-        if (duration.TotalSeconds < 10 || _isPreloading)
+        if (duration.TotalSeconds < 10)
         {
             return;
         }
 
+        // At 80% mark, verify preload is fresh and lyrics are loaded
         if (pos.TotalSeconds >= duration.TotalSeconds * 0.80)
         {
-            int nextOrderIndex = _orderIndex + 1;
-            if (nextOrderIndex >= _playOrder.Count && _repeatMode == RepeatMode.All)
+            if (_preloadedTrack == null)
             {
-                nextOrderIndex = 0;
-            }
-
-            if (nextOrderIndex < _playOrder.Count)
-            {
-                int nextTrackIndex = _playOrder[nextOrderIndex];
-                if (nextTrackIndex >= 0 && nextTrackIndex < _queue.Count)
-                {
-                    var nextTrack = _queue[nextTrackIndex];
-                    if (_preloadedTrack?.TrackId != nextTrack.Id)
-                    {
-                        _isPreloading = true;
-                        _ = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                var (url, quality) = await ResolveTrackStreamAsync(nextTrack.Id).ConfigureAwait(false);
-                                if (!string.IsNullOrEmpty(url))
-                                {
-                                    _preloadedTrack = (nextTrack.Id, url, quality);
-                                }
-
-                                // Prefetch lyrics for next track in background
-                                _ = _yandexMusicService.GetTrackLyricsAsync(
-                                    nextTrack.Id,
-                                    nextTrack.Title,
-                                    nextTrack.ArtistNames,
-                                    nextTrack.Duration.TotalSeconds);
-                            }
-                            catch
-                            {
-                                // Prefetch failure is non-fatal
-                            }
-                            finally
-                            {
-                                _isPreloading = false;
-                            }
-                        });
-                    }
-                }
+                TriggerUpcomingTracksPreload();
             }
         }
     }
@@ -1003,31 +1097,68 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     private async Task LoadAndPlayTrackAsync(Track track, TimeSpan? startPosition = null)
     {
+        int requestId = Interlocked.Increment(ref _playRequestId);
+
+        // Cancel previous background preloads
+        _preloadCts?.Cancel();
+        _preloadCts?.Dispose();
+        _preloadCts = null;
+
         _currentTrack = track;
         CurrentTrackChanged?.Invoke(this, track);
         UpdateSmtcMetadata(track);
         RequestSaveState();
 
-        string? streamUrl;
-        StreamAudioQuality? quality;
+        string? streamUrl = null;
+        StreamAudioQuality? quality = null;
 
-        // Prefer local disk cache if available (e.g. preloaded track finished caching or track previously played)
+        // Prefer local disk cache if available (0 ms latency)
         if (_audioCacheService != null && _audioCacheService.TryGetCachedTrack(track.Id, out var cachedPath, out var cachedQuality))
         {
             streamUrl = cachedPath;
             quality = cachedQuality;
             _preloadedTrack = null;
         }
-        else if (_preloadedTrack?.TrackId == track.Id)
+        else if (_preloadedTrack?.TrackId == track.Id && !string.IsNullOrEmpty(_preloadedTrack.Value.StreamUrl))
         {
             streamUrl = _preloadedTrack.Value.StreamUrl;
             quality = _preloadedTrack.Value.Quality;
             _preloadedTrack = null;
         }
-        else
+
+        // If track is cold (not in cache and not preloaded), stop old audio immediately and show immediate transition
+        if (string.IsNullOrWhiteSpace(streamUrl))
         {
-            _preloadedTrack = null;
+            if (_currentInputNode != null)
+            {
+                try
+                {
+                    _currentInputNode.Stop();
+                    if (_deviceOutput != null)
+                    {
+                        try { _currentInputNode.RemoveOutgoingConnection(_deviceOutput); } catch { }
+                    }
+                    _currentInputNode.MediaSourceCompleted -= OnInputNodeMediaCompleted;
+                    _currentInputNode.Dispose();
+                }
+                catch { }
+                _currentInputNode = null;
+            }
+            try
+            {
+                _mediaPlayer.Pause();
+                _mediaPlayer.Source = null;
+            }
+            catch { }
+
+            _positionTimer.Stop();
+            PositionChanged?.Invoke(this, TimeSpan.Zero);
+
             (streamUrl, quality) = await ResolveTrackStreamAsync(track.Id).ConfigureAwait(false);
+            if (requestId != _playRequestId)
+            {
+                return;
+            }
         }
 
         _currentQuality = quality;
@@ -1035,8 +1166,10 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
         if (string.IsNullOrWhiteSpace(streamUrl))
         {
-            // If failed to resolve stream, attempt next track
-            await NextAsync().ConfigureAwait(false);
+            if (requestId == _playRequestId)
+            {
+                await NextAsync().ConfigureAwait(false);
+            }
             return;
         }
 
@@ -1059,12 +1192,19 @@ public sealed class AudioPlayerService : IAudioPlayerService
             try
             {
                 var inputResult = await _audioGraph.CreateMediaSourceAudioInputNodeAsync(source);
+                if (requestId != _playRequestId)
+                {
+                    inputResult.Node?.Dispose();
+                    return;
+                }
+
                 if (inputResult.Status == MediaSourceAudioInputNodeCreationStatus.Success)
                 {
                     if (_currentInputNode != null)
                     {
                         _currentInputNode.Stop();
                         _currentInputNode.RemoveOutgoingConnection(_deviceOutput);
+                        _currentInputNode.MediaSourceCompleted -= OnInputNodeMediaCompleted;
                         _currentInputNode.Dispose();
                     }
 
@@ -1102,6 +1242,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
                         PositionChanged?.Invoke(this, startPosition.Value);
                     }
                     _restoredPosition = TimeSpan.Zero;
+
+                    TriggerUpcomingTracksPreload();
                     return;
                 }
             }
@@ -1110,6 +1252,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
                 System.Diagnostics.Debug.WriteLine($"[AudioGraph Playback Fallback] {ex.Message}");
             }
         }
+
+        if (requestId != _playRequestId) return;
 
         _mediaPlayer.Source = source;
         if (startPosition.HasValue && startPosition.Value > TimeSpan.Zero)
@@ -1126,6 +1270,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
             PositionChanged?.Invoke(this, startPosition.Value);
         }
         _restoredPosition = TimeSpan.Zero;
+
+        TriggerUpcomingTracksPreload();
     }
 
     private void OnInputNodeMediaCompleted(MediaSourceAudioInputNode sender, object args)

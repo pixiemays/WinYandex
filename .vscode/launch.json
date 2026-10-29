@@ -2,22 +2,21 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "YMusic.WinUI (.NET Core)",
+      "name": "WinYandex (.NET Core)",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/YMusic.WinUI/bin/Debug/net8.0-windows10.0.26100.0/win-x64/YMusic.WinUI.exe",
+      "program": "${workspaceFolder}/src/YMusic.WinUI/bin/Debug/net8.0-windows10.0.26100.0/win-x64/WinYandex.exe",
       "args": [],
       "cwd": "${workspaceFolder}/src/YMusic.WinUI",
       "stopAtEntry": false,
       "console": "internalConsole"
     },
     {
-      "name": "C#: YMusic.WinUI (Unpackaged)",
+      "name": "C#: WinYandex (Unpackaged)",
       "type": "dotnet",
       "request": "launch",
       "projectPath": "${workspaceFolder}/src/YMusic.WinUI/YMusic.WinUI.csproj"
     }
   ]
 }
-

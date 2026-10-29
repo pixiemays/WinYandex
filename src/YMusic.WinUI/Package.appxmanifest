@@ -11,14 +11,14 @@
 
   <Identity
     Name="34D44DFF-4BEF-4656-8DEB-FEF7F98C84CF"
-    Publisher="CN=AppPublisher"
-    Version="0.9.5.0" />
+    Publisher="CN=WinYandex"
+    Version="0.9.51.0" />
 
   <mp:PhoneIdentity PhoneProductId="34D44DFF-4BEF-4656-8DEB-FEF7F98C84CF" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>YMusic.WinUI</DisplayName>
-    <PublisherDisplayName>AppPublisher</PublisherDisplayName>
+    <DisplayName>WinYandex</DisplayName>
+    <PublisherDisplayName>WinYandex</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
     <uap10:PackageIntegrity>
       <uap10:Content Enforcement="on"/>
@@ -39,8 +39,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="YMusic.WinUI"
-        Description="YMusic.WinUI"
+        DisplayName="WinYandex"
+        Description="WinYandex"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

@@ -59,7 +59,7 @@
 Download the latest `Setup-x64.exe` installer from the [Releases](https://github.com/pixiemays/WinYandex/releases/latest) section. The installer sets up Start menu and Desktop shortcuts.
 
 ### 2. Portable Version (ZIP)
-Download the portable `win-x64-portable.zip` archive from [Releases](https://github.com/pixiemays/WinYandex/releases/latest), extract to any folder, and run `YMusic.WinUI.exe`. The application is fully standalone and requires no extra dependencies.
+Download the portable `win-x64-portable.zip` archive from [Releases](https://github.com/pixiemays/WinYandex/releases/latest), extract to any folder, and run `WinYandex.exe`. The application is fully standalone and requires no extra dependencies.
 
 ### 3. MSIX Bundle Package
 To install as a native Windows package, run the `WinYandex_x64.msixbundle` file.

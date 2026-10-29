@@ -75,7 +75,7 @@ if ($iscc) {
     }
 } else {
     Write-Host "  Inno Setup 6 not found on system." -ForegroundColor DarkYellow
-    Write-Host "  To build a single-file 'YMusic-Setup.exe':" -ForegroundColor Cyan
+    Write-Host "  To build a single-file 'WinYandex-Setup.exe':" -ForegroundColor Cyan
     Write-Host "  1. Download Inno Setup (free, ~4 MB) from: https://jrsoftware.org/isdl.php" -ForegroundColor Cyan
     Write-Host "  2. Run: ISCC.exe installer\installer.iss" -ForegroundColor Cyan
 }

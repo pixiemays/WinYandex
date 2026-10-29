@@ -4,6 +4,20 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.51] — 2026-10-29
+
+### Instant Track Switching & Playback Optimization
+* **Proactive Queue Preloader**: automatically resolves and background-caches upcoming tracks to the local audio disk cache (`%LocalAppData%/YMusic/Cache`) shortly after playback begins. When selecting the next track or skipping forward, playback starts instantaneously from the local SSD/disk (~10–15 ms) without waiting for network roundtrips.
+* **In-Memory Stream Caching**: added a thread-safe cache (`_streamInfoCache`) in `YandexMusicService` with connection pooling (`SocketsHttpHandler`) and HTTP/2 support to eliminate redundant network roundtrips for track URLs.
+* **Smart Queue Preservation**: clicking tracks within the active playlist or liked songs no longer clears and reshuffles the queue unnecessarily.
+* **Immediate Audio Feedback**: when switching to cold tracks, the previous audio and playback timers stop immediately with generation-based cancellation to eliminate race conditions.
+
+### System & Process Name Fix
+* Configured assembly and application metadata (`AssemblyName`, `Product`, `AssemblyTitle`, `Description`, `Company`) so the app is correctly identified as **WinYandex** (`WinYandex.exe`) in Windows Task Manager, Process List, and system volume mixer.
+* Updated installer, manifests, and documentation references.
+
+---
+
 ## [0.9.5] — 2026-10-28
 
 ### Pre-Save Albums (Upcoming Releases)

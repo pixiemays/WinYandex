@@ -32,6 +32,7 @@ public sealed class YandexMusicService : IYandexMusicService
     private readonly ConcurrentDictionary<long, (Album Album, DateTime CachedAt)> _albumWithTracksCache = new();
     private readonly ConcurrentDictionary<string, (Playlist Playlist, DateTime CachedAt)> _playlistWithTracksCache = new();
     private readonly ConcurrentDictionary<long, Album> _knownUpcomingAlbums = new();
+    private readonly ConcurrentDictionary<string, (string Url, StreamAudioQuality Quality, DateTime Expiry)> _streamInfoCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly HttpClient _lrclibHttpClient = new HttpClient
     {
         Timeout = TimeSpan.FromSeconds(2.5),
@@ -65,7 +66,14 @@ public sealed class YandexMusicService : IYandexMusicService
     public YandexMusicService(ICredentialStorageService? credentialStorage = null, HttpClient? httpClient = null)
     {
         _credentialStorage = credentialStorage;
-        _httpClient = httpClient ?? new HttpClient();
+        _httpClient = httpClient ?? new HttpClient(new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+            MaxConnectionsPerServer = 20,
+            EnableMultipleHttp2Connections = true,
+            ConnectTimeout = TimeSpan.FromSeconds(10)
+        });
         _httpClient.BaseAddress = new Uri(ApiBaseUrl);
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentHeader);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -1519,7 +1527,19 @@ public sealed class YandexMusicService : IYandexMusicService
         }
     }
 
-    public AudioQualityPreference PreferredQuality { get; set; } = AudioQualityPreference.AacPreferred;
+    private AudioQualityPreference _preferredQuality = AudioQualityPreference.AacPreferred;
+    public AudioQualityPreference PreferredQuality
+    {
+        get => _preferredQuality;
+        set
+        {
+            if (_preferredQuality != value)
+            {
+                _preferredQuality = value;
+                _streamInfoCache.Clear();
+            }
+        }
+    }
 
     public async Task<string?> GetTrackDownloadUrlAsync(string trackId, CancellationToken cancellationToken = default)
     {
@@ -1529,6 +1549,16 @@ public sealed class YandexMusicService : IYandexMusicService
 
     public async Task<(string? Url, StreamAudioQuality? Quality)> GetTrackStreamInfoAsync(string trackId, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(trackId))
+        {
+            return (null, null);
+        }
+
+        if (_streamInfoCache.TryGetValue(trackId, out var cached) && cached.Expiry > DateTime.UtcNow)
+        {
+            return (cached.Url, cached.Quality);
+        }
+
         using var downloadInfoResponse = await SendRequestAsync(HttpMethod.Get, $"tracks/{trackId}/download-info", null, cancellationToken).ConfigureAwait(false);
         if (downloadInfoResponse == null || !downloadInfoResponse.IsSuccessStatusCode)
         {
@@ -1603,6 +1633,11 @@ public sealed class YandexMusicService : IYandexMusicService
             Codec = selectedInfo.Codec,
             BitrateInKbps = selectedInfo.BitrateInKbps
         };
+
+        if (!string.IsNullOrEmpty(directUrl))
+        {
+            _streamInfoCache[trackId] = (directUrl, quality, DateTime.UtcNow.AddMinutes(45));
+        }
 
         return (directUrl, quality);
     }

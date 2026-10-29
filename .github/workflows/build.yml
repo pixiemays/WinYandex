@@ -55,7 +55,10 @@ jobs:
         
         $publishDir = "src/YMusic.WinUI/bin/Release/net8.0-windows10.0.26100.0/win-x64/publish"
         $binDir = "src/YMusic.WinUI/bin/Release/net8.0-windows10.0.26100.0/win-x64"
-        if (Test-Path "$binDir/YMusic.WinUI.pri") {
+        if (Test-Path "$binDir/WinYandex.pri") {
+            Copy-Item "$binDir/WinYandex.pri" "$publishDir/resources.pri" -Force
+            Copy-Item "$binDir/WinYandex.pri" "$publishDir/WinYandex.pri" -Force
+        } elseif (Test-Path "$binDir/YMusic.WinUI.pri") {
             Copy-Item "$binDir/YMusic.WinUI.pri" "$publishDir/resources.pri" -Force
             Copy-Item "$binDir/YMusic.WinUI.pri" "$publishDir/YMusic.WinUI.pri" -Force
         }
@@ -116,4 +119,3 @@ jobs:
           dist/*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

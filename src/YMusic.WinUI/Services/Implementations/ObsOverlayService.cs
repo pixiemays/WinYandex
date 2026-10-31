@@ -626,8 +626,8 @@ public sealed class ObsOverlayService : IObsOverlayService
         .theme-vinyl {
             display: flex;
             align-items: center;
-            width: 530px;
-            height: 140px;
+            width: 550px;
+            height: 116px;
             position: relative;
             color: #ffffff;
         }
@@ -655,8 +655,8 @@ public sealed class ObsOverlayService : IObsOverlayService
 
         .theme-vinyl .vinyl-disk {
             position: absolute;
-            top: 12px;
-            left: 58px;
+            top: 0;
+            left: 84px;
             width: 116px;
             height: 116px;
             border-radius: 50%;
@@ -678,8 +678,10 @@ public sealed class ObsOverlayService : IObsOverlayService
 
         .theme-vinyl .vinyl-grooves {
             position: absolute;
-            width: 88%;
-            height: 88%;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
             border-radius: 50%;
             border: 1px dashed rgba(255, 255, 255, 0.12);
             box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
@@ -694,6 +696,7 @@ public sealed class ObsOverlayService : IObsOverlayService
             border: 2px solid #333;
             position: relative;
             z-index: 3;
+            flex-shrink: 0;
         }
 
         .theme-vinyl .vinyl-center::after {
@@ -718,10 +721,11 @@ public sealed class ObsOverlayService : IObsOverlayService
         }
 
         .theme-vinyl .info-container {
-            margin-left: 70px;
+            margin-left: 96px;
+            height: 116px;
             flex: 1;
             min-width: 0;
-            padding: 14px 18px;
+            padding: 12px 18px;
             border-radius: 16px;
             background: rgba(18, 18, 24, 0.85);
             backdrop-filter: blur(20px);
@@ -733,6 +737,7 @@ public sealed class ObsOverlayService : IObsOverlayService
             justify-content: center;
             z-index: 4;
             position: relative;
+            box-sizing: border-box;
         }
 
         /* ================= SHARED TYPOGRAPHY & PROGRESS ================= */
@@ -1138,235 +1143,535 @@ public sealed class ObsOverlayService : IObsOverlayService
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WinYandex OBS Studio Overlay Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>WinYandex Overlay Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-page: #0a0a0c;
+            --bg-card: #121216;
+            --bg-subtle: #181820;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.16);
+            --text-main: #f4f4f5;
+            --text-sub: #a1a1aa;
+            --accent: #ffcc00;
+            --accent-hover: #ffdb33;
+        }
+
         body {
-            background: #0d0d12;
-            color: #f0f0f5;
-            font-family: 'Inter', -apple-system, sans-serif;
-            padding: 36px 24px;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-        .header h1 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 32px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffcc00, #ff453a);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
-        }
-        .header p {
-            color: #8e8e99;
-            font-size: 15px;
-        }
-        .preview-card {
-            background: rgba(22, 22, 30, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 24px;
-            width: 100%;
-            max-width: 820px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-            margin-bottom: 30px;
-        }
-        .preview-header {
+
+        /* Top Minimal Header */
+        header {
+            height: 52px;
+            border-bottom: 1px solid var(--border);
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
+            padding: 0 24px;
+            background: rgba(10, 10, 12, 0.85);
+            backdrop-filter: blur(16px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .preview-header h2 {
-            font-size: 18px;
-            font-weight: 700;
-        }
-        .theme-buttons {
+
+        .brand {
             display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .brand .badge-tag {
+            font-size: 11px;
+            font-weight: 500;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            padding: 2px 7px;
+            border-radius: 6px;
+            color: var(--text-sub);
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #34d399;
+            background: rgba(52, 211, 153, 0.08);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #34d399;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #34d399;
+        }
+
+        /* Main Workspace */
+        main {
+            flex: 1;
+            max-width: 860px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 28px 20px 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Toolbar */
+        .stage-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .segmented-group {
+            display: inline-flex;
+            background: var(--bg-card);
+            padding: 3px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .seg-btn {
+            background: transparent;
+            color: var(--text-sub);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .seg-btn:hover {
+            color: var(--text-main);
+        }
+
+        .seg-btn.active {
+            background: var(--bg-subtle);
+            color: var(--text-main);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+        }
+
+        .stage-options {
+            display: flex;
+            align-items: center;
             gap: 8px;
         }
-        .theme-btn {
-            background: #1c1c24;
-            color: #ccc;
-            border: 1px solid #333;
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
+
+        .toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
         }
-        .theme-btn:hover { background: #282834; color: #fff; }
-        .theme-btn.active {
-            background: #ffcc00;
-            color: #000;
-            border-color: #ffcc00;
+
+        .toggle-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-main);
         }
-        .iframe-container {
+
+        .toggle-btn.active {
+            background: var(--bg-subtle);
+            border-color: rgba(255, 204, 0, 0.35);
+            color: var(--accent);
+        }
+
+        /* Preview Canvas */
+        .preview-canvas {
             width: 100%;
-            height: 220px;
-            background: repeating-conic-gradient(#14141c 0% 25%, #181822 0% 50%) 50% / 20px 20px;
+            height: 240px;
             border-radius: 14px;
+            border: 1px solid var(--border);
+            position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: background 0.2s ease;
         }
+
+        .preview-canvas.bg-checker {
+            background: repeating-conic-gradient(#111116 0% 25%, #16161c 0% 50%) 50% / 20px 20px;
+        }
+
+        .preview-canvas.bg-dark {
+            background: #09090b;
+        }
+
+        .preview-canvas.bg-chroma {
+            background: #00b140;
+        }
+
         iframe {
             width: 100%;
             height: 100%;
             border: none;
         }
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
-            width: 100%;
-            max-width: 820px;
+
+        .viewport-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-sub);
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(8px);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            pointer-events: none;
         }
-        .theme-info-card {
-            background: #15151c;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 20px;
+
+        /* URL & Action Bar */
+        .url-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 12px;
         }
-        .theme-info-card h3 {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 6px;
-            color: #ffcc00;
+
+        .url-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .theme-info-card p {
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 14px;
-            line-height: 1.4;
-        }
-        .url-box {
-            background: #09090d;
-            padding: 8px 12px;
+
+        .url-input-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: #09090b;
+            border: 1px solid var(--border);
             border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            color: #bbb;
-            word-break: break-all;
-            margin-bottom: 12px;
-            border: 1px solid #222;
+            padding: 0 12px;
+            height: 40px;
+            transition: border-color 0.15s ease;
         }
-        .copy-btn {
-            background: #ffcc00;
-            color: #000;
-            border: none;
-            padding: 10px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            transition: opacity 0.2s;
+
+        .url-input-wrap:focus-within {
+            border-color: rgba(255, 204, 0, 0.4);
         }
-        .copy-btn:hover { opacity: 0.88; }
-        .instructions {
-            margin-top: 30px;
-            max-width: 820px;
+
+        .url-input {
             width: 100%;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 16px;
-            padding: 20px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #e4e4e7;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 13px;
-            line-height: 1.6;
-            color: #aaa;
         }
-        .instructions ol {
-            margin-left: 20px;
-            margin-top: 10px;
+
+        .action-btn {
+            height: 40px;
+            padding: 0 18px;
+            border-radius: 8px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .action-btn.primary {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .action-btn.primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .action-btn.primary.copied {
+            background: #34d399;
+            color: #000;
+        }
+
+        /* Specs Bar */
+        .specs-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .specs-tags {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .spec-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #e4e4e7;
+        }
+
+        /* Clean Setup Steps */
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 10px;
+        }
+
+        .guide-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .step-content h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .step-content p {
+            font-size: 11px;
+            color: var(--text-sub);
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>WinYandex OBS Studio Overlay</h1>
-        <p>Интерактивный виджет текущего играющего трека для стримеров (OBS Studio Browser Source)</p>
-    </div>
+    <header>
+        <div class="brand">
+            <span>WinYandex</span>
+            <span class="badge-tag">OBS Overlay</span>
+        </div>
+        <div class="status-pill">
+            <span class="status-dot"></span>
+            <span>:{{Port}}</span>
+        </div>
+    </header>
 
-    <div class="preview-card">
-        <div class="preview-header">
-            <h2>Живой предпросмотр</h2>
-            <div class="theme-buttons">
-                <button class="theme-btn active" onclick="setTheme('glass')">Glassmorphism Card</button>
-                <button class="theme-btn" onclick="setTheme('pill')">Compact Pill</button>
-                <button class="theme-btn" onclick="setTheme('vinyl')">Vinyl Record</button>
+    <main>
+        <div class="stage-header">
+            <div class="segmented-group">
+                <button class="seg-btn active" onclick="setTheme('glass')">Glass</button>
+                <button class="seg-btn" onclick="setTheme('vinyl')">Vinyl</button>
+                <button class="seg-btn" onclick="setTheme('pill')">Pill</button>
+            </div>
+
+            <div class="stage-options">
+                <button id="btn-pause-toggle" class="toggle-btn" onclick="toggleHideOnPause()">
+                    <span>Скрывать при паузе</span>
+                </button>
+                <button id="btn-bg-toggle" class="toggle-btn" onclick="cycleBg()">
+                    <span id="bg-label">Фон: Шахматка</span>
+                </button>
             </div>
         </div>
 
-        <div class="iframe-container">
+        <div class="preview-canvas bg-checker" id="canvas-wrap">
             <iframe id="preview-frame" src="/widget?theme=glass"></iframe>
+            <div class="viewport-badge" id="viewport-res">500 × 136 px</div>
         </div>
-    </div>
 
-    <div class="cards-grid">
-        <div class="theme-info-card">
-            <div>
-                <h3>1. Glassmorphism Card</h3>
-                <p>Полупрозрачная стеклянная карточка с размытием, цветной подсветкой в цвет обложки, бейджами и прогрессом. Размер в OBS: 520x160.</p>
-                <div class="url-box" id="url-glass">http://localhost:{{Port}}/widget?theme=glass</div>
+        <div class="url-panel">
+            <div class="url-row">
+                <div class="url-input-wrap">
+                    <input type="text" id="widget-url-input" class="url-input" readonly value="http://localhost:{{Port}}/widget?theme=glass">
+                </div>
+                <button class="action-btn primary" id="copy-btn" onclick="copyWidgetUrl()">
+                    <span id="copy-btn-text">Скопировать</span>
+                </button>
             </div>
-            <button class="copy-btn" onclick="copyUrl('url-glass')">Копировать ссылку для OBS</button>
-        </div>
 
-        <div class="theme-info-card">
-            <div>
-                <h3>2. Compact Pill</h3>
-                <p>Ультракомпактная капсула с вращающимся диском обложки и тонкой полоской прогресса. Идеально под веб-камеру. Размер в OBS: 460x80.</p>
-                <div class="url-box" id="url-pill">http://localhost:{{Port}}/widget?theme=pill</div>
+            <div class="specs-row">
+                <span id="theme-desc">Стеклянная карточка с размытием и цветным акцентом обложки</span>
+                <div class="specs-tags">
+                    <span class="spec-item" id="spec-obs-size">520 × 160</span>
+                    <span class="spec-item">60 FPS</span>
+                    <span class="spec-item">Alpha</span>
+                </div>
             </div>
-            <button class="copy-btn" onclick="copyUrl('url-pill')">Копировать ссылку для OBS</button>
         </div>
 
-        <div class="theme-info-card">
-            <div>
-                <h3>3. Vinyl Record</h3>
-                <p>Ретро-виниловая пластинка, выезжающая из конверта альбома и плавно вращающаяся при игре. Размер в OBS: 560x180.</p>
-                <div class="url-box" id="url-vinyl">http://localhost:{{Port}}/widget?theme=vinyl</div>
+        <div class="guide-grid">
+            <div class="guide-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <h4>Источник в OBS</h4>
+                    <p>Нажмите «+» в источниках сцены и добавьте «Браузер» (Browser).</p>
+                </div>
             </div>
-            <button class="copy-btn" onclick="copyUrl('url-vinyl')">Копировать ссылку для OBS</button>
+            <div class="guide-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <h4>Параметры ссылки</h4>
+                    <p>Вставьте скопированный URL и укажите рекомендованные размеры.</p>
+                </div>
+            </div>
+            <div class="guide-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <h4>Готово</h4>
+                    <p>Фон прозрачный. Виджет автоматически синхронизируется в реальном времени.</p>
+                </div>
+            </div>
         </div>
-    </div>
-
-    <div class="instructions">
-        <h4 style="color: #fff; margin-bottom: 8px;">Как добавить в OBS Studio:</h4>
-        <ol>
-            <li>В OBS нажмите кнопку <b>«+»</b> в панели «Источники» (Sources).</li>
-            <li>Выберите <b>«Браузер»</b> (Browser Source).</li>
-            <li>Вставьте скопированный URL (например, <code>http://localhost:{{Port}}/widget?theme=glass</code>).</li>
-            <li>Укажите ширину и высоту (рекомендуется: <b>Ширина 540, Высота 180</b>).</li>
-            <li>Фон автоматически прозрачный. Наслаждайтесь стримом!</li>
-        </ol>
-    </div>
+    </main>
 
     <script>
-        function setTheme(theme) {
-            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById('preview-frame').src = '/widget?theme=' + theme;
+        const port = {{Port}};
+        let currentTheme = 'glass';
+        let hideOnPause = false;
+        let bgMode = 0; // 0 = checker, 1 = dark, 2 = chroma
+
+        const themeMeta = {
+            glass: { res: '500 × 136 px', obsSize: '520 × 160', desc: 'Стеклянная карточка с эффектом размытия и динамической подсветкой' },
+            vinyl: { res: '550 × 116 px', obsSize: '560 × 140', desc: 'Ретро-пластинка с центрированным лейблом и плавной анимацией вращения' },
+            pill:  { res: '420 × 60 px',  obsSize: '440 × 80',  desc: 'Минималистичная капсула для размещения под веб-камерой' }
+        };
+
+        function buildUrl() {
+            let u = 'http://localhost:' + port + '/widget?theme=' + currentTheme;
+            if (hideOnPause) u += '&hideOnPause=true';
+            return u;
         }
 
-        function copyUrl(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Ссылка скопирована в буфер обмена!\n\n' + text);
+        function updateUi() {
+            const url = buildUrl();
+            document.getElementById('widget-url-input').value = url;
+            document.getElementById('preview-frame').src = '/widget?theme=' + currentTheme + (hideOnPause ? '&hideOnPause=true' : '');
+
+            const meta = themeMeta[currentTheme] || themeMeta.glass;
+            document.getElementById('viewport-res').textContent = meta.res;
+            document.getElementById('spec-obs-size').textContent = meta.obsSize;
+            document.getElementById('theme-desc').textContent = meta.desc;
+        }
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            document.querySelectorAll('.seg-btn').forEach(b => {
+                b.classList.toggle('active', b.textContent.toLowerCase().includes(theme));
+            });
+            updateUi();
+        }
+
+        function toggleHideOnPause() {
+            hideOnPause = !hideOnPause;
+            const btn = document.getElementById('btn-pause-toggle');
+            btn.classList.toggle('active', hideOnPause);
+            updateUi();
+        }
+
+        function cycleBg() {
+            bgMode = (bgMode + 1) % 3;
+            const canvas = document.getElementById('canvas-wrap');
+            const label = document.getElementById('bg-label');
+            canvas.className = 'preview-canvas';
+
+            if (bgMode === 0) {
+                canvas.classList.add('bg-checker');
+                label.textContent = 'Фон: Шахматка';
+            } else if (bgMode === 1) {
+                canvas.classList.add('bg-dark');
+                label.textContent = 'Фон: Тёмный';
+            } else {
+                canvas.classList.add('bg-chroma');
+                label.textContent = 'Фон: Хромакей';
+            }
+        }
+
+        function copyWidgetUrl() {
+            const url = document.getElementById('widget-url-input').value;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const text = document.getElementById('copy-btn-text');
+                btn.classList.add('copied');
+                text.textContent = '✓ Скопировано';
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    text.textContent = 'Скопировать';
+                }, 2000);
             });
         }
     </script>

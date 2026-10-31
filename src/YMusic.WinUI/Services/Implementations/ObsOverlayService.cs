@@ -448,11 +448,11 @@ public sealed class ObsOverlayService : IObsOverlayService
             overflow: hidden;
             font-family: 'Montserrat', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
-            align-items: flex-start;
-            justify-content: flex-start;
+            align-items: center;
+            justify-content: center;
             width: 100vw;
             height: 100vh;
-            padding: 16px;
+            padding: 12px;
         }
 
         /* Root Container with smooth transitions */
@@ -467,15 +467,20 @@ public sealed class ObsOverlayService : IObsOverlayService
             pointer-events: none;
         }
 
+        /* Ambient Glow (only active in glass theme) */
+        .ambient-bg {
+            display: none;
+        }
+
         /* ================= THEME 1: GLASSMORPHISM CARD ================= */
         .theme-glass {
             display: flex;
             align-items: center;
             width: 500px;
-            height: 140px;
+            height: 136px;
             padding: 16px;
             border-radius: 20px;
-            background: rgba(18, 18, 24, 0.78);
+            background: rgba(18, 18, 24, 0.8);
             backdrop-filter: blur(28px) saturate(180%);
             -webkit-backdrop-filter: blur(28px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -486,6 +491,7 @@ public sealed class ObsOverlayService : IObsOverlayService
         }
 
         .theme-glass .ambient-bg {
+            display: block;
             position: absolute;
             top: -40px;
             left: -40px;
@@ -501,13 +507,14 @@ public sealed class ObsOverlayService : IObsOverlayService
 
         .theme-glass .cover-container {
             position: relative;
-            width: 108px;
-            height: 108px;
-            min-width: 108px;
+            width: 104px;
+            height: 104px;
+            min-width: 104px;
             border-radius: 14px;
             overflow: hidden;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
             background: #24242a;
+            flex-shrink: 0;
         }
 
         .theme-glass .cover-img {
@@ -530,81 +537,15 @@ public sealed class ObsOverlayService : IObsOverlayService
             z-index: 2;
         }
 
-        .theme-glass .top-meta-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
-        }
-
-        .theme-glass .title-container {
-            overflow: hidden;
-            white-space: nowrap;
-            position: relative;
-            margin-bottom: 3px;
-        }
-
-        .theme-glass .title {
-            font-size: 19px;
-            font-weight: 700;
-            color: #ffffff;
-            display: inline-block;
-            letter-spacing: -0.2px;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        .theme-glass .artist {
-            font-size: 14px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.72);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-bottom: 12px;
-        }
-
-        .theme-glass .progress-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-        }
-
-        .theme-glass .progress-track {
-            flex: 1;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.14);
-            border-radius: 999px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .theme-glass .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ffcc00, #ff5500);
-            border-radius: 999px;
-            width: 0%;
-            box-shadow: 0 0 10px rgba(255, 120, 0, 0.6);
-            transition: width 0.3s linear;
-        }
-
-        .theme-glass .time-text {
-            font-size: 11px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.6);
-            font-variant-numeric: tabular-nums;
-            min-width: 32px;
-        }
-
         /* ================= THEME 2: COMPACT PILL ================= */
         .theme-pill {
             display: flex;
             align-items: center;
-            height: 64px;
-            width: 440px;
-            padding: 8px 18px 8px 8px;
+            height: 60px;
+            width: 420px;
+            padding: 6px 16px 6px 6px;
             border-radius: 9999px;
-            background: rgba(16, 16, 22, 0.86);
+            background: rgba(16, 16, 22, 0.88);
             backdrop-filter: blur(24px) saturate(180%);
             -webkit-backdrop-filter: blur(24px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -622,6 +563,7 @@ public sealed class ObsOverlayService : IObsOverlayService
             overflow: hidden;
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
             position: relative;
+            flex-shrink: 0;
         }
 
         .theme-pill .cover-img {
@@ -629,14 +571,16 @@ public sealed class ObsOverlayService : IObsOverlayService
             height: 100%;
             object-fit: cover;
             border-radius: 50%;
+            animation: spin 12s linear infinite;
+            animation-play-state: paused;
         }
 
         .theme-pill.playing .cover-img {
-            animation: spin 12s linear infinite;
+            animation-play-state: running;
         }
 
         .theme-pill .info-container {
-            margin-left: 14px;
+            margin-left: 12px;
             flex: 1;
             min-width: 0;
             display: flex;
@@ -644,23 +588,28 @@ public sealed class ObsOverlayService : IObsOverlayService
             justify-content: center;
         }
 
+        .theme-pill .top-meta-row {
+            display: none;
+        }
+
         .theme-pill .title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: #ffffff;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            text-shadow: none;
+            margin-bottom: 0;
         }
 
         .theme-pill .artist {
             font-size: 12px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.65);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            margin-bottom: 0;
             margin-top: 1px;
+        }
+
+        .theme-pill .progress-wrapper {
+            display: none;
         }
 
         .theme-pill .progress-bar-edge {
@@ -673,59 +622,68 @@ public sealed class ObsOverlayService : IObsOverlayService
             transition: width 0.3s linear;
         }
 
-        /* ================= THEME 3: VINYL TURNTABLE ================= */
+        /* ================= THEME 3: VINYL RECORD ================= */
         .theme-vinyl {
             display: flex;
             align-items: center;
             width: 530px;
-            height: 160px;
+            height: 140px;
             position: relative;
             color: #ffffff;
         }
 
-        .theme-vinyl .jacket-wrap {
+        .theme-vinyl .cover-container {
             position: relative;
-            width: 130px;
-            height: 130px;
-            z-index: 3;
-        }
-
-        .theme-vinyl .jacket-cover {
-            width: 100%;
-            height: 100%;
+            width: 116px;
+            height: 116px;
+            min-width: 116px;
             border-radius: 10px;
-            object-fit: cover;
-            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.65);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
             z-index: 3;
             background: #1c1c24;
+            flex-shrink: 0;
+        }
+
+        .theme-vinyl .cover-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         .theme-vinyl .vinyl-disk {
             position: absolute;
-            top: 5px;
-            left: 55px;
-            width: 120px;
-            height: 120px;
+            top: 12px;
+            left: 58px;
+            width: 116px;
+            height: 116px;
             border-radius: 50%;
-            background: radial-gradient(circle, #242424 0%, #111111 40%, #000000 70%, #151515 100%);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
-            border: 2px solid #222;
+            background: radial-gradient(circle, #2a2a2a 0%, #161616 35%, #0a0a0a 60%, #1a1a1a 85%, #0d0d0d 100%);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            border: 2px solid #202020;
             z-index: 2;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.6s ease;
+            animation: spin 8s linear infinite;
+            animation-play-state: paused;
+            transition: transform 0.5s ease;
+        }
+
+        .theme-vinyl.playing .vinyl-disk {
+            animation-play-state: running;
         }
 
         .theme-vinyl .vinyl-grooves {
             position: absolute;
-            width: 90%;
-            height: 90%;
+            width: 88%;
+            height: 88%;
             border-radius: 50%;
-            border: 1px dashed rgba(255, 255, 255, 0.08);
+            border: 1px dashed rgba(255, 255, 255, 0.12);
             box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+            pointer-events: none;
         }
 
         .theme-vinyl .vinyl-center {
@@ -738,30 +696,114 @@ public sealed class ObsOverlayService : IObsOverlayService
             z-index: 3;
         }
 
+        .theme-vinyl .vinyl-center::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: #0d0d12;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+            z-index: 4;
+        }
+
         .theme-vinyl .vinyl-center img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
-        .theme-vinyl.playing .vinyl-disk {
-            animation: spin 8s linear infinite;
-        }
-
-        .theme-vinyl .info-card {
-            margin-left: 65px;
+        .theme-vinyl .info-container {
+            margin-left: 70px;
             flex: 1;
-            padding: 16px 20px;
-            border-radius: 18px;
-            background: rgba(18, 18, 24, 0.82);
-            backdrop-filter: blur(24px);
+            min-width: 0;
+            padding: 14px 18px;
+            border-radius: 16px;
+            background: rgba(18, 18, 24, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
             display: flex;
             flex-direction: column;
             justify-content: center;
-            z-index: 1;
+            z-index: 4;
             position: relative;
+        }
+
+        /* ================= SHARED TYPOGRAPHY & PROGRESS ================= */
+        .top-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .title-container {
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            width: 100%;
+            margin-bottom: 2px;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            display: block;
+            letter-spacing: -0.2px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .artist {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.72);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 10px;
+        }
+
+        .progress-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .progress-track {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffcc00, #ff5500);
+            border-radius: 999px;
+            width: 0%;
+            box-shadow: 0 0 10px rgba(255, 120, 0, 0.6);
+            transition: width 0.3s linear;
+        }
+
+        .time-text {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+            font-variant-numeric: tabular-nums;
+            min-width: 28px;
         }
 
         /* ================= SHARED ELEMENTS & BADGES ================= */
@@ -775,12 +817,6 @@ public sealed class ObsOverlayService : IObsOverlayService
             display: inline-flex;
             align-items: center;
             line-height: 1;
-        }
-
-        .badge-fck {
-            background: linear-gradient(135deg, #ff2d55, #ff375f);
-            color: #ffffff;
-            box-shadow: 0 2px 8px rgba(255, 45, 85, 0.4);
         }
 
         .badge-explicit {
@@ -805,10 +841,14 @@ public sealed class ObsOverlayService : IObsOverlayService
             transition: height 0.2s ease;
         }
 
-        .playing .eq-bar:nth-child(1) { animation: bounce 0.9s ease-in-out infinite alternate; }
-        .playing .eq-bar:nth-child(2) { animation: bounce 1.1s ease-in-out infinite 0.2s alternate; }
-        .playing .eq-bar:nth-child(3) { animation: bounce 0.8s ease-in-out infinite 0.4s alternate; }
-        .playing .eq-bar:nth-child(4) { animation: bounce 1.2s ease-in-out infinite 0.1s alternate; }
+        .eq-bar:nth-child(1) { animation: bounce 0.9s ease-in-out infinite alternate; animation-play-state: paused; }
+        .eq-bar:nth-child(2) { animation: bounce 1.1s ease-in-out infinite 0.2s alternate; animation-play-state: paused; }
+        .eq-bar:nth-child(3) { animation: bounce 0.8s ease-in-out infinite 0.4s alternate; animation-play-state: paused; }
+        .eq-bar:nth-child(4) { animation: bounce 1.2s ease-in-out infinite 0.1s alternate; animation-play-state: paused; }
+
+        .playing .eq-bar {
+            animation-play-state: running;
+        }
 
         @keyframes bounce {
             0% { height: 2px; }
@@ -886,7 +926,6 @@ public sealed class ObsOverlayService : IObsOverlayService
                     <div class="eq-bar"></div>
                     <div class="eq-bar"></div>
                 </div>
-                <span id="badge-fck" class="badge badge-fck" style="display: none;">FCK CENSOR</span>
                 <span id="badge-explicit" class="badge badge-explicit" style="display: none;">E</span>
             </div>
 
@@ -922,7 +961,6 @@ public sealed class ObsOverlayService : IObsOverlayService
         const vinylDisk = document.getElementById('vinyl-disk');
         const titleEl = document.getElementById('track-title');
         const artistEl = document.getElementById('track-artist');
-        const badgeFck = document.getElementById('badge-fck');
         const badgeExplicit = document.getElementById('badge-explicit');
         const progressFill = document.getElementById('progress-fill');
         const progressEdge = document.getElementById('progress-edge');
@@ -1044,7 +1082,6 @@ public sealed class ObsOverlayService : IObsOverlayService
                 coverArt.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="%23333"><rect width="100" height="100"/></svg>';
             }
 
-            if (badgeFck) badgeFck.style.display = data.isFckCensor ? 'inline-flex' : 'none';
             if (badgeExplicit) badgeExplicit.style.display = data.isExplicit ? 'inline-flex' : 'none';
 
             if (timeDur) timeDur.textContent = data.formattedDuration || formatTime(data.durationMs);

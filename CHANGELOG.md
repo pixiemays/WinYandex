@@ -4,6 +4,23 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.6] — 2026-11-01
+
+### Now Playing Widget (OBS Studio)
+* **Music on your screen**: you can now display the currently playing track in OBS Studio or Streamlabs using a standard Browser Source with a transparent background.
+* **Three visual themes**:
+  * **Glassmorphism Card (Glass)** — sleek translucent card with smooth background blur, dynamic artwork glow, live equalizer, and playback timeline.
+  * **Vinyl Record (Vinyl)** — retro vinyl turntable deck featuring a record that slides out from the album sleeve and smoothly spins during playback, pausing neatly when you pause.
+  * **Compact Pill (Pill)** — ultra-minimalistic pill overlay, perfectly sized to sit right under a webcam.
+* **Smooth animations**: track transitions happen smoothly and cinematically without harsh jumps.
+* **Interactive preview page**: visit `http://localhost:21337/` in any browser to test themes against different backgrounds (checkerboard, dark, green screen chroma key), toggle auto-hide on pause, and copy the ready-to-use link into OBS in one click.
+* **Profile settings toggle**: easily enable/disable the widget or adjust its port directly from the in-app profile settings.
+
+### Seamless My Wave on Album Completion
+* **Music never stops**: when the last track of an album finishes playing, the player no longer fades into silence — it automatically transitions into a personalized My Wave stream matching the album's vibe.
+
+---
+
 ## [0.9.52] — 2026-10-31
 
 ### Audio Equalizer Fixes & Frequency Editing

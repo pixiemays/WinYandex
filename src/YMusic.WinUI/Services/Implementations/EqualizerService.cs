@@ -9,7 +9,9 @@ namespace YMusic.WinUI.Services.Implementations;
 public sealed class EqualizerService : IEqualizerService
 {
     private readonly List<EqualizerBand> _bands = new();
+    private readonly List<double> _customGains = new() { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     private bool _isEnabled;
+    private bool _isUpdatingBands;
     private string _currentPresetName = "Flat";
     private readonly string _settingsFilePath;
 
@@ -53,8 +55,20 @@ public sealed class EqualizerService : IEqualizerService
             };
             band.PropertyChanged += (_, e) =>
             {
+                if (_isUpdatingBands) return;
+
                 if (e.PropertyName == nameof(EqualizerBand.Gain))
                 {
+                    if (band.Index >= 0 && band.Index < _customGains.Count)
+                    {
+                        _customGains[band.Index] = band.Gain;
+                    }
+
+                    if (!_isEnabled)
+                    {
+                        _isEnabled = true;
+                    }
+
                     CheckIfPresetMatches();
                     EqualizerChanged?.Invoke(this, EventArgs.Empty);
                     SaveSettings();
@@ -68,14 +82,43 @@ public sealed class EqualizerService : IEqualizerService
 
     public void ApplyPreset(string presetName)
     {
+        if (string.Equals(presetName, "Custom", StringComparison.OrdinalIgnoreCase))
+        {
+            _currentPresetName = "Custom";
+            _isUpdatingBands = true;
+            try
+            {
+                for (int i = 0; i < _bands.Count && i < _customGains.Count; i++)
+                {
+                    _bands[i].Gain = _customGains[i];
+                }
+            }
+            finally
+            {
+                _isUpdatingBands = false;
+            }
+
+            EqualizerChanged?.Invoke(this, EventArgs.Empty);
+            SaveSettings();
+            return;
+        }
+
         var preset = Presets.FirstOrDefault(p => string.Equals(p.Name, presetName, StringComparison.OrdinalIgnoreCase));
         if (preset == null) return;
 
         _currentPresetName = preset.Name;
 
-        for (int i = 0; i < _bands.Count && i < preset.Gains.Count; i++)
+        _isUpdatingBands = true;
+        try
         {
-            _bands[i].Gain = preset.Gains[i];
+            for (int i = 0; i < _bands.Count && i < preset.Gains.Count; i++)
+            {
+                _bands[i].Gain = preset.Gains[i];
+            }
+        }
+        finally
+        {
+            _isUpdatingBands = false;
         }
 
         EqualizerChanged?.Invoke(this, EventArgs.Empty);
@@ -129,7 +172,8 @@ public sealed class EqualizerService : IEqualizerService
             {
                 IsEnabled = _isEnabled,
                 PresetName = _currentPresetName,
-                Gains = _bands.Select(b => b.Gain).ToList()
+                Gains = _bands.Select(b => b.Gain).ToList(),
+                CustomGains = _customGains.ToList()
             };
             string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_settingsFilePath, json);
@@ -153,11 +197,31 @@ public sealed class EqualizerService : IEqualizerService
             _isEnabled = data.IsEnabled;
             _currentPresetName = data.PresetName ?? "Flat";
 
-            if (data.Gains != null && data.Gains.Count == _bands.Count)
+            if (data.CustomGains != null && data.CustomGains.Count == _bands.Count)
             {
                 for (int i = 0; i < _bands.Count; i++)
                 {
-                    _bands[i].Gain = data.Gains[i];
+                    _customGains[i] = data.CustomGains[i];
+                }
+            }
+
+            if (data.Gains != null && data.Gains.Count == _bands.Count)
+            {
+                _isUpdatingBands = true;
+                try
+                {
+                    for (int i = 0; i < _bands.Count; i++)
+                    {
+                        _bands[i].Gain = data.Gains[i];
+                        if (data.CustomGains == null)
+                        {
+                            _customGains[i] = data.Gains[i];
+                        }
+                    }
+                }
+                finally
+                {
+                    _isUpdatingBands = false;
                 }
             }
             else
@@ -176,5 +240,6 @@ public sealed class EqualizerService : IEqualizerService
         public bool IsEnabled { get; set; }
         public string? PresetName { get; set; }
         public List<double>? Gains { get; set; }
+        public List<double>? CustomGains { get; set; }
     }
 }

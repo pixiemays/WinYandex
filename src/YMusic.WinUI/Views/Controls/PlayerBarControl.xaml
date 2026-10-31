@@ -553,6 +553,9 @@
                                                     Minimum="-12"
                                                     Maximum="12"
                                                     StepFrequency="0.5"
+                                                    SmallChange="0.5"
+                                                    LargeChange="2"
+                                                    IsThumbToolTipEnabled="False"
                                                     Value="{x:Bind Gain, Mode=TwoWay}"
                                                     HorizontalAlignment="Center" />
                                             <TextBlock Text="{x:Bind Label}"

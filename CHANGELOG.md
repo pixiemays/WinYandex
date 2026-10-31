@@ -4,6 +4,17 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.52] — 2026-10-31
+
+### Audio Equalizer Fixes & Frequency Editing
+* **Fixed Frequency Sliders**: resolved a feedback loop where adjusting any equalizer frequency band caused `ProfileViewModel` to immediately reapply the dummy "Custom" preset, instantly snapping all sliders back to 0 dB.
+* **Smart Custom Preset Preservation**: user-configured band gains are now persistently saved in `_customGains` and in `%LocalAppData%/YMusic/equalizer_settings.json`. Switching back to "Custom" from built-in presets (Rock, Pop, etc.) accurately restores the user's custom EQ curve instead of resetting gains.
+* **Seamless EQ Auto-Activation**: adjusting any frequency band when the equalizer is toggled off now automatically activates the equalizer, immediately routing processed audio through the AudioGraph filter nodes.
+* **Batch Update Event Suppression**: added `_isUpdatingBands` guard during preset application and settings loading to eliminate redundant event storms and prevent intermediate inconsistent states.
+* **UI Polish**: formatted 0 dB labels cleanly as `"0 dB"`, tuned vertical sliders with `SmallChange="0.5"` / `LargeChange="2"`, and disabled overlay thumb tooltips to keep band labels clear and legible.
+
+---
+
 ## [0.9.51] — 2026-10-29
 
 ### Instant Track Switching & Playback Optimization

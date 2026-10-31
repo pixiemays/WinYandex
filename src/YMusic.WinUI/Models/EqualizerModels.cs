@@ -14,7 +14,7 @@ public sealed partial class EqualizerBand : ObservableObject
     [NotifyPropertyChangedFor(nameof(FormattedGain))]
     private double _gain; // In decibels: -12.0 to +12.0
 
-    public string FormattedGain => Gain >= 0 ? $"+{Gain:F1} dB" : $"{Gain:F1} dB";
+    public string FormattedGain => Math.Abs(Gain) < 0.05 ? "0 dB" : (Gain > 0 ? $"+{Gain:F1} dB" : $"{Gain:F1} dB");
 }
 
 public sealed record EqualizerPreset(string Name, IReadOnlyList<double> Gains);

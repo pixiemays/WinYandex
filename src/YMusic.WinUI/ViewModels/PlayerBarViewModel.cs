@@ -35,7 +35,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     partial void OnCurrentEqualizerPresetNameChanged(string value)
     {
-        if (!string.IsNullOrEmpty(value) && value != "Custom")
+        if (!string.IsNullOrEmpty(value))
         {
             if (!string.Equals(_equalizer.CurrentPresetName, value, StringComparison.OrdinalIgnoreCase))
             {
@@ -460,8 +460,15 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     {
         RunOnUi(() =>
         {
-            IsEqualizerEnabled = _equalizer.IsEnabled;
-            CurrentEqualizerPresetName = _equalizer.CurrentPresetName;
+            if (IsEqualizerEnabled != _equalizer.IsEnabled)
+            {
+                IsEqualizerEnabled = _equalizer.IsEnabled;
+            }
+
+            if (!string.Equals(CurrentEqualizerPresetName, _equalizer.CurrentPresetName, StringComparison.OrdinalIgnoreCase))
+            {
+                CurrentEqualizerPresetName = _equalizer.CurrentPresetName;
+            }
         });
     }
 

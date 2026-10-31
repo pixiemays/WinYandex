@@ -472,8 +472,15 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         RunOnUi(() =>
         {
-            IsEqualizerEnabled = _equalizerService.IsEnabled;
-            SelectedEqualizerPreset = _equalizerService.CurrentPresetName;
+            if (IsEqualizerEnabled != _equalizerService.IsEnabled)
+            {
+                IsEqualizerEnabled = _equalizerService.IsEnabled;
+            }
+
+            if (!string.Equals(SelectedEqualizerPreset, _equalizerService.CurrentPresetName, StringComparison.OrdinalIgnoreCase))
+            {
+                SelectedEqualizerPreset = _equalizerService.CurrentPresetName;
+            }
         });
     }
 
@@ -623,12 +630,16 @@ public sealed partial class ProfileViewModel : BaseViewModel
     partial void OnIsEqualizerEnabledChanged(bool value)
     {
         if (_isInitializingSettings) return;
-        _equalizerService.IsEnabled = value;
+        if (_equalizerService.IsEnabled != value)
+        {
+            _equalizerService.IsEnabled = value;
+        }
     }
 
     partial void OnSelectedEqualizerPresetChanged(string value)
     {
         if (_isInitializingSettings || string.IsNullOrEmpty(value)) return;
+        if (string.Equals(_equalizerService.CurrentPresetName, value, StringComparison.OrdinalIgnoreCase)) return;
         _equalizerService.ApplyPreset(value);
     }
 

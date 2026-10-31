@@ -626,22 +626,45 @@ public sealed class ObsOverlayService : IObsOverlayService
         .theme-vinyl {
             display: flex;
             align-items: center;
-            width: 550px;
-            height: 116px;
-            position: relative;
+            width: 580px;
+            height: 136px;
+            padding: 16px;
+            border-radius: 20px;
+            background: rgba(18, 18, 24, 0.82);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.55), 0 0 40px var(--ambient-glow, rgba(255, 204, 0, 0.15));
             color: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-vinyl .ambient-bg {
+            display: block;
+            position: absolute;
+            top: -40px;
+            left: -40px;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: var(--ambient-glow, rgba(255, 204, 0, 0.3));
+            filter: blur(65px);
+            opacity: 0.45;
+            pointer-events: none;
+            transition: background 0.8s ease;
         }
 
         .theme-vinyl .cover-container {
             position: relative;
-            width: 116px;
-            height: 116px;
-            min-width: 116px;
-            border-radius: 10px;
+            width: 104px;
+            height: 104px;
+            min-width: 104px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 3;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.65), 0 8px 24px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            z-index: 4;
             background: #1c1c24;
             flex-shrink: 0;
         }
@@ -655,14 +678,14 @@ public sealed class ObsOverlayService : IObsOverlayService
 
         .theme-vinyl .vinyl-disk {
             position: absolute;
-            top: 0;
-            left: 84px;
-            width: 116px;
-            height: 116px;
+            top: 16px;
+            left: 74px;
+            width: 104px;
+            height: 104px;
             border-radius: 50%;
             background: radial-gradient(circle, #2a2a2a 0%, #161616 35%, #0a0a0a 60%, #1a1a1a 85%, #0d0d0d 100%);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-            border: 2px solid #202020;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
+            border: 2px solid #242424;
             z-index: 2;
             display: flex;
             align-items: center;
@@ -689,8 +712,8 @@ public sealed class ObsOverlayService : IObsOverlayService
         }
 
         .theme-vinyl .vinyl-center {
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             overflow: hidden;
             border: 2px solid #333;
@@ -704,8 +727,8 @@ public sealed class ObsOverlayService : IObsOverlayService
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             background: #0d0d12;
             border-radius: 50%;
             transform: translate(-50%, -50%);
@@ -721,23 +744,15 @@ public sealed class ObsOverlayService : IObsOverlayService
         }
 
         .theme-vinyl .info-container {
-            margin-left: 96px;
-            height: 116px;
+            margin-left: 78px;
             flex: 1;
             min-width: 0;
-            padding: 12px 18px;
-            border-radius: 16px;
-            background: rgba(18, 18, 24, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
             display: flex;
             flex-direction: column;
             justify-content: center;
-            z-index: 4;
+            height: 100%;
             position: relative;
-            box-sizing: border-box;
+            z-index: 5;
         }
 
         /* ================= SHARED TYPOGRAPHY & PROGRESS ================= */
@@ -1607,7 +1622,7 @@ public sealed class ObsOverlayService : IObsOverlayService
 
         const themeMeta = {
             glass: { res: '500 × 136 px', obsSize: '520 × 160', desc: 'Стеклянная карточка с эффектом размытия и динамической подсветкой' },
-            vinyl: { res: '550 × 116 px', obsSize: '560 × 140', desc: 'Ретро-пластинка с центрированным лейблом и плавной анимацией вращения' },
+            vinyl: { res: '580 × 136 px', obsSize: '600 × 160', desc: 'Единая виниловая дека с выдвигающейся пластинкой и плавным вращением' },
             pill:  { res: '420 × 60 px',  obsSize: '440 × 80',  desc: 'Минималистичная капсула для размещения под веб-камерой' }
         };
 

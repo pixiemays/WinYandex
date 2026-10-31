@@ -4,7 +4,7 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
-## [0.9.6] — 2026-11-01
+## [0.9.60] — 2026-11-01
 
 ### Now Playing Widget (OBS Studio)
 * **Music on your screen**: you can now display the currently playing track in OBS Studio or Streamlabs using a standard Browser Source with a transparent background.

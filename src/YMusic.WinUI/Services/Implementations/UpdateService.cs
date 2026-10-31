@@ -339,27 +339,50 @@ public sealed class UpdateService : IUpdateService
     {
         if (string.IsNullOrWhiteSpace(latestStr)) return false;
 
-        // Try standard Version parse
-        if (Version.TryParse(NormalizeVersionString(latestStr), out var latestVer) &&
-            Version.TryParse(NormalizeVersionString(currentStr), out var currentVer))
+        try
         {
+            var latestVer = ParseSmartVersion(latestStr);
+            var currentVer = ParseSmartVersion(currentStr);
             return latestVer > currentVer;
         }
-
-        // Fallback string comparison
-        return !string.Equals(latestStr, currentStr, StringComparison.OrdinalIgnoreCase);
+        catch
+        {
+            // Fallback string comparison
+            return !string.Equals(latestStr, currentStr, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
-    private static string NormalizeVersionString(string ver)
+    private static Version ParseSmartVersion(string ver)
     {
         string clean = ver.Trim().TrimStart('v', 'V');
         int dashIdx = clean.IndexOf('-');
         if (dashIdx > 0) clean = clean.Substring(0, dashIdx);
 
         var parts = clean.Split('.');
-        if (parts.Length == 1) return $"{parts[0]}.0.0";
-        if (parts.Length == 2) return $"{parts[0]}.{parts[1]}.0";
-        return clean;
+        int major = parts.Length > 0 && int.TryParse(parts[0], out int maj) ? maj : 0;
+        int minor = parts.Length > 1 && int.TryParse(parts[1], out int min) ? min : 0;
+        int patch = 0;
+        int sub = 0;
+
+        if (parts.Length > 2 && int.TryParse(parts[2], out int p))
+        {
+            // If patch is 51, 52, or 60 (two digits where first is 5 or 6), decode the legacy subpatch
+            if (major == 0 && minor == 9 && p >= 50 && p <= 69)
+            {
+                patch = p / 10;
+                sub = p % 10;
+            }
+            else
+            {
+                patch = p;
+                if (parts.Length > 3 && int.TryParse(parts[3], out int s))
+                {
+                    sub = s;
+                }
+            }
+        }
+
+        return new Version(major, minor, patch, sub);
     }
 
     public static string ExtractReleaseNotesFromChangelog(string changelog, string version)

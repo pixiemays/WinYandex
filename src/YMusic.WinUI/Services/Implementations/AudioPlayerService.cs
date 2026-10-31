@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Diagnostics;
 using System.Security.Cryptography;
 using Windows.Media;
 using Windows.Media.Audio;
@@ -795,6 +796,12 @@ public sealed class AudioPlayerService : IAudioPlayerService
             }
             else
             {
+                // If album or queue ended, seamlessly continue with Wave if enabled
+                if (_settingsService.AutoplayWaveOnAlbumEnd && await TryStartAlbumWaveOnQueueEndAsync().ConfigureAwait(false))
+                {
+                    return;
+                }
+
                 Pause();
                 Seek(TimeSpan.Zero);
                 return;
@@ -805,6 +812,76 @@ public sealed class AudioPlayerService : IAudioPlayerService
         int trackIndex = _playOrder[_orderIndex];
         var track = _queue[trackIndex];
         await LoadAndPlayTrackAsync(track).ConfigureAwait(false);
+    }
+
+    private async Task<bool> TryStartAlbumWaveOnQueueEndAsync()
+    {
+        try
+        {
+            var lastTrack = _currentTrack ?? (_queue.Count > 0 ? _queue[^1] : null);
+            if (lastTrack == null) return false;
+
+            // Determine target station: album station if available, otherwise track station
+            string stationType = "album";
+            string stationTag = string.Empty;
+
+            if (lastTrack.Albums.Count > 0 && lastTrack.Albums[0].Id > 0)
+            {
+                stationType = "album";
+                stationTag = lastTrack.Albums[0].Id.ToString();
+            }
+            else if (!string.IsNullOrWhiteSpace(lastTrack.Id))
+            {
+                stationType = "track";
+                stationTag = lastTrack.Id;
+            }
+            else
+            {
+                stationType = "user";
+                stationTag = "onyourwave";
+            }
+
+            Debug.WriteLine($"[AudioPlayerService] Album ended. Starting Wave for {stationType}:{stationTag}...");
+            var stationResult = await _yandexMusicService.GetRotorStationTracksAsync(stationType, stationTag).ConfigureAwait(false);
+
+            // If album station returned no tracks, fallback to track wave or user onyourwave
+            if ((stationResult?.Sequence == null || stationResult.Sequence.Count == 0) && stationType == "album")
+            {
+                stationType = "track";
+                stationTag = lastTrack.Id;
+                stationResult = await _yandexMusicService.GetRotorStationTracksAsync(stationType, stationTag).ConfigureAwait(false);
+            }
+
+            if (stationResult?.Sequence != null && stationResult.Sequence.Count > 0)
+            {
+                var waveTracks = stationResult.Sequence
+                    .Where(i => i.Track != null)
+                    .Select(i => i.Track!)
+                    .ToList();
+
+                if (waveTracks.Count > 0)
+                {
+                    CurrentPlaybackMode = PlaybackMode.Wave;
+                    AppendToQueue(waveTracks);
+
+                    int newOrderIndex = _orderIndex + 1;
+                    if (newOrderIndex < _playOrder.Count)
+                    {
+                        _orderIndex = newOrderIndex;
+                        int trackIdx = _playOrder[_orderIndex];
+                        var nextTrack = _queue[trackIdx];
+                        await LoadAndPlayTrackAsync(nextTrack).ConfigureAwait(false);
+                        return true;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[AudioPlayerService] Failed to autoplay wave on album end: {ex.Message}");
+        }
+
+        return false;
     }
 
     public async Task PreviousAsync()

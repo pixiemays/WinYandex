@@ -204,6 +204,76 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public bool ObsOverlayEnabled
+    {
+        get => _settings.ObsOverlayEnabled;
+        set
+        {
+            if (_settings.ObsOverlayEnabled != value)
+            {
+                _settings.ObsOverlayEnabled = value;
+                Save();
+                NotifyChanged(nameof(ObsOverlayEnabled));
+            }
+        }
+    }
+
+    public int ObsOverlayPort
+    {
+        get => _settings.ObsOverlayPort;
+        set
+        {
+            if (_settings.ObsOverlayPort != value)
+            {
+                _settings.ObsOverlayPort = value;
+                Save();
+                NotifyChanged(nameof(ObsOverlayPort));
+            }
+        }
+    }
+
+    public string ObsOverlayTheme
+    {
+        get => _settings.ObsOverlayTheme;
+        set
+        {
+            if (_settings.ObsOverlayTheme != value)
+            {
+                _settings.ObsOverlayTheme = value;
+                Save();
+                NotifyChanged(nameof(ObsOverlayTheme));
+            }
+        }
+    }
+
+    public bool ObsOverlayHideOnPause
+    {
+        get => _settings.ObsOverlayHideOnPause;
+        set
+        {
+            if (_settings.ObsOverlayHideOnPause != value)
+            {
+                _settings.ObsOverlayHideOnPause = value;
+                Save();
+                NotifyChanged(nameof(ObsOverlayHideOnPause));
+            }
+        }
+    }
+
+    public bool AutoplayWaveOnAlbumEnd
+    {
+        get => _settings.AutoplayWaveOnAlbumEnd;
+        set
+        {
+            if (_settings.AutoplayWaveOnAlbumEnd != value)
+            {
+                _settings.AutoplayWaveOnAlbumEnd = value;
+                Save();
+                NotifyChanged(nameof(AutoplayWaveOnAlbumEnd));
+            }
+        }
+    }
+
     private void Load()
     {
         lock (_lock)

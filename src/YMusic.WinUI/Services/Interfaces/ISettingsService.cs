@@ -19,6 +19,12 @@ public interface ISettingsService
     string AudioCacheLocation { get; set; }
     int CacheSizeLimitMb { get; set; }
 
+    bool ObsOverlayEnabled { get; set; }
+    int ObsOverlayPort { get; set; }
+    string ObsOverlayTheme { get; set; }
+    bool ObsOverlayHideOnPause { get; set; }
+    bool AutoplayWaveOnAlbumEnd { get; set; }
+
     event EventHandler<string>? SettingChanged;
 
     void Save();

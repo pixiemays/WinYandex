@@ -370,6 +370,82 @@
                         </Grid>
                     </Border>
 
+                    <!-- OBS Studio Overlay Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <StackPanel Spacing="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="4" Margin="0,0,16,0">
+                                    <TextBlock Text="{x:Bind ViewModel.ObsOverlayTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind ViewModel.ObsOverlayDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsOn="{x:Bind ViewModel.IsObsOverlayEnabled, Mode=TwoWay}"
+                                              OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                              OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                              VerticalAlignment="Center" />
+                            </Grid>
+
+                            <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                    CornerRadius="8"
+                                    Padding="12,10"
+                                    BorderThickness="1"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{x:Bind ViewModel.ObsWidgetUrlText, Mode=OneWay}"
+                                             IsReadOnly="True"
+                                             VerticalAlignment="Center"
+                                             FontSize="12" />
+                                    <Button Grid.Column="1"
+                                            Command="{x:Bind ViewModel.CopyObsUrlCommand}"
+                                            ToolTipService.ToolTip="Скопировать ссылку для вставки в OBS Browser Source"
+                                            VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE8C8;" FontSize="13" />
+                                            <TextBlock Text="{x:Bind ViewModel.CopyObsUrlButtonText, Mode=OneWay}" FontSize="12" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Grid.Column="2"
+                                            Command="{x:Bind ViewModel.OpenObsDashboardCommand}"
+                                            ToolTipService.ToolTip="Открыть веб-панель управления виджетом в браузере"
+                                            VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE8A7;" FontSize="13" />
+                                            <TextBlock Text="{x:Bind ViewModel.OpenObsDashboardButtonText, Mode=OneWay}" FontSize="12" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Autoplay Wave on Album End Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
+                                <TextBlock Text="{x:Bind ViewModel.AutoplayWaveTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.AutoplayWaveDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1"
+                                          IsOn="{x:Bind ViewModel.IsAutoplayWaveEnabled, Mode=TwoWay}"
+                                          OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                          OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                          VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
                     <!-- FckCensor Card -->
                     <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                         <Grid>

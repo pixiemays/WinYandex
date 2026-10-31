@@ -67,6 +67,7 @@ public partial class App : Application
         services.AddSingleton<IPinnedItemsService, PinnedItemsService>();
         services.AddSingleton<ITrayNotificationService, TrayNotificationService>();
         services.AddSingleton<IDiscordRpcService, DiscordRpcService>();
+        services.AddSingleton<IObsOverlayService, ObsOverlayService>();
         services.AddSingleton<IUpdateService, UpdateService>();
 
         // ViewModels
@@ -119,6 +120,7 @@ public partial class App : Application
             try
             {
                 provider.GetService<IDiscordRpcService>()?.Dispose();
+                provider.GetService<IObsOverlayService>()?.Dispose();
             }
             catch { }
         };
@@ -134,6 +136,7 @@ public partial class App : Application
         _window.Activate();
         GetService<ITrayNotificationService>()?.InitializeThumbnailButtons();
         GetService<IDiscordRpcService>()?.Initialize();
+        GetService<IObsOverlayService>()?.Initialize();
         UpdateService.CleanOldUpdates();
     }
 }

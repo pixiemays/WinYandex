@@ -136,6 +136,12 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private bool _isDiscordRpcEnabled;
 
     [ObservableProperty]
+    private bool _isObsOverlayEnabled;
+
+    [ObservableProperty]
+    private bool _isAutoplayWaveEnabled;
+
+    [ObservableProperty]
     private bool _isMinimizeToTrayEnabled;
 
     [ObservableProperty]
@@ -197,6 +203,38 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string SystemSectionTitle => IsRussian ? "Система и интеграции" : "System & Integrations";
     public string DiscordRpcTitle => "Discord Rich Presence";
     public string DiscordRpcDesc => IsRussian ? "Отображение названия трека, исполнителя и обложки в профиле Discord" : "Show current playing track title, artist name, and album artwork on your Discord profile";
+
+    public string ObsOverlayTitle => IsRussian ? "OBS Studio Виджет (Для стримеров)" : "OBS Studio Overlay (Streamer Widget)";
+    public string ObsOverlayDesc => IsRussian ? "Встроенный локальный сервер для источника «Браузер» в OBS. Красивые карточки треков с анимациями переходов." : "Embedded local web server for OBS Browser Source with animated track transitions.";
+    public string ObsWidgetUrlText => $"http://localhost:{_settingsService.ObsOverlayPort}/widget";
+    public string CopyObsUrlButtonText => IsRussian ? "Скопировать ссылку" : "Copy URL";
+    public string OpenObsDashboardButtonText => IsRussian ? "Панель управления" : "Open Dashboard";
+
+    public string AutoplayWaveTitle => IsRussian ? "Моя волна после окончания альбома" : "Autoplay Wave on Album End";
+    public string AutoplayWaveDesc => IsRussian ? "Автоматически запускать радио/волну по альбому после завершения последнего трека" : "Automatically transition to Wave based on the album when the last track finishes";
+
+    [RelayCommand]
+    public void CopyObsUrl()
+    {
+        try
+        {
+            var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            dataPackage.SetText(ObsWidgetUrlText);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+            ShowNotification(IsRussian ? "Ссылка для OBS скопирована в буфер обмена!" : "OBS Browser Source URL copied to clipboard!");
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    public async Task OpenObsDashboardAsync()
+    {
+        try
+        {
+            await Windows.System.Launcher.LaunchUriAsync(new Uri($"http://localhost:{_settingsService.ObsOverlayPort}/"));
+        }
+        catch { }
+    }
 
     public string FckCensorTitle => "FckCensor (разблокировка цензуры)";
     public string FckCensorDesc => IsRussian ? "Автоматически предпочитать оригинальные треки без цензуры вместо заглушенных версий" : "Automatically prefer original explicit and uncensored versions of tracks over sanitized edits";
@@ -352,6 +390,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
             IsGaplessPreloadEnabled = _settingsService.GaplessPreloadEnabled;
             IsDiscordRpcEnabled = _settingsService.DiscordRpcEnabled;
+            IsObsOverlayEnabled = _settingsService.ObsOverlayEnabled;
+            IsAutoplayWaveEnabled = _settingsService.AutoplayWaveOnAlbumEnd;
             IsMinimizeToTrayEnabled = _settingsService.MinimizeToTrayOnClose;
             IsTrackNotificationsEnabled = _settingsService.TrackNotificationsEnabled;
             IsFckCensorEnabled = _settingsService.FckCensorEnabled;
@@ -427,6 +467,14 @@ public sealed partial class ProfileViewModel : BaseViewModel
             else if (propName == nameof(ISettingsService.DiscordRpcEnabled))
             {
                 IsDiscordRpcEnabled = _settingsService.DiscordRpcEnabled;
+            }
+            else if (propName == nameof(ISettingsService.ObsOverlayEnabled))
+            {
+                IsObsOverlayEnabled = _settingsService.ObsOverlayEnabled;
+            }
+            else if (propName == nameof(ISettingsService.AutoplayWaveOnAlbumEnd))
+            {
+                IsAutoplayWaveEnabled = _settingsService.AutoplayWaveOnAlbumEnd;
             }
             else if (propName == nameof(ISettingsService.MinimizeToTrayOnClose))
             {
@@ -511,6 +559,21 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         if (_isInitializingSettings) return;
         _settingsService.DiscordRpcEnabled = value;
+    }
+
+    partial void OnIsObsOverlayEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ObsOverlayEnabled = value;
+        ShowNotification(value
+            ? (IsRussian ? "OBS Overlay сервер запущен." : "OBS Overlay server started.")
+            : (IsRussian ? "OBS Overlay сервер остановлен." : "OBS Overlay server stopped."));
+    }
+
+    partial void OnIsAutoplayWaveEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.AutoplayWaveOnAlbumEnd = value;
     }
 
     partial void OnIsMinimizeToTrayEnabledChanged(bool value)
@@ -1176,6 +1239,13 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(SystemSectionTitle));
         OnPropertyChanged(nameof(DiscordRpcTitle));
         OnPropertyChanged(nameof(DiscordRpcDesc));
+        OnPropertyChanged(nameof(ObsOverlayTitle));
+        OnPropertyChanged(nameof(ObsOverlayDesc));
+        OnPropertyChanged(nameof(ObsWidgetUrlText));
+        OnPropertyChanged(nameof(CopyObsUrlButtonText));
+        OnPropertyChanged(nameof(OpenObsDashboardButtonText));
+        OnPropertyChanged(nameof(AutoplayWaveTitle));
+        OnPropertyChanged(nameof(AutoplayWaveDesc));
         OnPropertyChanged(nameof(FckCensorTitle));
         OnPropertyChanged(nameof(FckCensorDesc));
         OnPropertyChanged(nameof(FckCensorAuthorCreditText));

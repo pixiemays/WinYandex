@@ -42,4 +42,19 @@ public sealed class AppSettings
 
     [JsonPropertyName("cacheSizeLimitMb")]
     public int CacheSizeLimitMb { get; set; } = 1024;
+
+    [JsonPropertyName("obsOverlayEnabled")]
+    public bool ObsOverlayEnabled { get; set; } = true;
+
+    [JsonPropertyName("obsOverlayPort")]
+    public int ObsOverlayPort { get; set; } = 21337;
+
+    [JsonPropertyName("obsOverlayTheme")]
+    public string ObsOverlayTheme { get; set; } = "glass"; // "glass", "pill", "vinyl"
+
+    [JsonPropertyName("obsOverlayHideOnPause")]
+    public bool ObsOverlayHideOnPause { get; set; } = false;
+
+    [JsonPropertyName("autoplayWaveOnAlbumEnd")]
+    public bool AutoplayWaveOnAlbumEnd { get; set; } = true;
 }

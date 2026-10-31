@@ -204,7 +204,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string DiscordRpcTitle => "Discord Rich Presence";
     public string DiscordRpcDesc => IsRussian ? "Отображение названия трека, исполнителя и обложки в профиле Discord" : "Show current playing track title, artist name, and album artwork on your Discord profile";
 
-    public string ObsOverlayTitle => IsRussian ? "OBS Studio Виджет (Для стримеров)" : "OBS Studio Overlay (Streamer Widget)";
+    public string ObsOverlayTitle => IsRussian ? "OBS Studio Виджет" : "OBS Studio Overlay";
     public string ObsOverlayDesc => IsRussian ? "Встроенный локальный сервер для источника «Браузер» в OBS. Красивые карточки треков с анимациями переходов." : "Embedded local web server for OBS Browser Source with animated track transitions.";
     public string ObsWidgetUrlText => $"http://localhost:{_settingsService.ObsOverlayPort}/widget";
     public string CopyObsUrlButtonText => IsRussian ? "Скопировать ссылку" : "Copy URL";

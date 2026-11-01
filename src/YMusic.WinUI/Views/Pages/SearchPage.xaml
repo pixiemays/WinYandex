@@ -175,10 +175,11 @@
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <!-- All Tab -->
                             <Button Click="TabButton_Click" Tag="0"
+                                    Style="{StaticResource TabPillButtonStyle}"
                                     Height="36" Padding="16,0" CornerRadius="18"
-                                    helpers:CursorHelper.UseHandCursor="True"
                                     Background="{x:Bind ViewModel.SelectedTabIndex, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}, ConverterParameter=0}"
-                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1">
                                 <TextBlock Text="{x:Bind ViewModel.AllTabHeader, Mode=OneWay}"
                                            FontWeight="SemiBold"
                                            FontSize="13"
@@ -187,10 +188,11 @@
 
                             <!-- Tracks Tab -->
                             <Button Click="TabButton_Click" Tag="1"
+                                    Style="{StaticResource TabPillButtonStyle}"
                                     Height="36" Padding="16,0" CornerRadius="18"
-                                    helpers:CursorHelper.UseHandCursor="True"
                                     Background="{x:Bind ViewModel.SelectedTabIndex, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}, ConverterParameter=1}"
-                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1">
                                 <TextBlock Text="{x:Bind ViewModel.TracksTabHeader, Mode=OneWay}"
                                            FontWeight="SemiBold"
                                            FontSize="13"
@@ -199,10 +201,11 @@
 
                             <!-- Artists Tab -->
                             <Button Click="TabButton_Click" Tag="2"
+                                    Style="{StaticResource TabPillButtonStyle}"
                                     Height="36" Padding="16,0" CornerRadius="18"
-                                    helpers:CursorHelper.UseHandCursor="True"
                                     Background="{x:Bind ViewModel.SelectedTabIndex, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}, ConverterParameter=2}"
-                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1">
                                 <TextBlock Text="{x:Bind ViewModel.ArtistsTabHeader, Mode=OneWay}"
                                            FontWeight="SemiBold"
                                            FontSize="13"
@@ -211,10 +214,11 @@
 
                             <!-- Albums Tab -->
                             <Button Click="TabButton_Click" Tag="3"
+                                    Style="{StaticResource TabPillButtonStyle}"
                                     Height="36" Padding="16,0" CornerRadius="18"
-                                    helpers:CursorHelper.UseHandCursor="True"
                                     Background="{x:Bind ViewModel.SelectedTabIndex, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}, ConverterParameter=3}"
-                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1">
                                 <TextBlock Text="{x:Bind ViewModel.AlbumsTabHeader, Mode=OneWay}"
                                            FontWeight="SemiBold"
                                            FontSize="13"
@@ -223,10 +227,11 @@
 
                             <!-- Playlists Tab -->
                             <Button Click="TabButton_Click" Tag="4"
+                                    Style="{StaticResource TabPillButtonStyle}"
                                     Height="36" Padding="16,0" CornerRadius="18"
-                                    helpers:CursorHelper.UseHandCursor="True"
                                     Background="{x:Bind ViewModel.SelectedTabIndex, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}, ConverterParameter=4}"
-                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1">
                                 <TextBlock Text="{x:Bind ViewModel.PlaylistsTabHeader, Mode=OneWay}"
                                            FontWeight="SemiBold"
                                            FontSize="13"
@@ -368,16 +373,13 @@
                                         <DataTemplate x:DataType="models:Track">
                                             <Button Click="TrackRow_Click"
                                                     Tag="{x:Bind}"
-                                                    HorizontalAlignment="Stretch"
-                                                    HorizontalContentAlignment="Stretch"
+                                                    Style="{StaticResource TrackRowButtonStyle}"
                                                     Padding="8,6"
                                                     Margin="0,2"
                                                     CornerRadius="8"
-                                                    helpers:CursorHelper.UseHandCursor="True"
                                                     helpers:TrackMenuHelper.Track="{x:Bind}"
                                                     Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
-                                                    Background="Transparent"
-                                                    BorderBrush="Transparent">
+                                                    Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}">
                                                 <Grid Height="44" ColumnSpacing="12">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
@@ -608,13 +610,11 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:Track">
                                     <Button Click="TrackRow_Click" Tag="{x:Bind}"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                            Padding="12,8" Margin="0,3" CornerRadius="8"
-                                            helpers:CursorHelper.UseHandCursor="True"
+                                            Style="{StaticResource TrackRowButtonStyle}"
+                                            Padding="12,8" Margin="0,2" CornerRadius="8"
                                             helpers:TrackMenuHelper.Track="{x:Bind}"
                                             Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
-                                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                            Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}">
                                         <Grid Height="48" ColumnSpacing="16">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />

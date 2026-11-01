@@ -271,6 +271,30 @@ public static class TrackMenuHelper
         };
         flyout.Items.Add(addToPlaylistItem);
 
+        // 6b. Remove from current playlist (if viewing an owned playlist)
+        try
+        {
+            var playlistsVm = App.GetService<PlaylistsViewModel>();
+            if (playlistsVm?.IsSelectedPlaylistOwned == true && playlistsVm.SelectedPlaylistTracks.Contains(track))
+            {
+                var removeFromPlaylistItem = new MenuFlyoutItem
+                {
+                    Text = GetLoc("TrackMenu_RemoveFromPlaylist", isEn ? "Remove from this playlist" : "Удалить из этого плейлиста"),
+                    Icon = new FontIcon
+                    {
+                        Glyph = "\uE74D",
+                        Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 85, 85))
+                    }
+                };
+                removeFromPlaylistItem.Click += async (s, e) =>
+                {
+                    await playlistsVm.RemoveTrackFromCurrentPlaylistAsync(track);
+                };
+                flyout.Items.Add(removeFromPlaylistItem);
+            }
+        }
+        catch { }
+
         // 7. Share
         var shareItem = new MenuFlyoutItem
         {

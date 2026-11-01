@@ -60,12 +60,32 @@ public sealed partial class Playlist : ObservableObject
 
     [JsonIgnore]
     public string PlayActionText => App.Loc?.CurrentLanguage == "en" ? "Play" : "Слушать";
+
+    [JsonIgnore]
+    public string EditActionText => App.Loc?.CurrentLanguage == "en" ? "Edit playlist" : "Редактировать";
+
+    [JsonIgnore]
+    public string DeleteActionText => App.Loc?.CurrentLanguage == "en" ? "Delete playlist" : "Удалить";
+
+    private long _uid;
+
     [JsonPropertyName("uid")]
     [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
-    public long Uid { get; set; }
+    public long Uid
+    {
+        get => _uid != 0 ? _uid : (_owner?.Uid ?? 0);
+        set
+        {
+            _uid = value;
+        }
+    }
 
     [JsonPropertyName("kind")]
     public int Kind { get; set; }
+
+    [JsonPropertyName("revision")]
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    public int Revision { get; set; } = 1;
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
@@ -79,8 +99,21 @@ public sealed partial class Playlist : ObservableObject
     [JsonPropertyName("cover")]
     public Cover? Cover { get; set; }
 
+    private PlaylistOwner? _owner;
+
     [JsonPropertyName("owner")]
-    public PlaylistOwner? Owner { get; set; }
+    public PlaylistOwner? Owner
+    {
+        get => _owner;
+        set
+        {
+            _owner = value;
+            if (_uid == 0 && value != null && value.Uid != 0)
+            {
+                _uid = value.Uid;
+            }
+        }
+    }
 
     [JsonPropertyName("tracks")]
     public List<PlaylistTrackItem> Tracks { get; set; } = new();
@@ -108,5 +141,10 @@ public sealed partial class Playlist : ObservableObject
     {
         return Cover?.GetFormattedUrl(size);
     }
+
+    public override bool Equals(object? obj) =>
+        obj is Playlist other && Kind == other.Kind && Uid == other.Uid;
+
+    public override int GetHashCode() => HashCode.Combine(Uid, Kind);
 }
 

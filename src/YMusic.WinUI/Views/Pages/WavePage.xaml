@@ -347,11 +347,8 @@
                           IsItemClickEnabled="True"
                           ItemClick="UpcomingTracks_ItemClick">
                     <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            <Setter Property="Padding" Value="8,4" />
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource TrackRowListViewItemStyle}">
                             <Setter Property="MinHeight" Value="52" />
-                            <Setter Property="CornerRadius" Value="8" />
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>

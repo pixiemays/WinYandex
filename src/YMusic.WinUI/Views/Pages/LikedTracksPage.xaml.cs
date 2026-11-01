@@ -69,4 +69,9 @@ public sealed partial class LikedTracksPage : Page
             await YMusic.WinUI.Helpers.ArtistNavigationHelper.NavigateToTrackArtistAsync(anchor, track);
         }
     }
+
+    private void ClearSearchButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.SearchFilter = string.Empty;
+    }
 }

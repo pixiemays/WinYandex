@@ -16,6 +16,7 @@ public sealed partial class ShellViewModel : BaseViewModel
     private readonly IYandexMusicService _musicService;
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
+    private readonly ISettingsService _settingsService;
 
     [ObservableProperty]
     private PlayerBarViewModel _playerBar;
@@ -51,6 +52,16 @@ public sealed partial class ShellViewModel : BaseViewModel
     public string NavPlaylistsText => IsRussian ? "Плейлисты и альбомы" : "Playlists & Albums";
     public string SearchPlaceholderText => IsRussian ? "Поиск треков, артистов, альбомов..." : "Search tracks, artists, albums...";
 
+    public bool ShowWaveInNav => _settingsService.ShowWaveInNav;
+    public bool ShowLikesInNav => _settingsService.ShowLikesInNav;
+    public bool ShowPlaylistsInNav => _settingsService.ShowPlaylistsInNav;
+    public bool ShowSearchInNav => _settingsService.ShowSearchInNav;
+
+    public Microsoft.UI.Xaml.Visibility WaveNavVisibility => _settingsService.ShowWaveInNav ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    public Microsoft.UI.Xaml.Visibility LikesNavVisibility => _settingsService.ShowLikesInNav ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    public Microsoft.UI.Xaml.Visibility PlaylistsNavVisibility => _settingsService.ShowPlaylistsInNav ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    public Microsoft.UI.Xaml.Visibility SearchNavVisibility => _settingsService.ShowSearchInNav ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+
     partial void OnCurrentUserChanged(UserProfile? value) => OnPropertyChanged(nameof(AccountNavItemTitle));
     partial void OnIsAuthenticatedChanged(bool value) => OnPropertyChanged(nameof(AccountNavItemTitle));
 
@@ -72,14 +83,40 @@ public sealed partial class ShellViewModel : BaseViewModel
         ICredentialStorageService credentialStorage,
         IYandexMusicService musicService,
         IUpdateService updateService,
-        INavigationService navigationService)
+        INavigationService navigationService,
+        ISettingsService settingsService)
     {
         _playerBar = playerBar;
         _credentialStorage = credentialStorage;
         _musicService = musicService;
         _updateService = updateService;
         _navigationService = navigationService;
+        _settingsService = settingsService;
         _isAuthenticated = _credentialStorage.HasToken();
+
+        _settingsService.SettingChanged += (s, prop) =>
+        {
+            if (prop == nameof(ISettingsService.ShowWaveInNav))
+            {
+                OnPropertyChanged(nameof(ShowWaveInNav));
+                OnPropertyChanged(nameof(WaveNavVisibility));
+            }
+            else if (prop == nameof(ISettingsService.ShowLikesInNav))
+            {
+                OnPropertyChanged(nameof(ShowLikesInNav));
+                OnPropertyChanged(nameof(LikesNavVisibility));
+            }
+            else if (prop == nameof(ISettingsService.ShowPlaylistsInNav))
+            {
+                OnPropertyChanged(nameof(ShowPlaylistsInNav));
+                OnPropertyChanged(nameof(PlaylistsNavVisibility));
+            }
+            else if (prop == nameof(ISettingsService.ShowSearchInNav))
+            {
+                OnPropertyChanged(nameof(ShowSearchInNav));
+                OnPropertyChanged(nameof(SearchNavVisibility));
+            }
+        };
     }
 
     [RelayCommand]

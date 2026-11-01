@@ -134,6 +134,34 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public string AccentColorHex
+    {
+        get => string.IsNullOrWhiteSpace(_settings.AccentColorHex) ? "#FFEAB308" : _settings.AccentColorHex;
+        set
+        {
+            if (_settings.AccentColorHex != value)
+            {
+                _settings.AccentColorHex = value;
+                Save();
+                NotifyChanged(nameof(AccentColorHex));
+            }
+        }
+    }
+
+    public string BackdropKind
+    {
+        get => string.IsNullOrWhiteSpace(_settings.BackdropKind) ? "Mica" : _settings.BackdropKind;
+        set
+        {
+            if (_settings.BackdropKind != value)
+            {
+                _settings.BackdropKind = value;
+                Save();
+                NotifyChanged(nameof(BackdropKind));
+            }
+        }
+    }
+
     public string AppFont
     {
         get => _settings.AppFont;
@@ -285,6 +313,275 @@ public sealed class SettingsService : ISettingsService
                 YandexBypassProxy.Instance.IsEnabled = value;
                 Save();
                 NotifyChanged(nameof(AutoBypassProxyForYandex));
+            }
+        }
+    }
+
+    public bool CrossfadeEnabled
+    {
+        get => _settings.CrossfadeEnabled;
+        set
+        {
+            if (_settings.CrossfadeEnabled != value)
+            {
+                _settings.CrossfadeEnabled = value;
+                Save();
+                NotifyChanged(nameof(CrossfadeEnabled));
+            }
+        }
+    }
+
+    public int CrossfadeDurationSeconds
+    {
+        get => _settings.CrossfadeDurationSeconds;
+        set
+        {
+            int clamped = Math.Clamp(value, 1, 10);
+            if (_settings.CrossfadeDurationSeconds != clamped)
+            {
+                _settings.CrossfadeDurationSeconds = clamped;
+                Save();
+                NotifyChanged(nameof(CrossfadeDurationSeconds));
+            }
+        }
+    }
+
+    public bool GlobalHotkeysEnabled
+    {
+        get => _settings.GlobalHotkeysEnabled;
+        set
+        {
+            if (_settings.GlobalHotkeysEnabled != value)
+            {
+                _settings.GlobalHotkeysEnabled = value;
+                Save();
+                NotifyChanged(nameof(GlobalHotkeysEnabled));
+            }
+        }
+    }
+
+    public bool GameOverlayEnabled
+    {
+        get => _settings.GameOverlayEnabled;
+        set
+        {
+            if (_settings.GameOverlayEnabled != value)
+            {
+                _settings.GameOverlayEnabled = value;
+                Save();
+                NotifyChanged(nameof(GameOverlayEnabled));
+            }
+        }
+    }
+
+    public bool ShowOverlayOnTrackChange
+    {
+        get => _settings.ShowOverlayOnTrackChange;
+        set
+        {
+            if (_settings.ShowOverlayOnTrackChange != value)
+            {
+                _settings.ShowOverlayOnTrackChange = value;
+                Save();
+                NotifyChanged(nameof(ShowOverlayOnTrackChange));
+            }
+        }
+    }
+
+    public int GameOverlayDurationSeconds
+    {
+        get => _settings.GameOverlayDurationSeconds;
+        set
+        {
+            int clamped = Math.Clamp(value, 1, 10);
+            if (_settings.GameOverlayDurationSeconds != clamped)
+            {
+                _settings.GameOverlayDurationSeconds = clamped;
+                Save();
+                NotifyChanged(nameof(GameOverlayDurationSeconds));
+            }
+        }
+    }
+
+    public int GameOverlayPosition
+    {
+        get => _settings.GameOverlayPosition;
+        set
+        {
+            int clamped = Math.Clamp(value, 0, 7);
+            if (_settings.GameOverlayPosition != clamped)
+            {
+                _settings.GameOverlayPosition = clamped;
+                Save();
+                NotifyChanged(nameof(GameOverlayPosition));
+            }
+        }
+    }
+
+    public bool ShowWaveInNav
+    {
+        get => _settings.ShowWaveInNav;
+        set
+        {
+            if (_settings.ShowWaveInNav != value)
+            {
+                _settings.ShowWaveInNav = value;
+                Save();
+                NotifyChanged(nameof(ShowWaveInNav));
+            }
+        }
+    }
+
+    public bool ShowLikesInNav
+    {
+        get => _settings.ShowLikesInNav;
+        set
+        {
+            if (_settings.ShowLikesInNav != value)
+            {
+                _settings.ShowLikesInNav = value;
+                Save();
+                NotifyChanged(nameof(ShowLikesInNav));
+            }
+        }
+    }
+
+    public bool ShowPlaylistsInNav
+    {
+        get => _settings.ShowPlaylistsInNav;
+        set
+        {
+            if (_settings.ShowPlaylistsInNav != value)
+            {
+                _settings.ShowPlaylistsInNav = value;
+                Save();
+                NotifyChanged(nameof(ShowPlaylistsInNav));
+            }
+        }
+    }
+
+    public bool ShowSearchInNav
+    {
+        get => _settings.ShowSearchInNav;
+        set
+        {
+            if (_settings.ShowSearchInNav != value)
+            {
+                _settings.ShowSearchInNav = value;
+                Save();
+                NotifyChanged(nameof(ShowSearchInNav));
+            }
+        }
+    }
+
+    public bool ShowLyricsButton
+    {
+        get => _settings.ShowLyricsButton;
+        set
+        {
+            if (_settings.ShowLyricsButton != value)
+            {
+                _settings.ShowLyricsButton = value;
+                Save();
+                NotifyChanged(nameof(ShowLyricsButton));
+            }
+        }
+    }
+
+    public bool ShowEqualizerButton
+    {
+        get => _settings.ShowEqualizerButton;
+        set
+        {
+            if (_settings.ShowEqualizerButton != value)
+            {
+                _settings.ShowEqualizerButton = value;
+                Save();
+                NotifyChanged(nameof(ShowEqualizerButton));
+            }
+        }
+    }
+
+    public bool ShowQualityBadge
+    {
+        get => _settings.ShowQualityBadge;
+        set
+        {
+            if (_settings.ShowQualityBadge != value)
+            {
+                _settings.ShowQualityBadge = value;
+                Save();
+                NotifyChanged(nameof(ShowQualityBadge));
+            }
+        }
+    }
+
+    public bool CompactPlayerVolume
+    {
+        get => _settings.CompactPlayerVolume;
+        set
+        {
+            if (_settings.CompactPlayerVolume != value)
+            {
+                _settings.CompactPlayerVolume = value;
+                Save();
+                NotifyChanged(nameof(CompactPlayerVolume));
+            }
+        }
+    }
+
+    public bool ShowPersonalPlaylistsOnHome
+    {
+        get => _settings.ShowPersonalPlaylistsOnHome;
+        set
+        {
+            if (_settings.ShowPersonalPlaylistsOnHome != value)
+            {
+                _settings.ShowPersonalPlaylistsOnHome = value;
+                Save();
+                NotifyChanged(nameof(ShowPersonalPlaylistsOnHome));
+            }
+        }
+    }
+
+    public bool ShowNewReleasesOnHome
+    {
+        get => _settings.ShowNewReleasesOnHome;
+        set
+        {
+            if (_settings.ShowNewReleasesOnHome != value)
+            {
+                _settings.ShowNewReleasesOnHome = value;
+                Save();
+                NotifyChanged(nameof(ShowNewReleasesOnHome));
+            }
+        }
+    }
+
+    public bool ShowEditorialPlaylistsOnHome
+    {
+        get => _settings.ShowEditorialPlaylistsOnHome;
+        set
+        {
+            if (_settings.ShowEditorialPlaylistsOnHome != value)
+            {
+                _settings.ShowEditorialPlaylistsOnHome = value;
+                Save();
+                NotifyChanged(nameof(ShowEditorialPlaylistsOnHome));
+            }
+        }
+    }
+
+    public bool ShowChartOnHome
+    {
+        get => _settings.ShowChartOnHome;
+        set
+        {
+            if (_settings.ShowChartOnHome != value)
+            {
+                _settings.ShowChartOnHome = value;
+                Save();
+                NotifyChanged(nameof(ShowChartOnHome));
             }
         }
     }

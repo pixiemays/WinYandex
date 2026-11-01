@@ -28,6 +28,9 @@ public sealed class AudioPlayerService : IAudioPlayerService
     private AudioGraph? _audioGraph;
     private AudioDeviceOutputNode? _deviceOutput;
     private MediaSourceAudioInputNode? _currentInputNode;
+    private MediaSourceAudioInputNode? _fadingOutNode;
+    private CancellationTokenSource? _crossfadeCts;
+    private volatile bool _isCrossfading;
     private EqualizerEffectDefinition? _eq1;
     private EqualizerEffectDefinition? _eq2;
     private EqualizerEffectDefinition? _eq3;
@@ -262,6 +265,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
                 var pos = Position;
                 PositionChanged?.Invoke(this, pos);
                 CheckPreloadNextTrack(pos);
+                CheckCrossfade(pos);
 
                 var dur = Duration;
                 if (dur > TimeSpan.Zero && (_currentTrack == null || _currentTrack.DurationMs <= 0))
@@ -677,6 +681,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         if (_currentInputNode != null && _audioGraph != null)
         {
             _currentInputNode.Start();
+            _fadingOutNode?.Start();
             _audioGraph.Start();
             _isPlaying = true;
             _smtc.PlaybackStatus = MediaPlaybackStatus.Playing;
@@ -699,6 +704,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         if (_currentInputNode != null && _audioGraph != null)
         {
             _currentInputNode.Stop();
+            _fadingOutNode?.Stop();
             _isPlaying = false;
             _smtc.PlaybackStatus = MediaPlaybackStatus.Paused;
             IsPlayingChanged?.Invoke(this, false);
@@ -725,6 +731,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public void StopAndClear()
     {
+        CancelActiveCrossfade();
         lock (_saveLock)
         {
             try
@@ -790,6 +797,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public async Task NextAsync()
     {
+        CancelActiveCrossfade();
         if (_queue.Count == 0 || _playOrder.Count == 0)
         {
             return;
@@ -894,6 +902,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public async Task PreviousAsync()
     {
+        CancelActiveCrossfade();
         if (_queue.Count == 0 || _playOrder.Count == 0)
         {
             return;
@@ -930,6 +939,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public void Seek(TimeSpan position)
     {
+        CancelActiveCrossfade();
         var duration = Duration;
         double maxSec = duration.TotalSeconds > 0 ? duration.TotalSeconds : double.MaxValue;
         var clamped = TimeSpan.FromSeconds(Math.Clamp(position.TotalSeconds, 0, maxSec));
@@ -1153,6 +1163,231 @@ public sealed class AudioPlayerService : IAudioPlayerService
         }
     }
 
+    private void CancelActiveCrossfade()
+    {
+        _crossfadeCts?.Cancel();
+        _crossfadeCts?.Dispose();
+        _crossfadeCts = null;
+        _isCrossfading = false;
+
+        if (_fadingOutNode != null)
+        {
+            try
+            {
+                _fadingOutNode.Stop();
+                if (_deviceOutput != null)
+                {
+                    _fadingOutNode.RemoveOutgoingConnection(_deviceOutput);
+                }
+                _fadingOutNode.Dispose();
+            }
+            catch { }
+            _fadingOutNode = null;
+        }
+
+        if (_currentInputNode != null)
+        {
+            try
+            {
+                _currentInputNode.OutgoingGain = 1.0;
+            }
+            catch { }
+        }
+    }
+
+    private void CheckCrossfade(TimeSpan pos)
+    {
+        if (!_settingsService.CrossfadeEnabled) return;
+        if (_isCrossfading) return;
+        if (!_isPlaying) return;
+        if (_currentInputNode == null || _audioGraph == null || _deviceOutput == null) return;
+        if (_repeatMode == RepeatMode.One) return;
+
+        var dur = Duration;
+        if (dur <= TimeSpan.FromSeconds(5)) return;
+
+        int configuredSeconds = _settingsService.CrossfadeDurationSeconds;
+        // Don't crossfade more than 40% of the entire track duration
+        double maxAllowedSeconds = dur.TotalSeconds * 0.4;
+        double crossfadeSec = Math.Min(configuredSeconds, maxAllowedSeconds);
+        if (crossfadeSec < 1.0) return;
+
+        var remaining = dur - pos;
+        if (remaining.TotalSeconds <= crossfadeSec && remaining.TotalSeconds > 0.3 && pos.TotalSeconds > 3.0)
+        {
+            _ = TryStartCrossfadeAsync((int)Math.Round(crossfadeSec));
+        }
+    }
+
+    private async Task TryStartCrossfadeAsync(int crossfadeSeconds)
+    {
+        if (_isCrossfading) return;
+        _isCrossfading = true;
+
+        try
+        {
+            if (_queue.Count == 0 || _playOrder.Count == 0)
+            {
+                _isCrossfading = false;
+                return;
+            }
+
+            int nextOrderIndex = _orderIndex + 1;
+            if (nextOrderIndex >= _playOrder.Count)
+            {
+                if (_repeatMode == RepeatMode.All)
+                {
+                    nextOrderIndex = 0;
+                }
+                else
+                {
+                    _isCrossfading = false;
+                    return;
+                }
+            }
+
+            if (nextOrderIndex < 0 || nextOrderIndex >= _playOrder.Count)
+            {
+                _isCrossfading = false;
+                return;
+            }
+
+            int nextTrackIndex = _playOrder[nextOrderIndex];
+            if (nextTrackIndex < 0 || nextTrackIndex >= _queue.Count)
+            {
+                _isCrossfading = false;
+                return;
+            }
+
+            var nextTrack = _queue[nextTrackIndex];
+            if (nextTrack == null || !nextTrack.Available)
+            {
+                _isCrossfading = false;
+                return;
+            }
+
+            string? streamUrl = null;
+            StreamAudioQuality? quality = null;
+
+            if (_preloadedTrack.HasValue && Track.IsSameTrackId(_preloadedTrack.Value.TrackId, nextTrack.Id))
+            {
+                streamUrl = _preloadedTrack.Value.StreamUrl;
+                quality = _preloadedTrack.Value.Quality;
+            }
+            else if (_audioCacheService != null && _audioCacheService.TryGetCachedTrack(nextTrack.Id, out var cachedPath, out var cachedQuality))
+            {
+                streamUrl = cachedPath;
+                quality = cachedQuality;
+            }
+            else
+            {
+                (streamUrl, quality) = await ResolveTrackStreamAsync(nextTrack.Id).ConfigureAwait(false);
+            }
+
+            if (string.IsNullOrWhiteSpace(streamUrl) || _audioGraph == null || _deviceOutput == null)
+            {
+                _isCrossfading = false;
+                return;
+            }
+
+            var nextSource = Windows.Media.Core.MediaSource.CreateFromUri(new Uri(streamUrl));
+            var inputResult = await _audioGraph.CreateMediaSourceAudioInputNodeAsync(nextSource);
+            if (inputResult.Status != Windows.Media.Audio.MediaSourceAudioInputNodeCreationStatus.Success || inputResult.Node == null)
+            {
+                _isCrossfading = false;
+                return;
+            }
+
+            var nextNode = inputResult.Node;
+            nextNode.OutgoingGain = 0.0;
+            nextNode.AddOutgoingConnection(_deviceOutput);
+            nextNode.Start();
+
+            _crossfadeCts?.Cancel();
+            _crossfadeCts?.Dispose();
+            _crossfadeCts = new CancellationTokenSource();
+            var ct = _crossfadeCts.Token;
+
+            var oldNode = _currentInputNode;
+            if (oldNode != null)
+            {
+                oldNode.MediaSourceCompleted -= OnInputNodeMediaCompleted;
+            }
+            _fadingOutNode = oldNode;
+            _currentInputNode = nextNode;
+
+            _orderIndex = nextOrderIndex;
+            _currentTrack = nextTrack;
+            _currentQuality = quality;
+            CurrentTrackChanged?.Invoke(this, nextTrack);
+            CurrentQualityChanged?.Invoke(this, quality);
+            UpdateSmtcMetadata(nextTrack);
+            RequestSaveState();
+
+            if (nextNode.Duration > TimeSpan.Zero)
+            {
+                DurationChanged?.Invoke(this, nextNode.Duration);
+            }
+            PositionChanged?.Invoke(this, TimeSpan.Zero);
+
+            int totalSteps = Math.Max(10, crossfadeSeconds * 20); // 20 updates per second (50ms)
+            int stepDelayMs = (crossfadeSeconds * 1000) / totalSteps;
+
+            for (int step = 1; step <= totalSteps; step++)
+            {
+                if (ct.IsCancellationRequested) break;
+                await Task.Delay(stepDelayMs, ct).ConfigureAwait(false);
+                if (ct.IsCancellationRequested) break;
+
+                double t = (double)step / totalSteps;
+                double gainOut = Math.Cos(t * Math.PI * 0.5);
+                double gainIn = Math.Sin(t * Math.PI * 0.5);
+
+                if (_fadingOutNode != null)
+                {
+                    _fadingOutNode.OutgoingGain = gainOut;
+                }
+                if (_currentInputNode != null)
+                {
+                    _currentInputNode.OutgoingGain = gainIn;
+                }
+            }
+
+            if (_fadingOutNode != null)
+            {
+                try
+                {
+                    _fadingOutNode.Stop();
+                    _fadingOutNode.RemoveOutgoingConnection(_deviceOutput);
+                    _fadingOutNode.Dispose();
+                }
+                catch { }
+                _fadingOutNode = null;
+            }
+
+            if (_currentInputNode != null)
+            {
+                _currentInputNode.OutgoingGain = 1.0;
+                _currentInputNode.MediaSourceCompleted += OnInputNodeMediaCompleted;
+            }
+
+            _isCrossfading = false;
+            TriggerUpcomingTracksPreload();
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when user pauses or skips
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Crossfade Error] {ex.Message}");
+        }
+        finally
+        {
+            _isCrossfading = false;
+        }
+    }
+
     private async Task<(string? Url, StreamAudioQuality? Quality)> ResolveTrackStreamAsync(string trackId, bool forceRefresh = false)
     {
         if (_fckCensorService != null && _fckCensorService.IsReplaced(trackId))
@@ -1182,6 +1417,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     private async Task LoadAndPlayTrackAsync(Track track, TimeSpan? startPosition = null)
     {
+        CancelActiveCrossfade();
         int requestId = Interlocked.Increment(ref _playRequestId);
 
         // Cancel previous background preloads
@@ -1378,6 +1614,11 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     private void OnInputNodeMediaCompleted(MediaSourceAudioInputNode sender, object args)
     {
+        if (_isCrossfading)
+        {
+            return;
+        }
+
         if (_repeatMode == RepeatMode.One)
         {
             Seek(TimeSpan.Zero);
@@ -1504,10 +1745,12 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
         SaveCurrentState();
         _isDisposed = true;
+        CancelActiveCrossfade();
         _positionTimer.Stop();
         _positionTimer.Dispose();
 
         _currentInputNode?.Dispose();
+        _fadingOutNode?.Dispose();
         _deviceOutput?.Dispose();
         _audioGraph?.Dispose();
 

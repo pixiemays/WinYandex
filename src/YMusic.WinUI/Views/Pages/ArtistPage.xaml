@@ -154,16 +154,13 @@
                             <DataTemplate x:DataType="models:Track">
                                 <Button Click="TrackRow_Click"
                                         Tag="{x:Bind}"
-                                        HorizontalAlignment="Stretch"
-                                        HorizontalContentAlignment="Stretch"
+                                        Style="{StaticResource TrackRowButtonStyle}"
                                         Padding="12,8"
                                         Margin="0,2"
-                                        CornerRadius="10"
+                                        CornerRadius="8"
                                         Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}"
-                                        BorderBrush="Transparent"
                                         Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
-                                        helpers:TrackMenuHelper.Track="{x:Bind}"
-                                        helpers:CursorHelper.UseHandCursor="True">
+                                        helpers:TrackMenuHelper.Track="{x:Bind}">
                                     <Grid Height="44" ColumnSpacing="14">
                                         <Grid.ColumnDefinitions>
                                             <!-- Track Cover & Equalizer -->
@@ -180,7 +177,7 @@
                                         <Border Grid.Column="0"
                                                 Width="44"
                                                 Height="44"
-                                                CornerRadius="8"
+                                                CornerRadius="6"
                                                 Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                                 BorderThickness="1">
@@ -189,7 +186,7 @@
                                                        Stretch="UniformToFill" />
                                                 <!-- Mini Equalizer Overlay when Playing -->
                                                 <Border Background="#66000000"
-                                                        CornerRadius="8"
+                                                        CornerRadius="6"
                                                         Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                                     <controls:MiniEqualizerControl IsPlaying="{x:Bind IsPlaying, Mode=OneWay}"
                                                                                    HorizontalAlignment="Center"
@@ -296,10 +293,8 @@
                                     Spacing="8"
                                     VerticalAlignment="Center">
                             <Button Click="FilterChip_Click" Tag="0"
-                                    Padding="14,6" CornerRadius="16"
-                                    Background="{x:Bind ViewModel.IsAllReleasesFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}"
-                                    BorderThickness="0"
-                                    helpers:CursorHelper.UseHandCursor="True">
+                                    Style="{StaticResource TabPillButtonStyle}"
+                                    Background="{x:Bind ViewModel.IsAllReleasesFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}">
                                 <TextBlock Text="{x:Bind ViewModel.AllReleasesFilterText, Mode=OneWay}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
@@ -307,10 +302,8 @@
                             </Button>
 
                             <Button Click="FilterChip_Click" Tag="1"
-                                    Padding="14,6" CornerRadius="16"
-                                    Background="{x:Bind ViewModel.IsAlbumsFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}"
-                                    BorderThickness="0"
-                                    helpers:CursorHelper.UseHandCursor="True">
+                                    Style="{StaticResource TabPillButtonStyle}"
+                                    Background="{x:Bind ViewModel.IsAlbumsFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}">
                                 <TextBlock Text="{x:Bind ViewModel.AlbumsFilterText, Mode=OneWay}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
@@ -318,10 +311,8 @@
                             </Button>
 
                             <Button Click="FilterChip_Click" Tag="2"
-                                    Padding="14,6" CornerRadius="16"
-                                    Background="{x:Bind ViewModel.IsSinglesFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}"
-                                    BorderThickness="0"
-                                    helpers:CursorHelper.UseHandCursor="True">
+                                    Style="{StaticResource TabPillButtonStyle}"
+                                    Background="{x:Bind ViewModel.IsSinglesFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}">
                                 <TextBlock Text="{x:Bind ViewModel.SinglesFilterText, Mode=OneWay}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
@@ -329,11 +320,9 @@
                             </Button>
 
                             <Button Click="FilterChip_Click" Tag="3"
-                                    Padding="14,6" CornerRadius="16"
+                                    Style="{StaticResource TabPillButtonStyle}"
                                     Background="{x:Bind ViewModel.IsCompilationsFilter, Mode=OneWay, Converter={StaticResource BoolToPillBackgroundConverter}}"
-                                    BorderThickness="0"
-                                    Visibility="{x:Bind ViewModel.HasAlsoAlbums, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                                    helpers:CursorHelper.UseHandCursor="True">
+                                    Visibility="{x:Bind ViewModel.HasAlsoAlbums, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <TextBlock Text="{x:Bind ViewModel.CompilationsFilterText, Mode=OneWay}"
                                            FontSize="12"
                                            FontWeight="SemiBold"

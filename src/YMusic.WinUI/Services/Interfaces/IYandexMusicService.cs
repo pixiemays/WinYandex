@@ -34,7 +34,12 @@ public interface IYandexMusicService
     Task<IReadOnlyList<Track>> GetTracksAsync(IEnumerable<string> trackIds, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Playlist>> GetUserPlaylistsAsync(string userId, CancellationToken cancellationToken = default);
+    Task<Playlist?> CreatePlaylistAsync(string title, string? description = null, bool isPublic = true, CancellationToken cancellationToken = default);
+    Task<bool> DeletePlaylistAsync(long ownerUid, int kind, CancellationToken cancellationToken = default);
+    Task<bool> RenamePlaylistAsync(long ownerUid, int kind, string newTitle, string? newDescription = null, CancellationToken cancellationToken = default);
+    Task<bool> RemoveTrackFromPlaylistAsync(long ownerUid, int kind, int trackIndex, CancellationToken cancellationToken = default);
     Task<bool> AddTrackToPlaylistAsync(long ownerUid, int kind, string trackId, string? albumId = null, CancellationToken cancellationToken = default);
+    Task<bool> AddTracksToPlaylistAsync(long ownerUid, int kind, IEnumerable<(string TrackId, string? AlbumId)> tracks, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Album>> GetLikedAlbumsAsync(string userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Album>> GetAlbumsAsync(IEnumerable<long> albumIds, CancellationToken cancellationToken = default);
     Task<Album?> GetAlbumAsync(long albumId, CancellationToken cancellationToken = default);

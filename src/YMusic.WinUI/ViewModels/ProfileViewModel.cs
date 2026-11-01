@@ -36,6 +36,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private readonly SearchViewModel _searchViewModel;
     private readonly IAudioCacheService _audioCacheService;
     private readonly IUpdateService _updateService;
+    private readonly IGameOverlayService _gameOverlayService;
+    private readonly IThemeService _themeService;
 
     private readonly string _appDataDir;
     private readonly string _profileCachePath;
@@ -145,6 +147,27 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private bool _isAutoBypassProxyEnabled;
 
     [ObservableProperty]
+    private bool _isCrossfadeEnabled;
+
+    [ObservableProperty]
+    private int _crossfadeDurationSeconds;
+
+    [ObservableProperty]
+    private bool _isGlobalHotkeysEnabled;
+
+    [ObservableProperty]
+    private bool _isGameOverlayEnabled;
+
+    [ObservableProperty]
+    private bool _isShowOverlayOnTrackChangeEnabled;
+
+    [ObservableProperty]
+    private int _gameOverlayDurationSeconds;
+
+    [ObservableProperty]
+    private int _selectedGameOverlayPositionIndex;
+
+    [ObservableProperty]
     private bool _isMinimizeToTrayEnabled;
 
     [ObservableProperty]
@@ -160,10 +183,77 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private int _selectedThemeIndex;
 
     [ObservableProperty]
+    private int _selectedBackdropIndex;
+
+    [ObservableProperty]
+    private string _currentAccentHex = string.Empty;
+
+    [ObservableProperty]
+    private string _customHexInput = string.Empty;
+
+    [ObservableProperty]
     private int _selectedFontIndex;
 
     [ObservableProperty]
     private int _selectedLanguageIndex;
+
+    [ObservableProperty]
+    private int _selectedCategoryIndex = 1;
+
+    partial void OnSelectedCategoryIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(ShowProfileSection));
+        OnPropertyChanged(nameof(ShowAudioSection));
+        OnPropertyChanged(nameof(ShowAppearanceSection));
+        OnPropertyChanged(nameof(ShowIntegrationsSection));
+        OnPropertyChanged(nameof(ShowSystemSection));
+        OnPropertyChanged(nameof(ShowStorageSection));
+        OnPropertyChanged(nameof(ShowAboutSection));
+    }
+
+    public bool ShowProfileSection => SelectedCategoryIndex == 0 || SelectedCategoryIndex == 1;
+    public bool ShowAudioSection => SelectedCategoryIndex == 0 || SelectedCategoryIndex == 2;
+    public bool ShowAppearanceSection => SelectedCategoryIndex == 0 || SelectedCategoryIndex == 3;
+    public bool ShowIntegrationsSection => SelectedCategoryIndex == 0 || SelectedCategoryIndex == 4;
+    public bool ShowSystemSection => SelectedCategoryIndex == 0 || SelectedCategoryIndex == 5;
+    public bool ShowStorageSection => SelectedCategoryIndex == 0 || SelectedCategoryIndex == 6;
+    public bool ShowAboutSection => SelectedCategoryIndex == 0 || SelectedCategoryIndex == 7;
+
+    [ObservableProperty]
+    private bool _isShowWaveInNavEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowLikesInNavEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowPlaylistsInNavEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowSearchInNavEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowLyricsButtonEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowEqualizerButtonEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowQualityBadgeEnabled = true;
+
+    [ObservableProperty]
+    private bool _isCompactPlayerVolumeEnabled = false;
+
+    [ObservableProperty]
+    private bool _isShowPersonalPlaylistsOnHomeEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowNewReleasesOnHomeEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowEditorialPlaylistsOnHomeEnabled = true;
+
+    [ObservableProperty]
+    private bool _isShowChartOnHomeEnabled = true;
 
     [ObservableProperty]
     private string? _notificationMessage;
@@ -172,9 +262,14 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private bool _hasNotification;
 
     public ObservableCollection<string> QualityOptions { get; } = new();
+    public ObservableCollection<string> GameOverlayPositionOptions { get; } = new();
     public ObservableCollection<string> ThemeOptions { get; } = new();
+    public ObservableCollection<string> BackdropOptions { get; } = new();
     public ObservableCollection<string> FontOptions { get; } = new();
     public ObservableCollection<string> CacheLimitOptions { get; } = new();
+
+    public IReadOnlyList<AccentPreset> AvailableAccents => _themeService.AvailableAccents;
+    public IReadOnlyList<ThemePreset> AvailableThemes => _themeService.AvailableThemes;
 
     private bool IsRussian => Loc?.CurrentLanguage != "en";
 
@@ -187,6 +282,57 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string LikedTracksStatText => IsRussian ? "Любимые треки" : "Liked Tracks";
     public string PlaylistsStatText => IsRussian ? "Плейлисты" : "Playlists";
     public string PinnedItemsStatText => IsRussian ? "Закрепленные" : "Pinned Items";
+
+    public string CategoryAllText => IsRussian ? "Все разделы" : "All Sections";
+    public string CategoryProfileText => IsRussian ? "Профиль" : "Profile";
+    public string CategoryAudioText => IsRussian ? "Звук" : "Audio";
+    public string CategoryAppearanceText => IsRussian ? "Оформление" : "Appearance";
+    public string CategoryIntegrationsText => IsRussian ? "Интеграции" : "Integrations";
+    public string CategorySystemText => IsRussian ? "Система" : "System";
+    public string CategoryStorageText => IsRussian ? "Хранилище" : "Storage";
+    public string CategoryAboutText => IsRussian ? "О программе" : "About";
+
+    public string IntegrationsSectionTitle => IsRussian ? "Интеграции" : "Integrations";
+    public string ModularUiTitle => IsRussian ? "Модульный интерфейс" : "Modular Interface";
+    public string ModularUiDesc => IsRussian ? "Настройка видимости элементов боковой панели и плеера" : "Customize visibility of navigation and player elements";
+    public string NavSectionTitle => IsRussian ? "Боковая панель (Навигация)" : "Sidebar Navigation";
+    public string ShowWaveTitle => IsRussian ? "Раздел «Моя волна»" : "«My Wave» Section";
+    public string ShowWaveDesc => IsRussian ? "Отображать быстрый переход к Моей волне в боковом меню" : "Show My Wave in navigation sidebar";
+    public string ShowLikesTitle => IsRussian ? "Раздел «Любимые треки»" : "«Liked Tracks» Section";
+    public string ShowLikesDesc => IsRussian ? "Отображать любимые треки в боковом меню" : "Show Liked Tracks in navigation sidebar";
+    public string ShowPlaylistsTitle => IsRussian ? "Раздел «Плейлисты и альбомы»" : "«Playlists & Albums» Section";
+    public string ShowPlaylistsDesc => IsRussian ? "Отображать библиотеку плейлистов в боковом меню" : "Show Playlists & Albums in navigation sidebar";
+    public string ShowSearchTitle => IsRussian ? "Поиск в боковой панели" : "Sidebar Search";
+    public string ShowSearchDesc => IsRussian ? "Отображать строку поиска и пункт в боковом меню" : "Show search box and item in sidebar";
+
+    public string PlayerModularTitle => IsRussian ? "Нижний плеер" : "Bottom Player Bar";
+    public string ShowLyricsTitle => IsRussian ? "Кнопка текста песен и караоке" : "Lyrics & Karaoke Button";
+    public string ShowLyricsDesc => IsRussian ? "Показывать кнопку открытия текста песни на панели плеера" : "Show button to open fullscreen lyrics";
+    public string ShowEqualizerTitle => IsRussian ? "Кнопка эквалайзера" : "Equalizer Button";
+    public string ShowEqualizerDesc => IsRussian ? "Быстрый доступ к 10-полосному эквалайзеру на панели плеера" : "Quick access to 10-band equalizer on player bar";
+    public string ShowQualityBadgeTitle => IsRussian ? "Индикатор качества звука" : "Audio Quality Indicator";
+    public string ShowQualityDesc => IsRussian ? "Показывать бейдж качества аудио (HQ / битрейт)" : "Show audio bitrate and format badge";
+    public string CompactVolumeTitle => IsRussian ? "Компактный регулятор громкости" : "Compact Volume Slider";
+    public string CompactVolumeDesc => IsRussian ? "Уменьшить ширину слайдера громкости для экономии места" : "Narrower volume slider to save space";
+
+    public string HomeModularTitle => IsRussian ? "Главная страница («Главное»)" : "Home Page («Explore»)";
+    public string ShowPersonalPlaylistsTitle => IsRussian ? "Раздел «Собрано для вас»" : "«Made For You» Section";
+    public string ShowPersonalPlaylistsDesc => IsRussian ? "Персональные плейлисты дня и умные миксы" : "Daily personal playlists and smart mixes";
+    public string ShowNewReleasesTitle => IsRussian ? "Раздел «Новые релизы»" : "«New Releases» Section";
+    public string ShowNewReleasesDesc => IsRussian ? "Свежие альбомы и синглы артистов" : "Fresh albums and singles from artists";
+    public string ShowEditorialPlaylistsTitle => IsRussian ? "Раздел «Популярные плейлисты»" : "«Curated Playlists» Section";
+    public string ShowEditorialPlaylistsDesc => IsRussian ? "Тематические коллекции и жанровые подборки" : "Themed collections and genre selections";
+    public string ShowChartTitle => IsRussian ? "Раздел «Чарт треков»" : "«Top Chart» Section";
+    public string ShowChartDesc => IsRussian ? "Топ-100 самых прослушиваемых треков" : "Top 100 most played tracks";
+
+    [RelayCommand]
+    public void SelectCategory(string categoryIndexStr)
+    {
+        if (int.TryParse(categoryIndexStr, out int idx))
+        {
+            SelectedCategoryIndex = idx;
+        }
+    }
 
     public string SignedOutTitleText => IsRussian ? "Вы не авторизованы" : "You are currently signed out";
     public string SignedOutDescText => IsRussian ? "Войдите с Яндекс ID для синхронизации вашей коллекции, Моей волны, лайков и плейлистов." : "Sign in with your Yandex ID to sync your collection, My Wave recommendations, liked tracks and playlists.";
@@ -218,6 +364,110 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
     public string AutoBypassProxyTitle => IsRussian ? "Обход системного VPN/прокси для Яндекса" : "Bypass System Proxy for Yandex";
     public string AutoBypassProxyDesc => IsRussian ? "Направлять запросы к сервисам Яндекса напрямую, предотвращая сбои воспроизведения при включенном VPN или прокси" : "Route Yandex API and audio stream requests directly, preventing playback issues when system VPN or proxy is active";
+
+    public string CrossfadeTitle => IsRussian ? "Плавный кроссфейд между треками" : "Smart Crossfade Between Tracks";
+    public string CrossfadeDesc => IsRussian ? "Плавное сведение треков: текущий плавно затухает, а следующий нарастает без паузы и тишины" : "Smoothly blends tracks: fades out the ending track while fading in the next track without silence";
+    public string CrossfadeDurationText => IsRussian ? $"Длительность сведения: {CrossfadeDurationSeconds} сек" : $"Transition duration: {CrossfadeDurationSeconds} s";
+
+    public string GlobalHotkeysTitle => IsRussian ? "Глобальные хоткеи (Ctrl+Alt+...)" : "Global System Hotkeys (Ctrl+Alt+...)";
+    public string GlobalHotkeysDesc => IsRussian
+        ? "Управление плеером из любых игр и окон: Пробел (Пауза/Плей), Вправо/Влево (Треки), L (Лайк), Вверх/Вниз (Громкость), O (HUD-оверлей)"
+        : "Control player from any game or app: Space (Play/Pause), Right/Left (Tracks), L (Like), Up/Down (Volume), O (HUD Overlay)";
+
+    public string GameOverlayTitle => IsRussian ? "Игровой HUD-оверлей поверх игр" : "In-Game HUD Overlay";
+    public string GameOverlayDesc => IsRussian
+        ? "Компактная карточка трека поверх игр: не перехватывает фокус мыши и клавиатуры, не сворачивает полноэкранные игры"
+        : "Compact semi-transparent track HUD over games: never steals focus or mouse clicks from fullscreen games";
+
+    public string ShowOverlayOnTrackChangeTitle => IsRussian ? "Показывать оверлей при автосмене трека" : "Show HUD on track change";
+    public string ShowOverlayOnTrackChangeDesc => IsRussian
+        ? "Кратковременно показывать карточку трека в углу экрана, когда начинается новая композиция"
+        : "Briefly pop up the track card in the corner of your screen when a new song starts playing";
+
+    public string GameOverlayDurationText => IsRussian
+        ? $"Длительность показа: {GameOverlayDurationSeconds} сек"
+        : $"Display duration: {GameOverlayDurationSeconds} s";
+
+    public string GameOverlayPositionTitle => IsRussian ? "Позиция оверлея на экране" : "Overlay Screen Position";
+    public string TestGameOverlayButtonText => IsRussian ? "Проверить оверлей" : "Test HUD Overlay";
+
+    public string SelectedOverlayPositionName => SelectedGameOverlayPositionIndex switch
+    {
+        1 => IsRussian ? "Сверху слева" : "Top Left",
+        4 => IsRussian ? "Сверху по центру" : "Top Center",
+        0 => IsRussian ? "Сверху справа" : "Top Right",
+        6 => IsRussian ? "Слева по центру" : "Middle Left",
+        7 => IsRussian ? "Справа по центру" : "Middle Right",
+        3 => IsRussian ? "Снизу слева" : "Bottom Left",
+        5 => IsRussian ? "Снизу по центру" : "Bottom Center",
+        2 => IsRussian ? "Снизу справа" : "Bottom Right",
+        _ => IsRussian ? "Сверху справа" : "Top Right"
+    };
+
+    public Microsoft.UI.Xaml.Media.Brush PosTopLeftBrush => GetPositionBrush(1);
+    public Microsoft.UI.Xaml.Media.Brush PosTopCenterBrush => GetPositionBrush(4);
+    public Microsoft.UI.Xaml.Media.Brush PosTopRightBrush => GetPositionBrush(0);
+    public Microsoft.UI.Xaml.Media.Brush PosMiddleLeftBrush => GetPositionBrush(6);
+    public Microsoft.UI.Xaml.Media.Brush PosMiddleRightBrush => GetPositionBrush(7);
+    public Microsoft.UI.Xaml.Media.Brush PosBottomLeftBrush => GetPositionBrush(3);
+    public Microsoft.UI.Xaml.Media.Brush PosBottomCenterBrush => GetPositionBrush(5);
+    public Microsoft.UI.Xaml.Media.Brush PosBottomRightBrush => GetPositionBrush(2);
+
+    public Microsoft.UI.Xaml.Media.Brush PosTopLeftForeground => GetPositionForeground(1);
+    public Microsoft.UI.Xaml.Media.Brush PosTopCenterForeground => GetPositionForeground(4);
+    public Microsoft.UI.Xaml.Media.Brush PosTopRightForeground => GetPositionForeground(0);
+    public Microsoft.UI.Xaml.Media.Brush PosMiddleLeftForeground => GetPositionForeground(6);
+    public Microsoft.UI.Xaml.Media.Brush PosMiddleRightForeground => GetPositionForeground(7);
+    public Microsoft.UI.Xaml.Media.Brush PosBottomLeftForeground => GetPositionForeground(3);
+    public Microsoft.UI.Xaml.Media.Brush PosBottomCenterForeground => GetPositionForeground(5);
+    public Microsoft.UI.Xaml.Media.Brush PosBottomRightForeground => GetPositionForeground(2);
+
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush ActivePosBrush = new(Windows.UI.Color.FromArgb(255, 255, 211, 0));
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush ActivePosFg = new(Windows.UI.Color.FromArgb(255, 18, 18, 20));
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush InactivePosBrush = new(Windows.UI.Color.FromArgb(32, 255, 255, 255));
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush InactivePosFg = new(Windows.UI.Color.FromArgb(210, 255, 255, 255));
+
+    private Microsoft.UI.Xaml.Media.Brush GetPositionBrush(int pos) =>
+        SelectedGameOverlayPositionIndex == pos ? ActivePosBrush : InactivePosBrush;
+
+    private Microsoft.UI.Xaml.Media.Brush GetPositionForeground(int pos) =>
+        SelectedGameOverlayPositionIndex == pos ? ActivePosFg : InactivePosFg;
+
+    [RelayCommand]
+    public void SetOverlayPosition(object? param)
+    {
+        if (param != null && int.TryParse(param.ToString(), out int pos))
+        {
+            SelectedGameOverlayPositionIndex = pos;
+        }
+    }
+
+    public void NotifyPositionProperties()
+    {
+        OnPropertyChanged(nameof(SelectedOverlayPositionName));
+        OnPropertyChanged(nameof(PosTopLeftBrush));
+        OnPropertyChanged(nameof(PosTopCenterBrush));
+        OnPropertyChanged(nameof(PosTopRightBrush));
+        OnPropertyChanged(nameof(PosMiddleLeftBrush));
+        OnPropertyChanged(nameof(PosMiddleRightBrush));
+        OnPropertyChanged(nameof(PosBottomLeftBrush));
+        OnPropertyChanged(nameof(PosBottomCenterBrush));
+        OnPropertyChanged(nameof(PosBottomRightBrush));
+        OnPropertyChanged(nameof(PosTopLeftForeground));
+        OnPropertyChanged(nameof(PosTopCenterForeground));
+        OnPropertyChanged(nameof(PosTopRightForeground));
+        OnPropertyChanged(nameof(PosMiddleLeftForeground));
+        OnPropertyChanged(nameof(PosMiddleRightForeground));
+        OnPropertyChanged(nameof(PosBottomLeftForeground));
+        OnPropertyChanged(nameof(PosBottomCenterForeground));
+        OnPropertyChanged(nameof(PosBottomRightForeground));
+    }
+
+    [RelayCommand]
+    public void TestGameOverlay()
+    {
+        _gameOverlayService.ShowOverlay(IsRussian ? "ТЕСТ ОВЕРЛЕЯ" : "HUD OVERLAY TEST");
+    }
 
     [RelayCommand]
     public void CopyObsUrl()
@@ -262,8 +512,21 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string TrackNotificationsTitle => IsRussian ? "Уведомления Windows Toast" : "Windows Toast Notifications";
     public string TrackNotificationsDesc => IsRussian ? "Показывать всплывающие уведомления на рабочем столе при переключении трека" : "Show native desktop banner notifications when track changes while playing in background";
 
+    public string AppearanceSectionTitle => IsRussian ? "Внешний вид и кастомизация" : "Appearance & Customization";
+    public string AppearanceSectionDesc => IsRussian ? "Темы, акцентные цвета, эффект размытия окна и типографика" : "Themes, accent colors, window backdrops, and typography";
+
     public string ThemeTitle => IsRussian ? "Тема оформления" : "Application Theme";
-    public string ThemeDesc => IsRussian ? "Выберите визуальное оформление приложения" : "Select your visual appearance preference";
+    public string ThemeDesc => IsRussian ? "Выберите базовую цветовую схему приложения" : "Select your visual appearance preference";
+
+    public string BackdropTitle => IsRussian ? "Эффект фона окна (Backdrop)" : "Window Backdrop Material";
+    public string BackdropDesc => IsRussian ? "Mica (Windows 11), глубокий Mica Alt, Desktop Acrylic размытие или сплошной цвет" : "Mica (Windows 11 standard), deep Mica Alt, acrylic blur, or solid theme background";
+
+    public string AccentTitle => IsRussian ? "Акцентный цвет интерфейса" : "UI Accent Color";
+    public string AccentDesc => IsRussian ? "Цвет кнопок, ползунков, прогресс-баров и интерактивных элементов" : "Highlight color for buttons, sliders, progress bars, and active elements";
+
+    public string CustomHexPlaceholder => "#FFEAB308";
+    public string ApplyHexButtonText => IsRussian ? "Применить" : "Apply";
+    public string CustomColorTitle => IsRussian ? "Свой HEX-код цвета" : "Custom HEX Color Code";
 
     public string FontTitle => IsRussian ? "Шрифт интерфейса" : "UI Typography Font";
     public string FontDesc => IsRussian ? "Рекомендуемый Inter, системный Segoe UI или Yandex Sans" : "Recommended Inter, system Segoe UI, or signature Yandex Sans";
@@ -325,7 +588,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
         LoginViewModel loginViewModel,
         SearchViewModel searchViewModel,
         IAudioCacheService audioCacheService,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        IGameOverlayService gameOverlayService,
+        IThemeService themeService)
     {
         _musicService = musicService;
         _credentialStorage = credentialStorage;
@@ -338,6 +603,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _searchViewModel = searchViewModel;
         _audioCacheService = audioCacheService;
         _updateService = updateService;
+        _gameOverlayService = gameOverlayService;
+        _themeService = themeService;
 
         _appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic");
         AppDataPath = _appDataDir;
@@ -399,6 +666,13 @@ public sealed partial class ProfileViewModel : BaseViewModel
             IsObsOverlayEnabled = _settingsService.ObsOverlayEnabled;
             IsAutoplayWaveEnabled = _settingsService.AutoplayWaveOnAlbumEnd;
             IsAutoBypassProxyEnabled = _settingsService.AutoBypassProxyForYandex;
+            IsCrossfadeEnabled = _settingsService.CrossfadeEnabled;
+            CrossfadeDurationSeconds = _settingsService.CrossfadeDurationSeconds;
+            IsGlobalHotkeysEnabled = _settingsService.GlobalHotkeysEnabled;
+            IsGameOverlayEnabled = _settingsService.GameOverlayEnabled;
+            IsShowOverlayOnTrackChangeEnabled = _settingsService.ShowOverlayOnTrackChange;
+            GameOverlayDurationSeconds = _settingsService.GameOverlayDurationSeconds;
+            SelectedGameOverlayPositionIndex = _settingsService.GameOverlayPosition;
             IsMinimizeToTrayEnabled = _settingsService.MinimizeToTrayOnClose;
             IsTrackNotificationsEnabled = _settingsService.TrackNotificationsEnabled;
             IsFckCensorEnabled = _settingsService.FckCensorEnabled;
@@ -418,10 +692,24 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
             SelectedThemeIndex = _settingsService.AppTheme switch
             {
-                "Light" => 2,
-                "Default" => 0,
-                _ => 1 // Dark default
+                "OLED" => 1,
+                "Midnight" => 2,
+                "Sepia" => 3,
+                "Light" => 4,
+                "Default" => 5,
+                _ => 0 // Dark default
             };
+
+            SelectedBackdropIndex = _settingsService.BackdropKind switch
+            {
+                "MicaAlt" => 1,
+                "Acrylic" => 2,
+                "Solid" => 3,
+                _ => 0 // Mica
+            };
+
+            CurrentAccentHex = _settingsService.AccentColorHex;
+            CustomHexInput = _settingsService.AccentColorHex;
 
             SelectedFontIndex = _settingsService.AppFont switch
             {
@@ -435,6 +723,21 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 "en" => 1,
                 _ => 0 // "ru" default
             };
+
+            IsShowWaveInNavEnabled = _settingsService.ShowWaveInNav;
+            IsShowLikesInNavEnabled = _settingsService.ShowLikesInNav;
+            IsShowPlaylistsInNavEnabled = _settingsService.ShowPlaylistsInNav;
+            IsShowSearchInNavEnabled = _settingsService.ShowSearchInNav;
+
+            IsShowLyricsButtonEnabled = _settingsService.ShowLyricsButton;
+            IsShowEqualizerButtonEnabled = _settingsService.ShowEqualizerButton;
+            IsShowQualityBadgeEnabled = _settingsService.ShowQualityBadge;
+            IsCompactPlayerVolumeEnabled = _settingsService.CompactPlayerVolume;
+
+            IsShowPersonalPlaylistsOnHomeEnabled = _settingsService.ShowPersonalPlaylistsOnHome;
+            IsShowNewReleasesOnHomeEnabled = _settingsService.ShowNewReleasesOnHome;
+            IsShowEditorialPlaylistsOnHomeEnabled = _settingsService.ShowEditorialPlaylistsOnHome;
+            IsShowChartOnHomeEnabled = _settingsService.ShowChartOnHome;
 
             IsEqualizerEnabled = _equalizerService.IsEnabled;
 
@@ -487,6 +790,36 @@ public sealed partial class ProfileViewModel : BaseViewModel
             {
                 IsAutoBypassProxyEnabled = _settingsService.AutoBypassProxyForYandex;
             }
+            else if (propName == nameof(ISettingsService.CrossfadeEnabled))
+            {
+                IsCrossfadeEnabled = _settingsService.CrossfadeEnabled;
+            }
+            else if (propName == nameof(ISettingsService.CrossfadeDurationSeconds))
+            {
+                CrossfadeDurationSeconds = _settingsService.CrossfadeDurationSeconds;
+                OnPropertyChanged(nameof(CrossfadeDurationText));
+            }
+            else if (propName == nameof(ISettingsService.GlobalHotkeysEnabled))
+            {
+                IsGlobalHotkeysEnabled = _settingsService.GlobalHotkeysEnabled;
+            }
+            else if (propName == nameof(ISettingsService.GameOverlayEnabled))
+            {
+                IsGameOverlayEnabled = _settingsService.GameOverlayEnabled;
+            }
+            else if (propName == nameof(ISettingsService.ShowOverlayOnTrackChange))
+            {
+                IsShowOverlayOnTrackChangeEnabled = _settingsService.ShowOverlayOnTrackChange;
+            }
+            else if (propName == nameof(ISettingsService.GameOverlayDurationSeconds))
+            {
+                GameOverlayDurationSeconds = _settingsService.GameOverlayDurationSeconds;
+                OnPropertyChanged(nameof(GameOverlayDurationText));
+            }
+            else if (propName == nameof(ISettingsService.GameOverlayPosition))
+            {
+                SelectedGameOverlayPositionIndex = _settingsService.GameOverlayPosition;
+            }
             else if (propName == nameof(ISettingsService.MinimizeToTrayOnClose))
             {
                 IsMinimizeToTrayEnabled = _settingsService.MinimizeToTrayOnClose;
@@ -523,6 +856,54 @@ public sealed partial class ProfileViewModel : BaseViewModel
             {
                 int langIdx = _settingsService.Language == "en" ? 1 : 0;
                 if (SelectedLanguageIndex != langIdx) SelectedLanguageIndex = langIdx;
+            }
+            else if (propName == nameof(ISettingsService.ShowWaveInNav))
+            {
+                if (IsShowWaveInNavEnabled != _settingsService.ShowWaveInNav) IsShowWaveInNavEnabled = _settingsService.ShowWaveInNav;
+            }
+            else if (propName == nameof(ISettingsService.ShowLikesInNav))
+            {
+                if (IsShowLikesInNavEnabled != _settingsService.ShowLikesInNav) IsShowLikesInNavEnabled = _settingsService.ShowLikesInNav;
+            }
+            else if (propName == nameof(ISettingsService.ShowPlaylistsInNav))
+            {
+                if (IsShowPlaylistsInNavEnabled != _settingsService.ShowPlaylistsInNav) IsShowPlaylistsInNavEnabled = _settingsService.ShowPlaylistsInNav;
+            }
+            else if (propName == nameof(ISettingsService.ShowSearchInNav))
+            {
+                if (IsShowSearchInNavEnabled != _settingsService.ShowSearchInNav) IsShowSearchInNavEnabled = _settingsService.ShowSearchInNav;
+            }
+            else if (propName == nameof(ISettingsService.ShowLyricsButton))
+            {
+                if (IsShowLyricsButtonEnabled != _settingsService.ShowLyricsButton) IsShowLyricsButtonEnabled = _settingsService.ShowLyricsButton;
+            }
+            else if (propName == nameof(ISettingsService.ShowEqualizerButton))
+            {
+                if (IsShowEqualizerButtonEnabled != _settingsService.ShowEqualizerButton) IsShowEqualizerButtonEnabled = _settingsService.ShowEqualizerButton;
+            }
+            else if (propName == nameof(ISettingsService.ShowQualityBadge))
+            {
+                if (IsShowQualityBadgeEnabled != _settingsService.ShowQualityBadge) IsShowQualityBadgeEnabled = _settingsService.ShowQualityBadge;
+            }
+            else if (propName == nameof(ISettingsService.CompactPlayerVolume))
+            {
+                if (IsCompactPlayerVolumeEnabled != _settingsService.CompactPlayerVolume) IsCompactPlayerVolumeEnabled = _settingsService.CompactPlayerVolume;
+            }
+            else if (propName == nameof(ISettingsService.ShowPersonalPlaylistsOnHome))
+            {
+                if (IsShowPersonalPlaylistsOnHomeEnabled != _settingsService.ShowPersonalPlaylistsOnHome) IsShowPersonalPlaylistsOnHomeEnabled = _settingsService.ShowPersonalPlaylistsOnHome;
+            }
+            else if (propName == nameof(ISettingsService.ShowNewReleasesOnHome))
+            {
+                if (IsShowNewReleasesOnHomeEnabled != _settingsService.ShowNewReleasesOnHome) IsShowNewReleasesOnHomeEnabled = _settingsService.ShowNewReleasesOnHome;
+            }
+            else if (propName == nameof(ISettingsService.ShowEditorialPlaylistsOnHome))
+            {
+                if (IsShowEditorialPlaylistsOnHomeEnabled != _settingsService.ShowEditorialPlaylistsOnHome) IsShowEditorialPlaylistsOnHomeEnabled = _settingsService.ShowEditorialPlaylistsOnHome;
+            }
+            else if (propName == nameof(ISettingsService.ShowChartOnHome))
+            {
+                if (IsShowChartOnHomeEnabled != _settingsService.ShowChartOnHome) IsShowChartOnHomeEnabled = _settingsService.ShowChartOnHome;
             }
         });
     }
@@ -593,6 +974,51 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _settingsService.AutoBypassProxyForYandex = value;
     }
 
+    partial void OnIsCrossfadeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.CrossfadeEnabled = value;
+    }
+
+    partial void OnCrossfadeDurationSecondsChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.CrossfadeDurationSeconds = value;
+        OnPropertyChanged(nameof(CrossfadeDurationText));
+    }
+
+    partial void OnIsGlobalHotkeysEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.GlobalHotkeysEnabled = value;
+    }
+
+    partial void OnIsGameOverlayEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.GameOverlayEnabled = value;
+    }
+
+    partial void OnIsShowOverlayOnTrackChangeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowOverlayOnTrackChange = value;
+    }
+
+    partial void OnGameOverlayDurationSecondsChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.GameOverlayDurationSeconds = value;
+        OnPropertyChanged(nameof(GameOverlayDurationText));
+    }
+
+    partial void OnSelectedGameOverlayPositionIndexChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.GameOverlayPosition = value;
+        NotifyPositionProperties();
+    }
+
     partial void OnIsMinimizeToTrayEnabledChanged(bool value)
     {
         if (_isInitializingSettings) return;
@@ -655,16 +1081,50 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
         string theme = value switch
         {
-            2 => "Light",
-            0 => "Default",
+            1 => "OLED",
+            2 => "Midnight",
+            3 => "Sepia",
+            4 => "Light",
+            5 => "Default",
             _ => "Dark"
         };
-        _settingsService.AppTheme = theme;
+        _themeService.ApplyTheme(theme);
+    }
 
-        if (App.MainWindow is ShellWindow shell)
+    partial void OnSelectedBackdropIndexChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+
+        string backdrop = value switch
         {
-            shell.ApplyTheme(theme);
-        }
+            1 => "MicaAlt",
+            2 => "Acrylic",
+            3 => "Solid",
+            _ => "Mica"
+        };
+        _themeService.ApplyBackdrop(backdrop);
+    }
+
+    [RelayCommand]
+    public void SelectAccent(AccentPreset preset)
+    {
+        if (preset == null) return;
+        _themeService.ApplyAccentColor(preset.Hex);
+        CurrentAccentHex = preset.Hex;
+        CustomHexInput = preset.Hex;
+        ShowNotification(IsRussian ? $"Акцентный цвет: {preset.Name}" : $"Accent color: {preset.NameEn}");
+    }
+
+    [RelayCommand]
+    public void ApplyCustomHex()
+    {
+        if (string.IsNullOrWhiteSpace(CustomHexInput)) return;
+        string hex = CustomHexInput.Trim();
+        if (!hex.StartsWith("#")) hex = "#" + hex;
+        _themeService.ApplyAccentColor(hex);
+        CurrentAccentHex = _settingsService.AccentColorHex;
+        CustomHexInput = CurrentAccentHex;
+        ShowNotification(IsRussian ? $"Пользовательский цвет применен: {CurrentAccentHex}" : $"Custom accent applied: {CurrentAccentHex}");
     }
 
     partial void OnSelectedFontIndexChanged(int value)
@@ -705,6 +1165,78 @@ public sealed partial class ProfileViewModel : BaseViewModel
         }
 
         ShowNotification(IsRussian ? "Настройки сохранены." : "Settings saved.");
+    }
+
+    partial void OnIsShowWaveInNavEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowWaveInNav = value;
+    }
+
+    partial void OnIsShowLikesInNavEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowLikesInNav = value;
+    }
+
+    partial void OnIsShowPlaylistsInNavEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowPlaylistsInNav = value;
+    }
+
+    partial void OnIsShowSearchInNavEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowSearchInNav = value;
+    }
+
+    partial void OnIsShowLyricsButtonEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowLyricsButton = value;
+    }
+
+    partial void OnIsShowEqualizerButtonEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowEqualizerButton = value;
+    }
+
+    partial void OnIsShowQualityBadgeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowQualityBadge = value;
+    }
+
+    partial void OnIsCompactPlayerVolumeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.CompactPlayerVolume = value;
+    }
+
+    partial void OnIsShowPersonalPlaylistsOnHomeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowPersonalPlaylistsOnHome = value;
+    }
+
+    partial void OnIsShowNewReleasesOnHomeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowNewReleasesOnHome = value;
+    }
+
+    partial void OnIsShowEditorialPlaylistsOnHomeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowEditorialPlaylistsOnHome = value;
+    }
+
+    partial void OnIsShowChartOnHomeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowChartOnHome = value;
     }
 
     partial void OnIsEqualizerEnabledChanged(bool value)
@@ -1265,6 +1797,18 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(AutoplayWaveDesc));
         OnPropertyChanged(nameof(AutoBypassProxyTitle));
         OnPropertyChanged(nameof(AutoBypassProxyDesc));
+        OnPropertyChanged(nameof(CrossfadeTitle));
+        OnPropertyChanged(nameof(CrossfadeDesc));
+        OnPropertyChanged(nameof(CrossfadeDurationText));
+        OnPropertyChanged(nameof(GlobalHotkeysTitle));
+        OnPropertyChanged(nameof(GlobalHotkeysDesc));
+        OnPropertyChanged(nameof(GameOverlayTitle));
+        OnPropertyChanged(nameof(GameOverlayDesc));
+        OnPropertyChanged(nameof(ShowOverlayOnTrackChangeTitle));
+        OnPropertyChanged(nameof(ShowOverlayOnTrackChangeDesc));
+        OnPropertyChanged(nameof(GameOverlayDurationText));
+        OnPropertyChanged(nameof(GameOverlayPositionTitle));
+        OnPropertyChanged(nameof(TestGameOverlayButtonText));
         OnPropertyChanged(nameof(FckCensorTitle));
         OnPropertyChanged(nameof(FckCensorDesc));
         OnPropertyChanged(nameof(FckCensorAuthorCreditText));
@@ -1272,8 +1816,16 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(MinimizeToTrayDesc));
         OnPropertyChanged(nameof(TrackNotificationsTitle));
         OnPropertyChanged(nameof(TrackNotificationsDesc));
+        OnPropertyChanged(nameof(AppearanceSectionTitle));
+        OnPropertyChanged(nameof(AppearanceSectionDesc));
         OnPropertyChanged(nameof(ThemeTitle));
         OnPropertyChanged(nameof(ThemeDesc));
+        OnPropertyChanged(nameof(BackdropTitle));
+        OnPropertyChanged(nameof(BackdropDesc));
+        OnPropertyChanged(nameof(AccentTitle));
+        OnPropertyChanged(nameof(AccentDesc));
+        OnPropertyChanged(nameof(ApplyHexButtonText));
+        OnPropertyChanged(nameof(CustomColorTitle));
         OnPropertyChanged(nameof(FontTitle));
         OnPropertyChanged(nameof(FontDesc));
         OnPropertyChanged(nameof(LanguageTitle));
@@ -1302,6 +1854,35 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(SearchHistoryTitle));
         OnPropertyChanged(nameof(SearchHistoryDesc));
         OnPropertyChanged(nameof(ClearHistoryButtonText));
+        OnPropertyChanged(nameof(CategoryAllText));
+        OnPropertyChanged(nameof(CategoryProfileText));
+        OnPropertyChanged(nameof(CategoryAudioText));
+        OnPropertyChanged(nameof(CategoryAppearanceText));
+        OnPropertyChanged(nameof(CategoryIntegrationsText));
+        OnPropertyChanged(nameof(CategorySystemText));
+        OnPropertyChanged(nameof(CategoryStorageText));
+        OnPropertyChanged(nameof(CategoryAboutText));
+        OnPropertyChanged(nameof(IntegrationsSectionTitle));
+        OnPropertyChanged(nameof(ModularUiTitle));
+        OnPropertyChanged(nameof(ModularUiDesc));
+        OnPropertyChanged(nameof(NavSectionTitle));
+        OnPropertyChanged(nameof(ShowWaveTitle));
+        OnPropertyChanged(nameof(ShowWaveDesc));
+        OnPropertyChanged(nameof(ShowLikesTitle));
+        OnPropertyChanged(nameof(ShowLikesDesc));
+        OnPropertyChanged(nameof(ShowPlaylistsTitle));
+        OnPropertyChanged(nameof(ShowPlaylistsDesc));
+        OnPropertyChanged(nameof(ShowSearchTitle));
+        OnPropertyChanged(nameof(ShowSearchDesc));
+        OnPropertyChanged(nameof(PlayerModularTitle));
+        OnPropertyChanged(nameof(ShowLyricsTitle));
+        OnPropertyChanged(nameof(ShowLyricsDesc));
+        OnPropertyChanged(nameof(ShowEqualizerTitle));
+        OnPropertyChanged(nameof(ShowEqualizerDesc));
+        OnPropertyChanged(nameof(ShowQualityBadgeTitle));
+        OnPropertyChanged(nameof(ShowQualityDesc));
+        OnPropertyChanged(nameof(CompactVolumeTitle));
+        OnPropertyChanged(nameof(CompactVolumeDesc));
         OnPropertyChanged(nameof(AboutDescText));
         OnPropertyChanged(nameof(GitHubRepoButtonText));
         OnPropertyChanged(nameof(SwitchOnText));
@@ -1353,17 +1934,41 @@ public sealed partial class ProfileViewModel : BaseViewModel
             ThemeOptions.Clear();
             if (IsRussian)
             {
-                ThemeOptions.Add("Как в системе");
-                ThemeOptions.Add("Тёмная тема");
-                ThemeOptions.Add("Светлая тема");
+                ThemeOptions.Add("Тёмная классическая (Dark)");
+                ThemeOptions.Add("OLED (Абсолютно чёрный)");
+                ThemeOptions.Add("Глубокая полночь (Midnight)");
+                ThemeOptions.Add("Тёплый графит (Sepia)");
+                ThemeOptions.Add("Светлая тема (Light)");
+                ThemeOptions.Add("Как в системе (Default)");
             }
             else
             {
-                ThemeOptions.Add("System Default");
-                ThemeOptions.Add("Dark Mode");
+                ThemeOptions.Add("Classic Dark");
+                ThemeOptions.Add("OLED Pure Black");
+                ThemeOptions.Add("Deep Midnight");
+                ThemeOptions.Add("Warm Sepia");
                 ThemeOptions.Add("Light Mode");
+                ThemeOptions.Add("System Default");
             }
             SelectedThemeIndex = tIdx;
+
+            int bIdx = SelectedBackdropIndex;
+            BackdropOptions.Clear();
+            if (IsRussian)
+            {
+                BackdropOptions.Add("Mica (Слюдяной стандарт)");
+                BackdropOptions.Add("Mica Alt (Глубокий эффект)");
+                BackdropOptions.Add("Desktop Acrylic (Размытое стекло)");
+                BackdropOptions.Add("Сплошной цвет темы (Без размытия)");
+            }
+            else
+            {
+                BackdropOptions.Add("Mica (Standard translucency)");
+                BackdropOptions.Add("Mica Alt (Deep backdrop)");
+                BackdropOptions.Add("Desktop Acrylic (Blur glass)");
+                BackdropOptions.Add("Solid Theme Background");
+            }
+            SelectedBackdropIndex = bIdx;
 
             int fIdx = SelectedFontIndex;
             FontOptions.Clear();
@@ -1404,6 +2009,33 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 CacheLimitOptions.Add("Unlimited");
             }
             SelectedCacheLimitIndex = cIdx;
+
+            int pIdx = SelectedGameOverlayPositionIndex;
+            GameOverlayPositionOptions.Clear();
+            if (IsRussian)
+            {
+                GameOverlayPositionOptions.Add("Сверху справа");
+                GameOverlayPositionOptions.Add("Сверху слева");
+                GameOverlayPositionOptions.Add("Снизу справа");
+                GameOverlayPositionOptions.Add("Снизу слева");
+                GameOverlayPositionOptions.Add("Сверху по центру");
+                GameOverlayPositionOptions.Add("Снизу по центру");
+                GameOverlayPositionOptions.Add("Слева по центру");
+                GameOverlayPositionOptions.Add("Справа по центру");
+            }
+            else
+            {
+                GameOverlayPositionOptions.Add("Top Right");
+                GameOverlayPositionOptions.Add("Top Left");
+                GameOverlayPositionOptions.Add("Bottom Right");
+                GameOverlayPositionOptions.Add("Bottom Left");
+                GameOverlayPositionOptions.Add("Top Center");
+                GameOverlayPositionOptions.Add("Bottom Center");
+                GameOverlayPositionOptions.Add("Middle Left");
+                GameOverlayPositionOptions.Add("Middle Right");
+            }
+            SelectedGameOverlayPositionIndex = pIdx;
+            NotifyPositionProperties();
         }
         finally
         {

@@ -330,6 +330,12 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     public Visibility ToastVisibility => IsToastOpen ? Visibility.Visible : Visibility.Collapsed;
 
+    public bool ShowLyricsButton => _settingsService.ShowLyricsButton;
+    public bool ShowEqualizerButton => _settingsService.ShowEqualizerButton;
+    public bool ShowQualityBadge => _settingsService.ShowQualityBadge;
+    public bool CompactPlayerVolume => _settingsService.CompactPlayerVolume;
+    public double VolumeSliderWidth => CompactPlayerVolume ? 80 : 160;
+
     private readonly ISettingsService _settingsService;
     private readonly IFckCensorService _fckCensorService;
 
@@ -389,6 +395,26 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                         AudioQualityPreference.Mp3Preferred => "320k",
                         _ => "HQ"
                     };
+                });
+            }
+            else if (prop == nameof(ISettingsService.ShowLyricsButton))
+            {
+                RunOnUi(() => OnPropertyChanged(nameof(ShowLyricsButton)));
+            }
+            else if (prop == nameof(ISettingsService.ShowEqualizerButton))
+            {
+                RunOnUi(() => OnPropertyChanged(nameof(ShowEqualizerButton)));
+            }
+            else if (prop == nameof(ISettingsService.ShowQualityBadge))
+            {
+                RunOnUi(() => OnPropertyChanged(nameof(ShowQualityBadge)));
+            }
+            else if (prop == nameof(ISettingsService.CompactPlayerVolume))
+            {
+                RunOnUi(() =>
+                {
+                    OnPropertyChanged(nameof(CompactPlayerVolume));
+                    OnPropertyChanged(nameof(VolumeSliderWidth));
                 });
             }
         };

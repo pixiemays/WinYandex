@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.ViewModels;
@@ -11,6 +12,7 @@ namespace YMusic.WinUI.Views;
 public sealed partial class ShellWindow : Window
 {
     public ShellViewModel ViewModel { get; }
+    public Grid WindowRootGrid => RootGrid;
     private readonly IPinnedItemsService _pinnedItemsService;
     private readonly List<object> _pinnedNavItems = new();
 
@@ -412,7 +414,7 @@ public sealed partial class ShellWindow : Window
 
                 if (ContentFrame.CurrentSourcePageType != targetPage)
                 {
-                    ContentFrame.Navigate(targetPage, isUpdatesTarget ? "Updates" : null);
+                    ContentFrame.Navigate(targetPage, isUpdatesTarget ? "Updates" : null, new EntranceNavigationTransitionInfo());
                 }
                 else if (isUpdatesTarget && ContentFrame.Content is ProfilePage profilePage)
                 {
@@ -448,15 +450,23 @@ public sealed partial class ShellWindow : Window
 
     public void ApplyTheme(string theme)
     {
-        DispatcherQueue.TryEnqueue(() =>
+        var themeService = App.GetService<IThemeService>();
+        if (themeService != null)
         {
-            RootGrid.RequestedTheme = theme switch
+            themeService.ApplyTheme(theme);
+        }
+        else
+        {
+            DispatcherQueue.TryEnqueue(() =>
             {
-                "Light" => ElementTheme.Light,
-                "Default" => ElementTheme.Default,
-                _ => ElementTheme.Dark
-            };
-        });
+                RootGrid.RequestedTheme = theme switch
+                {
+                    "Light" => ElementTheme.Light,
+                    "Default" => ElementTheme.Default,
+                    _ => ElementTheme.Dark
+                };
+            });
+        }
     }
 
     public void ApplyFont(string font)
@@ -497,7 +507,7 @@ public sealed partial class ShellWindow : Window
         NavView.SelectedItem = null;
         if (ContentFrame.CurrentSourcePageType != typeof(ArtistPage))
         {
-            ContentFrame.Navigate(typeof(ArtistPage));
+            ContentFrame.Navigate(typeof(ArtistPage), null, new EntranceNavigationTransitionInfo());
         }
         (ContentFrame.Content as ArtistPage)?.ResetScroll();
 
@@ -518,7 +528,7 @@ public sealed partial class ShellWindow : Window
         NavView.SelectedItem = null;
         if (ContentFrame.CurrentSourcePageType != typeof(ArtistPage))
         {
-            ContentFrame.Navigate(typeof(ArtistPage));
+            ContentFrame.Navigate(typeof(ArtistPage), null, new EntranceNavigationTransitionInfo());
         }
         (ContentFrame.Content as ArtistPage)?.ResetScroll();
 
@@ -542,7 +552,7 @@ public sealed partial class ShellWindow : Window
     {
         if (ContentFrame.CurrentSourcePageType != typeof(PlaylistsPage))
         {
-            ContentFrame.Navigate(typeof(PlaylistsPage));
+            ContentFrame.Navigate(typeof(PlaylistsPage), null, new EntranceNavigationTransitionInfo());
         }
     }
 

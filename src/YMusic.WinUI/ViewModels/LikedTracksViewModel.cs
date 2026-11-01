@@ -21,7 +21,10 @@ public sealed partial class LikedTracksViewModel : BaseViewModel
     public ObservableCollection<Track> FilteredTracks { get; } = new();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSearchFilter))]
     private string _searchFilter = string.Empty;
+
+    public bool HasSearchFilter => !string.IsNullOrWhiteSpace(SearchFilter);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FormattedTotalTracks))]
@@ -33,7 +36,7 @@ public sealed partial class LikedTracksViewModel : BaseViewModel
     public string PlayAllText => Loc?.CurrentLanguage == "en" ? "Play All" : "Слушать всё";
     public string ShuffleText => Loc?.CurrentLanguage == "en" ? "Shuffle" : "Перемешать";
     public string RefreshTooltip => Loc?.CurrentLanguage == "en" ? "Refresh tracks" : "Обновить треки";
-    public string FilterPlaceholder => Loc?.CurrentLanguage == "en" ? "Filter tracks or artists..." : "Поиск по трекам и артистам...";
+    public string FilterPlaceholder => Loc?.CurrentLanguage == "en" ? "Filter tracks..." : "Поиск по трекам...";
     public string ErrorTitle => Loc?.CurrentLanguage == "en" ? "Error Loading Tracks" : "Ошибка при загрузке треков";
 
     protected override void OnLanguageChanged()

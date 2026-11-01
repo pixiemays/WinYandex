@@ -69,6 +69,9 @@ public partial class App : Application
         services.AddSingleton<IDiscordRpcService, DiscordRpcService>();
         services.AddSingleton<IObsOverlayService, ObsOverlayService>();
         services.AddSingleton<IUpdateService, UpdateService>();
+        services.AddSingleton<ISpotifyImportService, SpotifyImportService>();
+        services.AddSingleton<IGameOverlayService, GameOverlayService>();
+        services.AddSingleton<IThemeService, ThemeService>();
 
         // ViewModels
         services.AddSingleton<PlayerBarViewModel>();
@@ -121,6 +124,7 @@ public partial class App : Application
             {
                 provider.GetService<IDiscordRpcService>()?.Dispose();
                 provider.GetService<IObsOverlayService>()?.Dispose();
+                provider.GetService<IGameOverlayService>()?.Dispose();
             }
             catch { }
         };
@@ -130,13 +134,18 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        var themeService = GetService<IThemeService>();
+        themeService?.PreInitializeResources();
+
         MainWindow = new ShellWindow();
         _window = MainWindow;
         MainDispatcherQueue = _window.DispatcherQueue;
+        themeService?.Initialize();
         _window.Activate();
         GetService<ITrayNotificationService>()?.InitializeThumbnailButtons();
         GetService<IDiscordRpcService>()?.Initialize();
         GetService<IObsOverlayService>()?.Initialize();
+        GetService<IGameOverlayService>()?.Initialize();
         UpdateService.CleanOldUpdates();
     }
 }

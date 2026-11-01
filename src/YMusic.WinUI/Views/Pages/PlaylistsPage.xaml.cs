@@ -12,7 +12,9 @@ public sealed partial class PlaylistsPage : Page
     public PlaylistsViewModel ViewModel { get; }
 
     private Storyboard? _currentTransition;
+    private Storyboard? _tabTransition;
     private bool _isAnimating;
+    private int _currentTabIndex = 0;
 
     public PlaylistsPage()
     {
@@ -63,6 +65,20 @@ public sealed partial class PlaylistsPage : Page
                     }
                 });
             }
+            else if (e.PropertyName == nameof(PlaylistsViewModel.SelectedCategoryIndex))
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (!ViewModel.IsDetailOpen)
+                    {
+                        AnimateTabTransition(ViewModel.SelectedCategoryIndex);
+                    }
+                    else
+                    {
+                        _currentTabIndex = ViewModel.SelectedCategoryIndex;
+                    }
+                });
+            }
         };
     }
 
@@ -87,6 +103,29 @@ public sealed partial class PlaylistsPage : Page
             DetailViewRoot.Visibility = Visibility.Collapsed;
             DetailViewRoot.Opacity = 0.0;
             DetailTranslateTransform.Y = 28.0;
+        }
+
+        if (ViewModel.SelectedCategoryIndex == 0)
+        {
+            PlaylistsTabContent.Visibility = Visibility.Visible;
+            PlaylistsTabContent.Opacity = 1.0;
+            PlaylistsTabTranslateTransform.X = 0;
+
+            AlbumsTabContent.Visibility = Visibility.Collapsed;
+            AlbumsTabContent.Opacity = 0.0;
+            AlbumsTabTranslateTransform.X = 0;
+            _currentTabIndex = 0;
+        }
+        else
+        {
+            PlaylistsTabContent.Visibility = Visibility.Collapsed;
+            PlaylistsTabContent.Opacity = 0.0;
+            PlaylistsTabTranslateTransform.X = 0;
+
+            AlbumsTabContent.Visibility = Visibility.Visible;
+            AlbumsTabContent.Opacity = 1.0;
+            AlbumsTabTranslateTransform.X = 0;
+            _currentTabIndex = 1;
         }
     }
 
@@ -287,11 +326,99 @@ public sealed partial class PlaylistsPage : Page
         });
     }
 
+    public void AnimateTabTransition(int targetIndex)
+    {
+        if (_currentTabIndex == targetIndex) return;
+
+        int fromIndex = _currentTabIndex;
+        _currentTabIndex = targetIndex;
+
+        _tabTransition?.Stop();
+
+        var outgoing = fromIndex == 0 ? PlaylistsTabContent : AlbumsTabContent;
+        var outgoingTransform = fromIndex == 0 ? PlaylistsTabTranslateTransform : AlbumsTabTranslateTransform;
+
+        var incoming = targetIndex == 0 ? PlaylistsTabContent : AlbumsTabContent;
+        var incomingTransform = targetIndex == 0 ? PlaylistsTabTranslateTransform : AlbumsTabTranslateTransform;
+
+        incoming.Visibility = Visibility.Visible;
+        incoming.Opacity = 0.0;
+
+        double slideOffset = targetIndex > fromIndex ? 18.0 : -18.0;
+        incomingTransform.X = slideOffset;
+
+        var sb = new Storyboard();
+
+        // 1. Outgoing Fade Out & Slide
+        var outFade = new DoubleAnimation
+        {
+            From = outgoing.Opacity,
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(160),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(outFade, outgoing);
+        Storyboard.SetTargetProperty(outFade, "Opacity");
+        sb.Children.Add(outFade);
+
+        var outSlide = new DoubleAnimation
+        {
+            From = outgoingTransform.X,
+            To = -slideOffset * 0.7,
+            Duration = TimeSpan.FromMilliseconds(160),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(outSlide, outgoingTransform);
+        Storyboard.SetTargetProperty(outSlide, "X");
+        sb.Children.Add(outSlide);
+
+        // 2. Incoming Fade In & Slide into place
+        var inFade = new DoubleAnimation
+        {
+            From = 0.0,
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(220),
+            BeginTime = TimeSpan.FromMilliseconds(40),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(inFade, incoming);
+        Storyboard.SetTargetProperty(inFade, "Opacity");
+        sb.Children.Add(inFade);
+
+        var inSlide = new DoubleAnimation
+        {
+            From = slideOffset,
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(240),
+            BeginTime = TimeSpan.FromMilliseconds(40),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(inSlide, incomingTransform);
+        Storyboard.SetTargetProperty(inSlide, "X");
+        sb.Children.Add(inSlide);
+
+        sb.Completed += (s, e) =>
+        {
+            outgoing.Visibility = Visibility.Collapsed;
+            outgoingTransform.X = 0;
+            incomingTransform.X = 0;
+            _tabTransition = null;
+        };
+
+        _tabTransition = sb;
+        sb.Begin();
+    }
+
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
         if (ViewModel.Playlists.Count == 0 && ViewModel.LikedAlbums.Count == 0)
         {
             await ViewModel.LoadPlaylistsAsync();
+        }
+        else if (!ViewModel.IsDetailOpen)
+        {
+            // Background refresh to guarantee the user never needs to press any reload button
+            _ = ViewModel.LoadPlaylistsAsync();
         }
     }
 
@@ -386,6 +513,22 @@ public sealed partial class PlaylistsPage : Page
         if (sender is FrameworkElement element && element.Tag is Playlist playlist)
         {
             _ = ViewModel.TogglePlaylistLikeCommand.ExecuteAsync(playlist);
+        }
+    }
+
+    private void EditPlaylistContext_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is Playlist playlist)
+        {
+            ViewModel.OpenEditPlaylistDialogCommand.Execute(playlist);
+        }
+    }
+
+    private void DeletePlaylistContext_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is Playlist playlist)
+        {
+            ViewModel.OpenDeletePlaylistDialogCommand.Execute(playlist);
         }
     }
 

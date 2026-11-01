@@ -48,7 +48,7 @@
                 </StackPanel>
 
                 <!-- SECTION 1: Personal Playlists ("Собираем для вас" / Плейлист дня, etc.) -->
-                <StackPanel Spacing="14">
+                <StackPanel Spacing="14" Visibility="{x:Bind ViewModel.ShowPersonalPlaylists, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xEC26;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{x:Bind ViewModel.PersonalPlaylistsTitle, Mode=OneWay}"
@@ -156,7 +156,7 @@
                 </StackPanel>
 
                 <!-- SECTION 2: New Releases (Albums) -->
-                <StackPanel Spacing="14">
+                <StackPanel Spacing="14" Visibility="{x:Bind ViewModel.ShowNewReleases, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE93C;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{x:Bind ViewModel.NewReleasesTitle, Mode=OneWay}"
@@ -262,7 +262,7 @@
                 </StackPanel>
 
                 <!-- SECTION 3: Editorial Playlists ("Популярные плейлисты") -->
-                <StackPanel Spacing="14">
+                <StackPanel Spacing="14" Visibility="{x:Bind ViewModel.ShowEditorialPlaylists, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE142;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{x:Bind ViewModel.EditorialPlaylistsTitle, Mode=OneWay}"
@@ -368,7 +368,7 @@
                 </StackPanel>
 
                 <!-- SECTION 4: Top Chart ("Чарт") -->
-                <StackPanel Spacing="14">
+                <StackPanel Spacing="14" Visibility="{x:Bind ViewModel.ShowChart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE734;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{x:Bind ViewModel.ChartTitle, Mode=OneWay}"
@@ -381,13 +381,9 @@
                             <DataTemplate x:DataType="models:Track">
                                 <Button Click="ChartTrackRow_Click"
                                         Tag="{x:Bind}"
-                                        HorizontalAlignment="Stretch"
-                                        HorizontalContentAlignment="Stretch"
+                                        Style="{StaticResource TrackRowButtonStyle}"
                                         helpers:TrackMenuHelper.Track="{x:Bind}"
                                         Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
-                                        Background="Transparent"
-                                        BorderBrush="Transparent"
-                                        Padding="0"
                                         Margin="0,1">
                                     <Border CornerRadius="8"
                                             Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}">
@@ -415,14 +411,14 @@
                                             <Border Grid.Column="1"
                                                     Width="38"
                                                     Height="38"
-                                                    CornerRadius="4"
+                                                    CornerRadius="6"
                                                     Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                                                 <Grid>
                                                     <Image Source="{x:Bind ThumbnailUrl, Converter={StaticResource StringToImageSourceConverter}}" Stretch="UniformToFill" />
 
                                                     <Grid Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                          Background="#A6000000"
-                                                          CornerRadius="4">
+                                                          Background="#B3000000"
+                                                          CornerRadius="6">
                                                         <controls:MiniEqualizerControl IsPlaying="{x:Bind IsPlaying, Mode=OneWay}"
                                                                                        HorizontalAlignment="Center"
                                                                                        VerticalAlignment="Center" />
@@ -666,11 +662,8 @@
                                              ItemClick="DetailTrack_ItemClick"
                                              SelectionMode="None">
                     <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="Padding" Value="0" />
-                            <Setter Property="Margin" Value="0,1" />
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource TrackRowListViewItemStyle}">
                             <Setter Property="MinHeight" Value="48" />
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.ItemsPanel>
@@ -712,7 +705,7 @@
                                     <Border Grid.Column="1"
                                             Width="38"
                                             Height="38"
-                                            CornerRadius="4"
+                                            CornerRadius="6"
                                             Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                                         <Grid>
                                             <FontIcon Glyph="&#xE8D6;"
@@ -724,7 +717,7 @@
 
                                             <Grid Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                                                   Background="#A6000000"
-                                                  CornerRadius="4">
+                                                  CornerRadius="6">
                                                 <controls:MiniEqualizerControl IsPlaying="{x:Bind IsPlaying, Mode=OneWay}"
                                                                                HorizontalAlignment="Center"
                                                                                VerticalAlignment="Center" />

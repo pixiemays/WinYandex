@@ -424,6 +424,7 @@
             
             <!-- Now Playing & Karaoke Lyrics Toggle Button -->
             <Button Command="{x:Bind ViewModel.ToggleNowPlayingDrawerCommand}"
+                    Visibility="{x:Bind ViewModel.ShowLyricsButton, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                     Width="36"
                     Height="36"
                     CornerRadius="18"
@@ -440,7 +441,8 @@
             </Button>
 
             <!-- Audio Quality Pill & Selector Flyout -->
-            <Button Height="28"
+            <Button Visibility="{x:Bind ViewModel.ShowQualityBadge, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Height="28"
                     MinWidth="52"
                     Padding="10,2"
                     CornerRadius="6"
@@ -470,7 +472,8 @@
             </Button>
 
             <!-- Equalizer Button & Flyout -->
-            <Button Width="36"
+            <Button Visibility="{x:Bind ViewModel.ShowEqualizerButton, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Width="36"
                     Height="36"
                     CornerRadius="18"
                     Padding="0"
@@ -593,7 +596,7 @@
 
                 <!-- Longer, precise Volume Slider -->
                 <Slider x:Name="VolumeSlider"
-                        Width="160"
+                        Width="{x:Bind ViewModel.VolumeSliderWidth, Mode=OneWay}"
                         Minimum="0"
                         Maximum="100"
                         StepFrequency="1"

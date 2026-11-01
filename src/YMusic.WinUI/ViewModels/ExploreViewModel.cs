@@ -16,6 +16,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
     private readonly ITrackPlaybackCoordinator _playbackCoordinator;
     private readonly ICredentialStorageService _credentialStorage;
     private readonly IPinnedItemsService _pinnedItemsService;
+    private readonly ISettingsService _settingsService;
 
     public ObservableCollection<Playlist> PersonalPlaylists { get; } = new();
     public ObservableCollection<Playlist> EditorialPlaylists { get; } = new();
@@ -106,24 +107,46 @@ public sealed partial class ExploreViewModel : BaseViewModel
 
     public bool HasLoaded { get; private set; }
 
+    public bool ShowPersonalPlaylists => _settingsService.ShowPersonalPlaylistsOnHome;
+    public bool ShowNewReleases => _settingsService.ShowNewReleasesOnHome;
+    public bool ShowEditorialPlaylists => _settingsService.ShowEditorialPlaylistsOnHome;
+    public bool ShowChart => _settingsService.ShowChartOnHome;
+
     public ExploreViewModel(
         IYandexMusicService musicService,
         IAudioPlayerService audioPlayer,
         ITrackPlaybackCoordinator playbackCoordinator,
         ICredentialStorageService credentialStorage,
-        IPinnedItemsService pinnedItemsService)
+        IPinnedItemsService pinnedItemsService,
+        ISettingsService settingsService)
     {
         _musicService = musicService;
         _audioPlayer = audioPlayer;
         _playbackCoordinator = playbackCoordinator;
         _credentialStorage = credentialStorage;
         _pinnedItemsService = pinnedItemsService;
+        _settingsService = settingsService;
 
+        _settingsService.SettingChanged += OnSettingChanged;
         _pinnedItemsService.PinStateChanged += OnPinStateChanged;
         _musicService.AlbumLikeChanged += OnAlbumLikeChanged;
         _musicService.PlaylistLikeChanged += OnPlaylistLikeChanged;
         _playbackCoordinator.Register(DetailTracks);
         _playbackCoordinator.Register(ChartTracks);
+    }
+
+    private void OnSettingChanged(object? sender, string propName)
+    {
+        if (propName is nameof(ISettingsService.ShowPersonalPlaylistsOnHome) or
+                       nameof(ISettingsService.ShowNewReleasesOnHome) or
+                       nameof(ISettingsService.ShowEditorialPlaylistsOnHome) or
+                       nameof(ISettingsService.ShowChartOnHome))
+        {
+            OnPropertyChanged(nameof(ShowPersonalPlaylists));
+            OnPropertyChanged(nameof(ShowNewReleases));
+            OnPropertyChanged(nameof(ShowEditorialPlaylists));
+            OnPropertyChanged(nameof(ShowChart));
+        }
     }
 
     [RelayCommand]

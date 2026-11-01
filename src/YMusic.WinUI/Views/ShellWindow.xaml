@@ -46,6 +46,7 @@
             <NavigationView.AutoSuggestBox>
                 <AutoSuggestBox x:Name="NavAutoSuggestBox"
                                 QueryIcon="Find"
+                                Visibility="{x:Bind ViewModel.SearchNavVisibility, Mode=OneWay}"
                                 PlaceholderText="{x:Bind ViewModel.SearchPlaceholderText, Mode=OneWay}"
                                 TextChanged="NavAutoSuggestBox_TextChanged"
                                 QuerySubmitted="NavAutoSuggestBox_QuerySubmitted" />
@@ -60,6 +61,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemSearch"
+                                    Visibility="{x:Bind ViewModel.SearchNavVisibility, Mode=OneWay}"
                                     Content="{x:Bind ViewModel.NavSearchText, Mode=OneWay}"
                                     Tag="Search">
                     <NavigationViewItem.Icon>
@@ -67,6 +69,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemWave"
+                                    Visibility="{x:Bind ViewModel.WaveNavVisibility, Mode=OneWay}"
                                     Content="{x:Bind ViewModel.NavWaveText, Mode=OneWay}"
                                     Tag="Wave">
                     <NavigationViewItem.Icon>
@@ -74,6 +77,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemLikes"
+                                    Visibility="{x:Bind ViewModel.LikesNavVisibility, Mode=OneWay}"
                                     Content="{x:Bind ViewModel.NavLikesText, Mode=OneWay}"
                                     Tag="Likes">
                     <NavigationViewItem.Icon>
@@ -81,6 +85,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemPlaylists"
+                                    Visibility="{x:Bind ViewModel.PlaylistsNavVisibility, Mode=OneWay}"
                                     Content="{x:Bind ViewModel.NavPlaylistsText, Mode=OneWay}"
                                     Tag="Playlists">
                     <NavigationViewItem.Icon>
@@ -122,7 +127,13 @@
                     </InfoBar.ActionButton>
                 </InfoBar>
 
-                <Frame x:Name="ContentFrame" Grid.Row="1" />
+                <Frame x:Name="ContentFrame" Grid.Row="1">
+                    <Frame.ContentTransitions>
+                        <TransitionCollection>
+                            <NavigationThemeTransition />
+                        </TransitionCollection>
+                    </Frame.ContentTransitions>
+                </Frame>
             </Grid>
         </NavigationView>
 

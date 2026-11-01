@@ -4,6 +4,49 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.7] — 2026-11-01
+
+### Theming System & Visual Customization
+* **New Color Themes**:
+  * **OLED Black** — deep absolute black background (#000000) for maximum contrast and battery saving on OLED displays.
+  * **Midnight Blue** — elegant deep blue night tone.
+  * **Sepia Warm** — soft, warm palette for comfortable late-night listening sessions.
+  * **Classic Dark & Light** — familiar dark and light Fluent themes.
+* **Curated Nordic Accent Palette**:
+  * Distinctive Nordic-inspired accents (Nordic Ice, Berry, Emerald, Mint, Gold, Purple, Coral).
+  * **Custom HEX Color Picker**: enter any hex color code (#RRGGBB) to personalize your accent tone.
+* **Interface Fonts**: choose between Inter, Segoe UI, and Yandex Sans.
+* **Window Backdrops**: toggle seamlessly between Mica, Mica Alt, Acrylic, and Solid backgrounds.
+
+### Categorized Settings (Profile & Preferences)
+* **Segmented Navigation Bar**: settings are now neatly organized into dedicated categories (Profile, Audio, Appearance & Modules, Integrations, System, Storage, About, and All).
+* **Smooth Category Animations**: tactile slide and fade-in transitions when navigating between settings categories.
+* **Scroll & Layout Fixes**: resolved dead-zone strips and bottom padding clipping in settings scroll viewers.
+
+### Modular Interface Customization
+* **Sidebar Customization**: independently toggle visibility for Search, My Wave, Liked Tracks, and Playlists & Albums in the sidebar.
+* **Player Bar Controls**: customize lower player items, including Lyrics, Equalizer, HQ quality badge, and compact volume slider.
+* **Home Page Sections**: independently show or hide Home sections ("Curated for You", "New Releases", "Editorial Playlists", and "Chart").
+
+### Smooth Navigation Transitions
+* **Fluid Page Transitions**: integrated `EntranceNavigationTransitionInfo` across the entire application shell, providing fluid entrance animations when switching pages, browsing artists, and opening albums.
+
+### Track Row Redesign
+* **Dynamic Active Track Glow**: translucent accent tint (12.5% opacity) highlighting the currently playing track, dynamically adapting to your active accent color.
+* **Fluent 2 Hover Effects**: translucent hover and selection overlays replacing flat gray boxes.
+* **Refined 6px Thumbnails**: track artwork thumbnails and playing equalizer overlays now feature consistent modern 6px rounded corners across all pages.
+
+### Liked Tracks & Playlists Polish
+* **Modern Header Action Pills**: replaced clunky rectangular buttons with sleek Fluent 2 pills ("Play All", "Shuffle") with tactile cursors. Removed redundant refresh button.
+* **Redesigned Search Capsule**: transformed the search input into a dedicated capsule featuring a left-aligned search icon, concise "Filter tracks..." placeholder, quick-clear `✕` button, and no underline artifact.
+* **Seamless Viewport & Spacing**: removed the bottom dead-band gap so track lists scroll flush against the player bar, and balanced top padding (32px) matching Explore and Search pages.
+
+### Game Overlay & Spotify Import
+* **Game Overlay**: foundation service for in-game track notifications and overlay display.
+* **Spotify Import**: service for migrating and matching Spotify playlists and tracks into Yandex Music.
+
+---
+
 ## [0.9.61] — 2026-11-01
 
 ### Seamless Playback with VPN & System Proxy

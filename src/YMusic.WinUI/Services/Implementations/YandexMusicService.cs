@@ -612,10 +612,11 @@ public sealed class YandexMusicService : IYandexMusicService
         for (int i = 0; i < idList.Count; i += batchSize)
         {
             var batch = idList.Skip(i).Take(batchSize).ToList();
-            var formValues = new List<KeyValuePair<string, string>>
+            var formValues = new List<KeyValuePair<string, string>>();
+            foreach (var id in batch)
             {
-                new("track-ids", string.Join(",", batch))
-            };
+                formValues.Add(new KeyValuePair<string, string>("track-ids", id));
+            }
 
             using var content = new FormUrlEncodedContent(formValues);
             using var response = await SendRequestAsync(HttpMethod.Post, "tracks", content, cancellationToken).ConfigureAwait(false);
@@ -714,22 +715,167 @@ public sealed class YandexMusicService : IYandexMusicService
         return allPlaylists;
     }
 
-    public async Task<bool> AddTrackToPlaylistAsync(
+    public async Task<Playlist?> CreatePlaylistAsync(
+        string title,
+        string? description = null,
+        bool isPublic = true,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return null;
+        }
+
+        try
+        {
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new("title", title),
+                new("visibility", isPublic ? "public" : "private")
+            };
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                pairs.Add(new("description", description));
+            }
+
+            var content = new FormUrlEncodedContent(pairs);
+
+            using var response = await SendRequestAsync(
+                HttpMethod.Post,
+                $"users/{userId}/playlists/create",
+                content,
+                cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var apiResult = JsonSerializer.Deserialize<YandexApiResponse<Playlist>>(json, _jsonOptions);
+                return apiResult?.Result;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CreatePlaylistAsync error] {ex.Message}");
+        }
+
+        return null;
+    }
+
+    private void InvalidatePlaylistCache(long ownerUid, int kind)
+    {
+        _playlistWithTracksCache.TryRemove($"{ownerUid}:{kind}", out _);
+        _playlistWithTracksCache.TryRemove($"{ownerUid}_{kind}", out _);
+    }
+
+    public async Task<bool> DeletePlaylistAsync(
         long ownerUid,
         int kind,
-        string trackId,
-        string? albumId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (ownerUid <= 0)
+        {
+            var myUserId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (long.TryParse(myUserId, out var parsed))
+            {
+                ownerUid = parsed;
+            }
+        }
+
+        try
+        {
+            using var response = await SendRequestAsync(
+                HttpMethod.Post,
+                $"users/{ownerUid}/playlists/{kind}/delete",
+                null,
+                cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                InvalidatePlaylistCache(ownerUid, kind);
+                lock (_likedPlaylistKeys) { _likedPlaylistKeys.Remove($"{ownerUid}:{kind}"); }
+                return true;
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeletePlaylistAsync error] {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> RenamePlaylistAsync(
+        long ownerUid,
+        int kind,
+        string newTitle,
+        string? newDescription = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var diffJson = albumId != null
-                ? $"[{{\"op\":\"insert\",\"at\":0,\"tracks\":[{{\"id\":\"{trackId}\",\"albumId\":\"{albumId}\"}}]}}]"
-                : $"[{{\"op\":\"insert\",\"at\":0,\"tracks\":[{{\"id\":\"{trackId}\"}}]}}]";
+            var nameContent = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("value", newTitle)
+            });
 
+            using var nameResponse = await SendRequestAsync(
+                HttpMethod.Post,
+                $"users/{ownerUid}/playlists/{kind}/name",
+                nameContent,
+                cancellationToken).ConfigureAwait(false);
+
+            bool ok = nameResponse != null && nameResponse.IsSuccessStatusCode;
+
+            if (newDescription != null)
+            {
+                var descContent = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("value", newDescription)
+                });
+
+                using var descResponse = await SendRequestAsync(
+                    HttpMethod.Post,
+                    $"users/{ownerUid}/playlists/{kind}/description",
+                    descContent,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            InvalidatePlaylistCache(ownerUid, kind);
+            return ok;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[RenamePlaylistAsync error] {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> RemoveTrackFromPlaylistAsync(
+        long ownerUid,
+        int kind,
+        int trackIndex,
+        CancellationToken cancellationToken = default)
+    {
+        if (ownerUid <= 0)
+        {
+            var myUserId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (long.TryParse(myUserId, out var parsed))
+            {
+                ownerUid = parsed;
+            }
+        }
+
+        try
+        {
+            var pl = await GetPlaylistWithTracksAsync(ownerUid, kind, cancellationToken).ConfigureAwait(false);
+            int rev = pl?.Revision ?? 1;
+
+            var diffJson = $"[{{\"op\":\"delete\",\"from\":{trackIndex},\"to\":{trackIndex + 1}}}]";
             var content = new FormUrlEncodedContent(new[]
             {
-                new KeyValuePair<string, string>("diff", diffJson)
+                new KeyValuePair<string, string>("diff", diffJson),
+                new KeyValuePair<string, string>("revision", rev.ToString())
             });
 
             using var response = await SendRequestAsync(
@@ -740,7 +886,139 @@ public sealed class YandexMusicService : IYandexMusicService
 
             if (response != null && response.IsSuccessStatusCode)
             {
-                _playlistWithTracksCache.TryRemove($"{ownerUid}:{kind}", out _);
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var apiResult = JsonSerializer.Deserialize<YandexApiResponse<Playlist>>(json, _jsonOptions);
+                if (apiResult?.Result != null && pl != null)
+                {
+                    pl.Revision = apiResult.Result.Revision;
+                }
+                InvalidatePlaylistCache(ownerUid, kind);
+                return true;
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[RemoveTrackFromPlaylistAsync error] {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> AddTracksToPlaylistAsync(
+        long ownerUid,
+        int kind,
+        IEnumerable<(string TrackId, string? AlbumId)> tracks,
+        CancellationToken cancellationToken = default)
+    {
+        if (ownerUid <= 0)
+        {
+            var myUserId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (long.TryParse(myUserId, out var parsed))
+            {
+                ownerUid = parsed;
+            }
+        }
+
+        var trackList = tracks.ToList();
+        if (trackList.Count == 0) return true;
+
+        var pl = await GetPlaylistWithTracksAsync(ownerUid, kind, cancellationToken).ConfigureAwait(false);
+        int currentRevision = pl?.Revision ?? 1;
+
+        bool allSuccess = true;
+        foreach (var chunk in trackList.Chunk(50))
+        {
+            try
+            {
+                var tracksJson = string.Join(",", chunk.Select(t =>
+                    t.AlbumId != null
+                        ? $"{{\"id\":\"{t.TrackId}\",\"albumId\":\"{t.AlbumId}\"}}"
+                        : $"{{\"id\":\"{t.TrackId}\"}}"));
+
+                var diffJson = $"[{{\"op\":\"insert\",\"at\":0,\"tracks\":[{tracksJson}]}}]";
+
+                var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("diff", diffJson),
+                    new KeyValuePair<string, string>("revision", currentRevision.ToString())
+                });
+
+                using var response = await SendRequestAsync(
+                    HttpMethod.Post,
+                    $"users/{ownerUid}/playlists/{kind}/change-relative",
+                    content,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (response != null && response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    var apiResult = JsonSerializer.Deserialize<YandexApiResponse<Playlist>>(json, _jsonOptions);
+                    if (apiResult?.Result != null)
+                    {
+                        currentRevision = apiResult.Result.Revision > 0 ? apiResult.Result.Revision : currentRevision + 1;
+                        if (pl != null) pl.Revision = currentRevision;
+                    }
+                    else
+                    {
+                        currentRevision++;
+                    }
+
+                    InvalidatePlaylistCache(ownerUid, kind);
+                }
+                else
+                {
+                    string? errBody = response != null ? await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false) : null;
+                    System.Diagnostics.Debug.WriteLine($"[AddTracksToPlaylistAsync failed] Status: {response?.StatusCode}, Body: {errBody}");
+                    allSuccess = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AddTracksToPlaylistAsync error] {ex.Message}");
+                allSuccess = false;
+            }
+        }
+
+        return allSuccess;
+    }
+
+    public async Task<bool> AddTrackToPlaylistAsync(
+        long ownerUid,
+        int kind,
+        string trackId,
+        string? albumId = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var pl = await GetPlaylistWithTracksAsync(ownerUid, kind, cancellationToken).ConfigureAwait(false);
+            int rev = pl?.Revision ?? 1;
+
+            var diffJson = albumId != null
+                ? $"[{{\"op\":\"insert\",\"at\":0,\"tracks\":[{{\"id\":\"{trackId}\",\"albumId\":\"{albumId}\"}}]}}]"
+                : $"[{{\"op\":\"insert\",\"at\":0,\"tracks\":[{{\"id\":\"{trackId}\"}}]}}]";
+
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("diff", diffJson),
+                new KeyValuePair<string, string>("revision", rev.ToString())
+            });
+
+            using var response = await SendRequestAsync(
+                HttpMethod.Post,
+                $"users/{ownerUid}/playlists/{kind}/change-relative",
+                content,
+                cancellationToken).ConfigureAwait(false);
+
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var apiResult = JsonSerializer.Deserialize<YandexApiResponse<Playlist>>(json, _jsonOptions);
+                if (apiResult?.Result != null && pl != null)
+                {
+                    pl.Revision = apiResult.Result.Revision;
+                }
+                InvalidatePlaylistCache(ownerUid, kind);
                 return true;
             }
             return false;
@@ -2551,7 +2829,18 @@ public sealed class YandexMusicService : IYandexMusicService
 
     public async Task<Playlist?> GetPlaylistWithTracksAsync(long ownerUid, int kind, CancellationToken cancellationToken = default)
     {
-        string cacheKey = $"{ownerUid}_{kind}";
+        if (ownerUid <= 0)
+        {
+            var myUserId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+            if (long.TryParse(myUserId, out var parsed))
+            {
+                ownerUid = parsed;
+            }
+        }
+
+        if (ownerUid <= 0) return null;
+
+        string cacheKey = $"{ownerUid}:{kind}";
         if (_playlistWithTracksCache.TryGetValue(cacheKey, out var cached) && (DateTime.UtcNow - cached.CachedAt).TotalMinutes < 10)
         {
             return cached.Playlist;
@@ -2559,7 +2848,7 @@ public sealed class YandexMusicService : IYandexMusicService
 
         try
         {
-            using var response = await SendRequestAsync(HttpMethod.Get, $"users/{ownerUid}/playlists/{kind}", null, cancellationToken).ConfigureAwait(false);
+            using var response = await SendRequestAsync(HttpMethod.Get, $"users/{ownerUid}/playlists/{kind}?rich-tracks=true", null, cancellationToken).ConfigureAwait(false);
             if (response == null || !response.IsSuccessStatusCode)
             {
                 return null;
@@ -2571,6 +2860,11 @@ public sealed class YandexMusicService : IYandexMusicService
 
             if (playlist != null)
             {
+                if (playlist.Uid <= 0 && ownerUid > 0)
+                {
+                    playlist.Uid = ownerUid;
+                }
+
                 var missingIds = playlist.Tracks
                     .Where(t => t.Track == null && !string.IsNullOrWhiteSpace(t.Id))
                     .Select(t => t.Id)
@@ -2590,6 +2884,7 @@ public sealed class YandexMusicService : IYandexMusicService
                 }
 
                 _playlistWithTracksCache[cacheKey] = (playlist, DateTime.UtcNow);
+                _playlistWithTracksCache[$"{ownerUid}_{kind}"] = (playlist, DateTime.UtcNow);
             }
 
             return playlist;

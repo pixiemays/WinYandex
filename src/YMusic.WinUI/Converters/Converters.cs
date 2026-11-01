@@ -306,13 +306,21 @@ public sealed class BoolToTrackTitleBrushConverter : IValueConverter
 
 public sealed class BoolToTrackHighlightBrushConverter : IValueConverter
 {
-    private static readonly SolidColorBrush FallbackHighlightBrush = new(Windows.UI.Color.FromArgb(18, 255, 255, 255));
+    private static readonly SolidColorBrush FallbackHighlightBrush = new(Windows.UI.Color.FromArgb(28, 255, 255, 255));
     private static readonly SolidColorBrush TransparentBrush = new(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
     public object Convert(object value, Type targetType, object parameter, string language)
     {
         if (value is bool isCurrent && isCurrent)
         {
+            if (Application.Current.Resources.TryGetValue("SystemAccentColor", out var accentObj) && accentObj is Windows.UI.Color c)
+            {
+                return new SolidColorBrush(Windows.UI.Color.FromArgb(32, c.R, c.G, c.B));
+            }
+            if (Application.Current.Resources.TryGetValue("AccentFillColorDefaultBrush", out var accentBrush) && accentBrush is SolidColorBrush scb)
+            {
+                return new SolidColorBrush(Windows.UI.Color.FromArgb(32, scb.Color.R, scb.Color.G, scb.Color.B));
+            }
             if (Application.Current.Resources.TryGetValue("SubtleFillColorSecondaryBrush", out var brush) && brush is Brush b)
             {
                 return b;
@@ -333,7 +341,24 @@ public sealed class BoolToPillBackgroundConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        if (value is bool b && b)
+        bool isSelected = false;
+        if (value is bool b)
+        {
+            isSelected = b;
+        }
+        else if (value is int intVal && parameter != null)
+        {
+            if (int.TryParse(parameter.ToString(), out int targetInt))
+            {
+                isSelected = intVal == targetInt;
+            }
+        }
+        else if (value != null && parameter != null)
+        {
+            isSelected = string.Equals(value.ToString(), parameter.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (isSelected)
         {
             if (Application.Current.Resources.TryGetValue("AccentFillColorDefaultBrush", out var accent) && accent is Brush ab)
                 return ab;
@@ -352,11 +377,67 @@ public sealed class BoolToPillBackgroundConverter : IValueConverter
     }
 }
 
+public sealed class BoolToSegmentBackgroundConverter : IValueConverter
+{
+    private static readonly SolidColorBrush TransparentBrush = new(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        bool isSelected = false;
+        if (value is bool b)
+        {
+            isSelected = b;
+        }
+        else if (value is int intVal && parameter != null)
+        {
+            if (int.TryParse(parameter.ToString(), out int targetInt))
+            {
+                isSelected = intVal == targetInt;
+            }
+        }
+        else if (value != null && parameter != null)
+        {
+            isSelected = string.Equals(value.ToString(), parameter.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (isSelected)
+        {
+            if (Application.Current.Resources.TryGetValue("AccentFillColorDefaultBrush", out var accent) && accent is Brush ab)
+                return ab;
+            return new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 204, 0));
+        }
+
+        return TransparentBrush;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public sealed class BoolToPillForegroundConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        if (value is bool b && b)
+        bool isSelected = false;
+        if (value is bool b)
+        {
+            isSelected = b;
+        }
+        else if (value is int intVal && parameter != null)
+        {
+            if (int.TryParse(parameter.ToString(), out int targetInt))
+            {
+                isSelected = intVal == targetInt;
+            }
+        }
+        else if (value != null && parameter != null)
+        {
+            isSelected = string.Equals(value.ToString(), parameter.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (isSelected)
         {
             if (Application.Current.Resources.TryGetValue("TextOnAccentFillColorPrimaryBrush", out var onAccent) && onAccent is Brush oab)
                 return oab;
@@ -558,6 +639,22 @@ public sealed class BoolToPreSaveBadgeBorderConverter : IValueConverter
         }
 
         return TransparentBrush;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
+
+public sealed class HexToBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is string hex && !string.IsNullOrWhiteSpace(hex))
+        {
+            var col = YMusic.WinUI.Services.Implementations.ThemeService.ParseHex(hex);
+            return new SolidColorBrush(col);
+        }
+        return new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();

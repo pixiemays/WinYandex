@@ -12,7 +12,7 @@
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <Grid Padding="20,18,20,16">
+    <Grid Padding="32,32,32,0">
         <Grid.RowDefinitions>
             <!-- Header & Controls -->
             <RowDefinition Height="Auto" />
@@ -21,58 +21,115 @@
         </Grid.RowDefinitions>
 
         <!-- 1. Header Section -->
-        <Grid Grid.Row="0" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
+        <StackPanel Grid.Row="0" Margin="0,0,0,20" Spacing="18">
             <!-- Title & Info -->
-            <StackPanel Grid.Column="0" Spacing="4">
+            <StackPanel Spacing="4">
                 <TextBlock Text="{x:Bind ViewModel.PageTitle, Mode=OneWay}"
-                           FontSize="28"
+                           FontSize="30"
                            FontWeight="Bold" />
-                
                 <TextBlock Text="{x:Bind ViewModel.FormattedTotalTracks, Mode=OneWay}"
                            FontSize="13"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
 
-                <!-- Actions -->
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,12,0,0">
+            <!-- Actions Row & Search Filter -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Action Buttons (Pill) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <Button Command="{x:Bind ViewModel.PlayAllCommand}"
                             Style="{ThemeResource AccentButtonStyle}"
-                            Height="36">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE768;" FontSize="14" />
-                            <TextBlock Text="{x:Bind ViewModel.PlayAllText, Mode=OneWay}" />
+                            Height="40"
+                            CornerRadius="20"
+                            Padding="20,0"
+                            helpers:CursorHelper.UseHandCursor="True">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE768;" FontSize="13" />
+                            <TextBlock Text="{x:Bind ViewModel.PlayAllText, Mode=OneWay}"
+                                       FontWeight="SemiBold"
+                                       FontSize="13.5" />
                         </StackPanel>
                     </Button>
 
                     <Button Command="{x:Bind ViewModel.ShufflePlayAllCommand}"
-                            Height="36">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            Height="40"
+                            CornerRadius="20"
+                            Padding="18,0"
+                            helpers:CursorHelper.UseHandCursor="True">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <FontIcon Glyph="&#xE8B1;" FontSize="14" />
-                            <TextBlock Text="{x:Bind ViewModel.ShuffleText, Mode=OneWay}" />
+                            <TextBlock Text="{x:Bind ViewModel.ShuffleText, Mode=OneWay}"
+                                       FontWeight="SemiBold"
+                                       FontSize="13.5" />
                         </StackPanel>
                     </Button>
-
-                    <Button Command="{x:Bind ViewModel.LoadTracksCommand}"
-                            Height="36"
-                            ToolTipService.ToolTip="{x:Bind ViewModel.RefreshTooltip, Mode=OneWay}">
-                        <FontIcon Glyph="&#xE72C;" FontSize="14" />
-                    </Button>
                 </StackPanel>
-            </StackPanel>
 
-            <!-- Search Filter Box -->
-            <AutoSuggestBox Grid.Column="1"
-                            Width="260"
-                            Height="36"
-                            VerticalAlignment="Bottom"
-                            PlaceholderText="{x:Bind ViewModel.FilterPlaceholder, Mode=OneWay}"
-                            QueryIcon="Find"
-                            Text="{x:Bind ViewModel.SearchFilter, Mode=TwoWay}" />
-        </Grid>
+                <!-- Right: Sleek Search Capsule -->
+                <Border Grid.Column="1"
+                        Width="280"
+                        Height="40"
+                        CornerRadius="20"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Search Icon (Left) -->
+                        <FontIcon Grid.Column="0"
+                                  Glyph="&#xE721;"
+                                  FontSize="13"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                  Margin="14,0,8,0"
+                                  VerticalAlignment="Center" />
+
+                        <!-- Search Input -->
+                        <TextBox Grid.Column="1"
+                                 Text="{x:Bind ViewModel.SearchFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 PlaceholderText="{x:Bind ViewModel.FilterPlaceholder, Mode=OneWay}"
+                                 FontSize="13"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 VerticalAlignment="Center"
+                                 Padding="0,0,4,0">
+                            <TextBox.Resources>
+                                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                            </TextBox.Resources>
+                        </TextBox>
+
+                        <!-- Clear Filter Button -->
+                        <Button Grid.Column="2"
+                                Click="ClearSearchButton_Click"
+                                Visibility="{x:Bind ViewModel.HasSearchFilter, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Width="28"
+                                Height="28"
+                                Margin="0,0,6,0"
+                                Padding="0"
+                                CornerRadius="14"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                helpers:CursorHelper.UseHandCursor="True">
+                            <FontIcon Glyph="&#xE711;" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+        </StackPanel>
 
         <!-- 2. Track List with UI Virtualization -->
         <Grid Grid.Row="1">
@@ -92,16 +149,12 @@
 
             <!-- Virtualized Track List -->
             <ListView ItemsSource="{x:Bind ViewModel.FilteredTracks, Mode=OneWay}"
+                      Padding="0,0,0,24"
                       IsItemClickEnabled="True"
                       ItemClick="TrackListView_ItemClick"
                       SelectionMode="None">
                 <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="Padding" Value="0" />
-                        <Setter Property="Margin" Value="0,1" />
-                        <Setter Property="MinHeight" Value="48" />
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                    </Style>
+                    <Style TargetType="ListViewItem" BasedOn="{StaticResource TrackRowListViewItemStyle}" />
                 </ListView.ItemContainerStyle>
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -142,7 +195,7 @@
                                 <Border Grid.Column="1"
                                         Width="40"
                                         Height="40"
-                                        CornerRadius="4"
+                                        CornerRadius="6"
                                         Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                                     <Grid>
                                         <FontIcon Glyph="&#xE8D6;"
@@ -154,8 +207,8 @@
 
                                         <!-- Equalizer Playing Overlay -->
                                         <Grid Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                                              Background="#A6000000"
-                                              CornerRadius="4">
+                                              Background="#B3000000"
+                                              CornerRadius="6">
                                             <controls:MiniEqualizerControl IsPlaying="{x:Bind IsPlaying, Mode=OneWay}"
                                                                            HorizontalAlignment="Center"
                                                                            VerticalAlignment="Center" />

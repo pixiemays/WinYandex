@@ -7,13 +7,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:YMusic.WinUI.ViewModels"
     xmlns:helpers="using:YMusic.WinUI.Helpers"
+    xmlns:interfaces="using:YMusic.WinUI.Services.Interfaces"
     mc:Ignorable="d">
 
     <ScrollViewer x:Name="PageScrollViewer"
                   VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled"
-                  Padding="36,28,36,48">
-        <StackPanel HorizontalAlignment="Stretch" Spacing="28">
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel HorizontalAlignment="Stretch" Spacing="18" Padding="36,24,36,48">
 
             <!-- Page Title -->
             <StackPanel Spacing="6">
@@ -25,8 +25,120 @@
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             </StackPanel>
 
+            <!-- Settings Segmented Navigation Bar -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="4"
+                    Margin="0,2,0,0">
+                <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled"
+                              HorizontalScrollMode="Enabled"
+                              VerticalScrollMode="Disabled">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <!-- Profile Tab -->
+                        <Button Click="CategoryPill_Click" Tag="1"
+                                Style="{StaticResource SettingsSegmentButtonStyle}"
+                                Background="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToSegmentBackgroundConverter}, ConverterParameter=1}">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE77B;" FontSize="13" Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=1}" />
+                                <TextBlock Text="{x:Bind ViewModel.CategoryProfileText, Mode=OneWay}"
+                                           FontWeight="SemiBold" FontSize="12.5"
+                                           Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=1}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Audio Tab -->
+                        <Button Click="CategoryPill_Click" Tag="2"
+                                Style="{StaticResource SettingsSegmentButtonStyle}"
+                                Background="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToSegmentBackgroundConverter}, ConverterParameter=2}">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xEC4F;" FontSize="13" Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=2}" />
+                                <TextBlock Text="{x:Bind ViewModel.CategoryAudioText, Mode=OneWay}"
+                                           FontWeight="SemiBold" FontSize="12.5"
+                                           Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=2}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Appearance Tab -->
+                        <Button Click="CategoryPill_Click" Tag="3"
+                                Style="{StaticResource SettingsSegmentButtonStyle}"
+                                Background="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToSegmentBackgroundConverter}, ConverterParameter=3}">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE790;" FontSize="13" Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=3}" />
+                                <TextBlock Text="{x:Bind ViewModel.CategoryAppearanceText, Mode=OneWay}"
+                                           FontWeight="SemiBold" FontSize="12.5"
+                                           Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=3}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Integrations Tab -->
+                        <Button Click="CategoryPill_Click" Tag="4"
+                                Style="{StaticResource SettingsSegmentButtonStyle}"
+                                Background="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToSegmentBackgroundConverter}, ConverterParameter=4}">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xEB51;" FontSize="13" Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=4}" />
+                                <TextBlock Text="{x:Bind ViewModel.CategoryIntegrationsText, Mode=OneWay}"
+                                           FontWeight="SemiBold" FontSize="12.5"
+                                           Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=4}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- System Tab -->
+                        <Button Click="CategoryPill_Click" Tag="5"
+                                Style="{StaticResource SettingsSegmentButtonStyle}"
+                                Background="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToSegmentBackgroundConverter}, ConverterParameter=5}">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE713;" FontSize="13" Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=5}" />
+                                <TextBlock Text="{x:Bind ViewModel.CategorySystemText, Mode=OneWay}"
+                                           FontWeight="SemiBold" FontSize="12.5"
+                                           Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=5}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Storage Tab -->
+                        <Button Click="CategoryPill_Click" Tag="6"
+                                Style="{StaticResource SettingsSegmentButtonStyle}"
+                                Background="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToSegmentBackgroundConverter}, ConverterParameter=6}">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xEDA2;" FontSize="13" Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=6}" />
+                                <TextBlock Text="{x:Bind ViewModel.CategoryStorageText, Mode=OneWay}"
+                                           FontWeight="SemiBold" FontSize="12.5"
+                                           Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=6}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- About Tab -->
+                        <Button Click="CategoryPill_Click" Tag="7"
+                                Style="{StaticResource SettingsSegmentButtonStyle}"
+                                Background="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToSegmentBackgroundConverter}, ConverterParameter=7}">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE946;" FontSize="13" Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=7}" />
+                                <TextBlock Text="{x:Bind ViewModel.CategoryAboutText, Mode=OneWay}"
+                                           FontWeight="SemiBold" FontSize="12.5"
+                                           Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=7}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- All Tab -->
+                        <Button Click="CategoryPill_Click" Tag="0"
+                                Style="{StaticResource SettingsSegmentButtonStyle}"
+                                Background="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToSegmentBackgroundConverter}, ConverterParameter=0}">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE81D;" FontSize="13" Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=0}" />
+                                <TextBlock Text="{x:Bind ViewModel.CategoryAllText, Mode=OneWay}"
+                                           FontWeight="SemiBold" FontSize="12.5"
+                                           Foreground="{x:Bind ViewModel.SelectedCategoryIndex, Mode=OneWay, Converter={StaticResource BoolToPillForegroundConverter}, ConverterParameter=0}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
             <!-- Feedback / Status InfoBar -->
             <InfoBar IsOpen="{x:Bind ViewModel.HasNotification, Mode=OneWay}"
+                     Visibility="{x:Bind ViewModel.HasNotification, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                      Severity="Informational"
                      Title="{x:Bind ViewModel.NotificationTitle, Mode=OneWay}"
                      Message="{x:Bind ViewModel.NotificationMessage, Mode=OneWay}"
@@ -34,15 +146,25 @@
                      CloseButtonClick="NotificationInfoBar_CloseButtonClick" />
 
             <!-- ========================================== -->
+            <!-- DYNAMIC SETTINGS CONTENT CONTAINER         -->
+            <!-- ========================================== -->
+            <Grid x:Name="SettingsContentContainer">
+                <Grid.RenderTransform>
+                    <TranslateTransform x:Name="ContentTranslateTransform" Y="0" />
+                </Grid.RenderTransform>
+
+                <StackPanel Spacing="18">
+            <!-- ========================================== -->
             <!-- 1. USER PROFILE SECTION                   -->
             <!-- ========================================== -->
-            <!-- Logged In Card -->
-            <Border Visibility="{x:Bind ViewModel.IsLoggedIn, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Padding="24"
-                    CornerRadius="14"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1">
+            <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.ShowProfileSection, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                <!-- Logged In Card -->
+                <Border Visibility="{x:Bind ViewModel.IsLoggedIn, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                        Padding="24"
+                        CornerRadius="14"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
                 <StackPanel Spacing="20">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -260,11 +382,12 @@
                     </Button>
                 </Grid>
             </Border>
+            </StackPanel>
 
             <!-- ========================================== -->
             <!-- 2. AUDIO & PLAYBACK SETTINGS              -->
             <!-- ========================================== -->
-            <StackPanel Spacing="12">
+            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.ShowAudioSection, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <FontIcon Glyph="&#xEC4F;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
                     <TextBlock Text="{x:Bind ViewModel.AudioSectionTitle, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" />
@@ -310,6 +433,42 @@
                         </Grid>
                     </Border>
 
+                    <!-- Smart Crossfade Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
+                                <TextBlock Text="{x:Bind ViewModel.CrossfadeTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.CrossfadeDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1"
+                                          IsOn="{x:Bind ViewModel.IsCrossfadeEnabled, Mode=TwoWay}"
+                                          OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                          OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                          VerticalAlignment="Center" />
+
+                            <!-- Crossfade Duration Slider -->
+                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,14,0,0"
+                                        Orientation="Horizontal" Spacing="16" VerticalAlignment="Center"
+                                        Visibility="{x:Bind ViewModel.IsCrossfadeEnabled, Mode=OneWay}">
+                                <Slider Minimum="1" Maximum="10" StepFrequency="1"
+                                        Value="{x:Bind ViewModel.CrossfadeDurationSeconds, Mode=TwoWay}"
+                                        Width="200" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ViewModel.CrossfadeDurationText, Mode=OneWay}"
+                                           FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                     <!-- Equalizer Card -->
                     <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                         <Grid>
@@ -342,12 +501,12 @@
             </StackPanel>
 
             <!-- ========================================== -->
-            <!-- 3. INTEGRATIONS & SYSTEM                  -->
+            <!-- 4. INTEGRATIONS                           -->
             <!-- ========================================== -->
-            <StackPanel Spacing="12">
+            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.ShowIntegrationsSection, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <FontIcon Glyph="&#xE713;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
-                    <TextBlock Text="{x:Bind ViewModel.SystemSectionTitle, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" />
+                    <FontIcon Glyph="&#xEB51;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <TextBlock Text="{x:Bind ViewModel.IntegrationsSectionTitle, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" />
                 </StackPanel>
 
                 <StackPanel Spacing="8">
@@ -425,6 +584,231 @@
                                 </Grid>
                             </Border>
                         </StackPanel>
+                    </Border>
+
+                    <!-- In-Game HUD Overlay Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <StackPanel Spacing="14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="4" Margin="0,0,16,0">
+                                    <TextBlock Text="{x:Bind ViewModel.GameOverlayTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind ViewModel.GameOverlayDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsOn="{x:Bind ViewModel.IsGameOverlayEnabled, Mode=TwoWay}"
+                                              OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                              OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                              VerticalAlignment="Center" />
+                            </Grid>
+
+                            <!-- Sub-settings for HUD Overlay -->
+                            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.IsGameOverlayEnabled, Mode=OneWay}">
+                                <!-- Show on Track Change Toggle -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="2" Margin="0,0,16,0">
+                                        <TextBlock Text="{x:Bind ViewModel.ShowOverlayOnTrackChangeTitle, Mode=OneWay}" FontSize="13" />
+                                        <TextBlock Text="{x:Bind ViewModel.ShowOverlayOnTrackChangeDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  IsOn="{x:Bind ViewModel.IsShowOverlayOnTrackChangeEnabled, Mode=TwoWay}"
+                                                  OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                  OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                  VerticalAlignment="Center" />
+                                </Grid>
+
+                                <!-- Duration Slider -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{x:Bind ViewModel.GameOverlayDurationText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <Slider Minimum="2" Maximum="7" StepFrequency="1"
+                                            Value="{x:Bind ViewModel.GameOverlayDurationSeconds, Mode=TwoWay}"
+                                            VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Interactive Screen Position Selector -->
+                                <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10"
+                                        Padding="14"
+                                        Margin="0,4,0,0">
+                                    <StackPanel Spacing="12">
+                                        <!-- Header: Title, Selected Badge, Test Button -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind ViewModel.GameOverlayPositionTitle, Mode=OneWay}"
+                                                           FontSize="13" FontWeight="SemiBold" />
+                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <TextBlock Text="Выбрано:" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    <TextBlock Text="{x:Bind ViewModel.SelectedOverlayPositionName, Mode=OneWay}"
+                                                               FontSize="11" FontWeight="SemiBold" Foreground="#FFFFD300" />
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Test Overlay Button -->
+                                            <Button Grid.Column="1"
+                                                    Command="{x:Bind ViewModel.TestGameOverlayCommand}"
+                                                    Height="32"
+                                                    Padding="12,0"
+                                                    CornerRadius="6">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <FontIcon Glyph="&#xE768;" FontSize="11" Foreground="#FFFFD300" />
+                                                    <TextBlock Text="{x:Bind ViewModel.TestGameOverlayButtonText, Mode=OneWay}" FontSize="12" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+
+                                        <!-- Mini Monitor Screen Graphic -->
+                                        <StackPanel HorizontalAlignment="Center" Spacing="4">
+                                            <Border Width="270"
+                                                    Height="136"
+                                                    Background="#FF101014"
+                                                    BorderBrush="#33FFFFFF"
+                                                    BorderThickness="1.5"
+                                                    CornerRadius="8"
+                                                    Padding="8">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Top Row -->
+                                                    <Button Grid.Row="0" Grid.Column="0"
+                                                            Command="{x:Bind ViewModel.SetOverlayPositionCommand}"
+                                                            CommandParameter="1"
+                                                            Background="{x:Bind ViewModel.PosTopLeftBrush, Mode=OneWay}"
+                                                            Foreground="{x:Bind ViewModel.PosTopLeftForeground, Mode=OneWay}"
+                                                            Height="26" Width="66" Padding="0" CornerRadius="5" BorderThickness="0">
+                                                        <TextBlock Text="Слева" FontSize="10.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                    </Button>
+
+                                                    <Button Grid.Row="0" Grid.Column="1"
+                                                            Command="{x:Bind ViewModel.SetOverlayPositionCommand}"
+                                                            CommandParameter="4"
+                                                            Background="{x:Bind ViewModel.PosTopCenterBrush, Mode=OneWay}"
+                                                            Foreground="{x:Bind ViewModel.PosTopCenterForeground, Mode=OneWay}"
+                                                            Height="26" Width="74" Padding="0" CornerRadius="5" BorderThickness="0"
+                                                            HorizontalAlignment="Center">
+                                                        <TextBlock Text="Вверху" FontSize="10.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                    </Button>
+
+                                                    <Button Grid.Row="0" Grid.Column="2"
+                                                            Command="{x:Bind ViewModel.SetOverlayPositionCommand}"
+                                                            CommandParameter="0"
+                                                            Background="{x:Bind ViewModel.PosTopRightBrush, Mode=OneWay}"
+                                                            Foreground="{x:Bind ViewModel.PosTopRightForeground, Mode=OneWay}"
+                                                            Height="26" Width="66" Padding="0" CornerRadius="5" BorderThickness="0">
+                                                        <TextBlock Text="Справа" FontSize="10.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                    </Button>
+
+                                                    <!-- Middle Row (Sides) -->
+                                                    <Button Grid.Row="1" Grid.Column="0"
+                                                            Command="{x:Bind ViewModel.SetOverlayPositionCommand}"
+                                                            CommandParameter="6"
+                                                            Background="{x:Bind ViewModel.PosMiddleLeftBrush, Mode=OneWay}"
+                                                            Foreground="{x:Bind ViewModel.PosMiddleLeftForeground, Mode=OneWay}"
+                                                            Height="26" Width="66" Padding="0" CornerRadius="5" BorderThickness="0"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="Бок Л" FontSize="10.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                    </Button>
+
+                                                    <Button Grid.Row="1" Grid.Column="2"
+                                                            Command="{x:Bind ViewModel.SetOverlayPositionCommand}"
+                                                            CommandParameter="7"
+                                                            Background="{x:Bind ViewModel.PosMiddleRightBrush, Mode=OneWay}"
+                                                            Foreground="{x:Bind ViewModel.PosMiddleRightForeground, Mode=OneWay}"
+                                                            Height="26" Width="66" Padding="0" CornerRadius="5" BorderThickness="0"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="Бок П" FontSize="10.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                    </Button>
+
+                                                    <!-- Bottom Row -->
+                                                    <Button Grid.Row="2" Grid.Column="0"
+                                                            Command="{x:Bind ViewModel.SetOverlayPositionCommand}"
+                                                            CommandParameter="3"
+                                                            Background="{x:Bind ViewModel.PosBottomLeftBrush, Mode=OneWay}"
+                                                            Foreground="{x:Bind ViewModel.PosBottomLeftForeground, Mode=OneWay}"
+                                                            Height="26" Width="66" Padding="0" CornerRadius="5" BorderThickness="0">
+                                                        <TextBlock Text="Слева" FontSize="10.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                    </Button>
+
+                                                    <Button Grid.Row="2" Grid.Column="1"
+                                                            Command="{x:Bind ViewModel.SetOverlayPositionCommand}"
+                                                            CommandParameter="5"
+                                                            Background="{x:Bind ViewModel.PosBottomCenterBrush, Mode=OneWay}"
+                                                            Foreground="{x:Bind ViewModel.PosBottomCenterForeground, Mode=OneWay}"
+                                                            Height="26" Width="74" Padding="0" CornerRadius="5" BorderThickness="0"
+                                                            HorizontalAlignment="Center">
+                                                        <TextBlock Text="Внизу" FontSize="10.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                    </Button>
+
+                                                    <Button Grid.Row="2" Grid.Column="2"
+                                                            Command="{x:Bind ViewModel.SetOverlayPositionCommand}"
+                                                            CommandParameter="2"
+                                                            Background="{x:Bind ViewModel.PosBottomRightBrush, Mode=OneWay}"
+                                                            Foreground="{x:Bind ViewModel.PosBottomRightForeground, Mode=OneWay}"
+                                                            Height="26" Width="66" Padding="0" CornerRadius="5" BorderThickness="0">
+                                                        <TextBlock Text="Справа" FontSize="10.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Monitor Stand -->
+                                            <Border Width="48" Height="4" Background="#33FFFFFF" CornerRadius="2" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- ========================================== -->
+            <!-- 5. SYSTEM & GENERAL SETTINGS              -->
+            <!-- ========================================== -->
+            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.ShowSystemSection, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE713;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <TextBlock Text="{x:Bind ViewModel.CategorySystemText, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" />
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <!-- Global Hotkeys Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
+                                <TextBlock Text="{x:Bind ViewModel.GlobalHotkeysTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.GlobalHotkeysDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1"
+                                          IsOn="{x:Bind ViewModel.IsGlobalHotkeysEnabled, Mode=TwoWay}"
+                                          OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                          OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                          VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
 
                     <!-- Autoplay Wave on Album End Card -->
@@ -533,46 +917,6 @@
                         </Grid>
                     </Border>
 
-                    <!-- Application Theme Card -->
-                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4" Margin="0,0,16,0">
-                                <TextBlock Text="{x:Bind ViewModel.ThemeTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
-                                <TextBlock Text="{x:Bind ViewModel.ThemeDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
-                            <ComboBox Grid.Column="1"
-                                      ItemsSource="{x:Bind ViewModel.ThemeOptions, Mode=OneWay}"
-                                      SelectedIndex="{x:Bind ViewModel.SelectedThemeIndex, Mode=TwoWay}"
-                                      MinWidth="180"
-                                      HorizontalAlignment="Right"
-                                      VerticalAlignment="Center" />
-                        </Grid>
-                    </Border>
-
-                    <!-- UI Font Card -->
-                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4" Margin="0,0,16,0">
-                                <TextBlock Text="{x:Bind ViewModel.FontTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
-                                <TextBlock Text="{x:Bind ViewModel.FontDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
-                            <ComboBox Grid.Column="1"
-                                      ItemsSource="{x:Bind ViewModel.FontOptions, Mode=OneWay}"
-                                      SelectedIndex="{x:Bind ViewModel.SelectedFontIndex, Mode=TwoWay}"
-                                      MinWidth="240"
-                                      HorizontalAlignment="Right"
-                                      VerticalAlignment="Center" />
-                        </Grid>
-                    </Border>
-
                     <!-- Language Selection Card -->
                     <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                         <Grid>
@@ -598,9 +942,404 @@
             </StackPanel>
 
             <!-- ========================================== -->
-            <!-- 4. STORAGE & DATA MANAGEMENT              -->
+            <!-- 3. APPEARANCE & CUSTOMIZATION             -->
             <!-- ========================================== -->
-            <StackPanel Spacing="12">
+            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.ShowAppearanceSection, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE790;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <TextBlock Text="{x:Bind ViewModel.AppearanceSectionTitle, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" />
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <!-- Application Theme Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
+                                <TextBlock Text="{x:Bind ViewModel.ThemeTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.ThemeDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{x:Bind ViewModel.ThemeOptions, Mode=OneWay}"
+                                      SelectedIndex="{x:Bind ViewModel.SelectedThemeIndex, Mode=TwoWay}"
+                                      MinWidth="240"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Window Backdrop Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
+                                <TextBlock Text="{x:Bind ViewModel.BackdropTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.BackdropDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{x:Bind ViewModel.BackdropOptions, Mode=OneWay}"
+                                      SelectedIndex="{x:Bind ViewModel.SelectedBackdropIndex, Mode=TwoWay}"
+                                      MinWidth="240"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Accent Color Customization Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <StackPanel Spacing="14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="4" Margin="0,0,16,0">
+                                    <TextBlock Text="{x:Bind ViewModel.AccentTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind ViewModel.AccentDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+
+                                <!-- Active Accent Preview Pill -->
+                                <Border Grid.Column="1" Padding="10,5" CornerRadius="14" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Border Width="16" Height="16" CornerRadius="8" Background="{x:Bind ViewModel.CurrentAccentHex, Mode=OneWay, Converter={StaticResource HexToBrushConverter}}" BorderThickness="1" BorderBrush="#33FFFFFF" />
+                                        <TextBlock Text="{x:Bind ViewModel.CurrentAccentHex, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" FontFamily="Consolas, Cascadia Mono, monospace" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Preset Color Badges -->
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.AvailableAccents}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="8" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="interfaces:AccentPreset">
+                                        <Button Click="AccentPreset_Click"
+                                                Tag="{x:Bind}"
+                                                Padding="2"
+                                                CornerRadius="18"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                ToolTipService.ToolTip="{x:Bind Name}">
+                                            <Border Width="32" Height="32" CornerRadius="16" Background="{x:Bind Brush}" BorderThickness="2" BorderBrush="#40FFFFFF" />
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Custom HEX Input Row -->
+                            <Grid ColumnSpacing="10" Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{x:Bind ViewModel.CustomHexInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         PlaceholderText="{x:Bind ViewModel.CustomHexPlaceholder, Mode=OneWay}"
+                                         MaxLength="9"
+                                         FontFamily="Consolas, Cascadia Mono, monospace"
+                                         VerticalAlignment="Center">
+                                    <TextBox.Header>
+                                        <TextBlock Text="{x:Bind ViewModel.CustomColorTitle, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </TextBox.Header>
+                                </TextBox>
+                                <Button Grid.Column="1"
+                                        Command="{x:Bind ViewModel.ApplyCustomHexCommand}"
+                                        VerticalAlignment="Bottom"
+                                        Height="32"
+                                        Style="{ThemeResource AccentButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE8FB;" FontSize="13" />
+                                        <TextBlock Text="{x:Bind ViewModel.ApplyHexButtonText, Mode=OneWay}" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- UI Font Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
+                                <TextBlock Text="{x:Bind ViewModel.FontTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.FontDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{x:Bind ViewModel.FontOptions, Mode=OneWay}"
+                                      SelectedIndex="{x:Bind ViewModel.SelectedFontIndex, Mode=TwoWay}"
+                                      MinWidth="240"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Modular Interface Customization Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <StackPanel Spacing="16">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE74C;" FontSize="16" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                                    <TextBlock Text="{x:Bind ViewModel.ModularUiTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                </StackPanel>
+                                <TextBlock Text="{x:Bind ViewModel.ModularUiDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+
+                            <!-- 1. Navigation Sidebar Sub-section -->
+                            <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                    CornerRadius="8"
+                                    Padding="14,12"
+                                    BorderThickness="1"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="{x:Bind ViewModel.NavSectionTitle, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
+
+                                    <!-- Show Search in Nav -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowSearchTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowSearchDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowSearchInNavEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Show Wave in Nav -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowWaveTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowWaveDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowWaveInNavEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Show Likes in Nav -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowLikesTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowLikesDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowLikesInNavEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Show Playlists in Nav -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowPlaylistsTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowPlaylistsDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowPlaylistsInNavEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 2. Bottom Player Bar Sub-section -->
+                            <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                    CornerRadius="8"
+                                    Padding="14,12"
+                                    BorderThickness="1"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="{x:Bind ViewModel.PlayerModularTitle, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
+
+                                    <!-- Show Lyrics Button -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowLyricsTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowLyricsDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowLyricsButtonEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Show Equalizer Button -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowEqualizerTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowEqualizerDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowEqualizerButtonEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Show Quality Badge -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowQualityBadgeTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowQualityDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowQualityBadgeEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Compact Volume Slider -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.CompactVolumeTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.CompactVolumeDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsCompactPlayerVolumeEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 3. Home / Explore Page Sub-section -->
+                            <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                    CornerRadius="8"
+                                    Padding="14,12"
+                                    BorderThickness="1"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="{x:Bind ViewModel.HomeModularTitle, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
+
+                                    <!-- Show Personal Playlists -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowPersonalPlaylistsTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowPersonalPlaylistsDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowPersonalPlaylistsOnHomeEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Show New Releases -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowNewReleasesTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowNewReleasesDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowNewReleasesOnHomeEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Show Editorial Playlists -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowEditorialPlaylistsTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowEditorialPlaylistsDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowEditorialPlaylistsOnHomeEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Show Chart -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowChartTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowChartDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowChartOnHomeEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- ========================================== -->
+            <!-- 6. STORAGE & DATA MANAGEMENT              -->
+            <!-- ========================================== -->
+            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.ShowStorageSection, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <FontIcon Glyph="&#xE8B7;" FontSize="18" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
                     <TextBlock Text="{x:Bind ViewModel.StorageSectionTitle, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" />
@@ -799,9 +1538,11 @@
             </StackPanel>
 
             <!-- ========================================== -->
-            <!-- 5. ABOUT & UPDATES                        -->
+            <!-- 7. ABOUT & UPDATES                        -->
             <!-- ========================================== -->
-            <Border x:Name="AboutAndUpdatesSection" Padding="20" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+            <Border x:Name="AboutAndUpdatesSection"
+                    Visibility="{x:Bind ViewModel.ShowAboutSection, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Padding="20" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                 <StackPanel Spacing="16">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -917,6 +1658,9 @@
                     </Border>
                 </StackPanel>
             </Border>
+
+                </StackPanel>
+            </Grid>
 
         </StackPanel>
     </ScrollViewer>

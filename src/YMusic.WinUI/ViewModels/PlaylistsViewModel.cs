@@ -16,6 +16,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     private readonly ICredentialStorageService _credentialStorage;
     private readonly ITrackPlaybackCoordinator _playbackCoordinator;
     private readonly IPinnedItemsService _pinnedItemsService;
+    private readonly ISpotifyImportService _spotifyImportService;
 
     public ObservableCollection<Playlist> Playlists { get; } = new();
     public ObservableCollection<Album> LikedAlbums { get; } = new();
@@ -23,7 +24,10 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     private readonly List<Track> _allSelectedTracks = new();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSearchFilter))]
     private string _searchFilter = string.Empty;
+
+    public bool HasSearchFilter => !string.IsNullOrWhiteSpace(SearchFilter);
 
     public string FilterPlaceholder => Loc?.CurrentLanguage == "en" ? "Filter tracks..." : "Поиск по трекам...";
 
@@ -70,7 +74,21 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(DetailPlayButtonText))]
     [NotifyPropertyChangedFor(nameof(IsDetailPinned))]
     [NotifyPropertyChangedFor(nameof(IsDetailLiked))]
+    [NotifyPropertyChangedFor(nameof(IsDetailPlaylist))]
+    [NotifyPropertyChangedFor(nameof(IsSelectedPlaylistOwned))]
     private Playlist? _selectedPlaylist;
+
+    public bool IsDetailPlaylist => SelectedPlaylist != null;
+
+    public bool IsSelectedPlaylistOwned =>
+        SelectedPlaylist != null &&
+        (SelectedPlaylist.Uid.ToString() == _credentialStorage.GetUserId() ||
+         SelectedPlaylist.Owner?.Uid.ToString() == _credentialStorage.GetUserId());
+
+    public bool IsPlaylistOwned(Playlist? pl) =>
+        pl != null &&
+        (pl.Uid.ToString() == _credentialStorage.GetUserId() ||
+         pl.Owner?.Uid.ToString() == _credentialStorage.GetUserId());
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DetailTitle))]
@@ -247,6 +265,33 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         }
     }
 
+    public string CreatePlaylistButtonText => Loc?.CurrentLanguage == "en" ? "Create" : "Создать";
+    public string CreatePlaylistTooltip => Loc?.CurrentLanguage == "en" ? "Create a new playlist" : "Создать новый плейлист";
+    public string EditPlaylistButtonText => Loc?.CurrentLanguage == "en" ? "Edit" : "Редактировать";
+    public string DeletePlaylistButtonText => Loc?.CurrentLanguage == "en" ? "Delete Playlist" : "Удалить плейлист";
+    public string EditPlaylistMenuText => Loc?.CurrentLanguage == "en" ? "Edit playlist" : "Редактировать плейлист";
+    public string DeletePlaylistMenuText => Loc?.CurrentLanguage == "en" ? "Delete playlist" : "Удалить плейлист";
+    public string CreatePlaylistHeader => Loc?.CurrentLanguage == "en" ? "New Playlist" : "Новый плейлист";
+    public string EditPlaylistHeader => Loc?.CurrentLanguage == "en" ? "Edit Playlist" : "Редактировать плейлист";
+    public string DeletePlaylistHeader => Loc?.CurrentLanguage == "en" ? "Delete Playlist" : "Удалить плейлист";
+    public string PlaylistTitlePlaceholder => Loc?.CurrentLanguage == "en" ? "Playlist name (required)" : "Название плейлиста (обязательно)";
+    public string PlaylistDescPlaceholder => Loc?.CurrentLanguage == "en" ? "Description (optional)" : "Описание (необязательно)";
+    public string PlaylistPublicToggleText => Loc?.CurrentLanguage == "en" ? "Public playlist" : "Публичный плейлист";
+    public string SaveButtonText => Loc?.CurrentLanguage == "en" ? "Save" : "Сохранить";
+    public string CancelButtonText => Loc?.CurrentLanguage == "en" ? "Cancel" : "Отмена";
+    public string DeleteButtonText => Loc?.CurrentLanguage == "en" ? "Delete" : "Удалить";
+    public string CreateButtonText => Loc?.CurrentLanguage == "en" ? "Create" : "Создать";
+    public string RemoveTrackFromPlaylistText => Loc?.CurrentLanguage == "en" ? "Remove from this playlist" : "Удалить из этого плейлиста";
+
+    public string ImportButtonText => Loc?.CurrentLanguage == "en" ? "Import" : "Импорт";
+    public string ImportTooltip => Loc?.CurrentLanguage == "en" ? "Import playlist or album from Spotify" : "Импортировать плейлист или альбом из Spotify";
+    public string ImportDialogTitle => Loc?.CurrentLanguage == "en" ? "Import Playlist from Spotify" : "Импорт плейлиста из Spotify";
+    public string ImportUrlPlaceholder => Loc?.CurrentLanguage == "en" ? "Paste Spotify playlist, album, or track URL..." : "Вставьте ссылку на плейлист, альбом или трек из Spotify...";
+    public string ImportCustomTitlePlaceholder => Loc?.CurrentLanguage == "en" ? "Custom playlist name in Yandex (optional)" : "Название плейлиста в Яндекс Музыке (необязательно)";
+    public string StartImportButtonText => Loc?.CurrentLanguage == "en" ? "Start Import" : "Начать импорт";
+    public string OpenImportedPlaylistButtonText => Loc?.CurrentLanguage == "en" ? "Open Playlist" : "Открыть плейлист";
+    public string CloseButtonText => Loc?.CurrentLanguage == "en" ? "Close" : "Закрыть";
+
     protected override void OnLanguageChanged()
     {
         OnPropertyChanged(nameof(PageTitle));
@@ -265,6 +310,30 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         OnPropertyChanged(nameof(FilterPlaceholder));
         OnPropertyChanged(nameof(PreSaveBannerTitle));
         OnPropertyChanged(nameof(PreSaveBannerDescription));
+        OnPropertyChanged(nameof(ImportButtonText));
+        OnPropertyChanged(nameof(ImportTooltip));
+        OnPropertyChanged(nameof(ImportDialogTitle));
+        OnPropertyChanged(nameof(ImportUrlPlaceholder));
+        OnPropertyChanged(nameof(ImportCustomTitlePlaceholder));
+        OnPropertyChanged(nameof(StartImportButtonText));
+        OnPropertyChanged(nameof(OpenImportedPlaylistButtonText));
+        OnPropertyChanged(nameof(CloseButtonText));
+        OnPropertyChanged(nameof(CreatePlaylistButtonText));
+        OnPropertyChanged(nameof(EditPlaylistButtonText));
+        OnPropertyChanged(nameof(DeletePlaylistButtonText));
+        OnPropertyChanged(nameof(EditPlaylistMenuText));
+        OnPropertyChanged(nameof(DeletePlaylistMenuText));
+        OnPropertyChanged(nameof(CreatePlaylistHeader));
+        OnPropertyChanged(nameof(EditPlaylistHeader));
+        OnPropertyChanged(nameof(DeletePlaylistHeader));
+        OnPropertyChanged(nameof(PlaylistTitlePlaceholder));
+        OnPropertyChanged(nameof(PlaylistDescPlaceholder));
+        OnPropertyChanged(nameof(PlaylistPublicToggleText));
+        OnPropertyChanged(nameof(SaveButtonText));
+        OnPropertyChanged(nameof(CancelButtonText));
+        OnPropertyChanged(nameof(DeleteButtonText));
+        OnPropertyChanged(nameof(CreateButtonText));
+        OnPropertyChanged(nameof(RemoveTrackFromPlaylistText));
     }
 
     [ObservableProperty]
@@ -291,18 +360,113 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [ObservableProperty]
     private string _formattedDuration = string.Empty;
 
+    [ObservableProperty]
+    private bool _isImportDialogOpen;
+
+    [ObservableProperty]
+    private string _importUrl = string.Empty;
+
+    [ObservableProperty]
+    private string _importCustomTitle = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotImporting))]
+    private bool _isImporting;
+
+    public bool IsNotImporting => !IsImporting;
+
+    [ObservableProperty]
+    private double _importProgressValue;
+
+    [ObservableProperty]
+    private string _importStatusText = string.Empty;
+
+    [ObservableProperty]
+    private string _importResultSummary = string.Empty;
+
+    [ObservableProperty]
+    private bool _isImportFinished;
+
+    [ObservableProperty]
+    private Playlist? _lastImportedPlaylist;
+
+    // Create Playlist dialog
+    [ObservableProperty]
+    private bool _isCreatePlaylistDialogOpen;
+
+    [ObservableProperty]
+    private string _newPlaylistTitle = string.Empty;
+
+    [ObservableProperty]
+    private string _newPlaylistDescription = string.Empty;
+
+    [ObservableProperty]
+    private bool _isNewPlaylistPublic = true;
+
+    [ObservableProperty]
+    private string? _createPlaylistErrorMessage;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotCreatingPlaylist))]
+    private bool _isCreatingPlaylist;
+
+    public bool IsNotCreatingPlaylist => !IsCreatingPlaylist;
+
+    // Edit Playlist dialog
+    [ObservableProperty]
+    private bool _isEditPlaylistDialogOpen;
+
+    [ObservableProperty]
+    private string _editPlaylistTitle = string.Empty;
+
+    [ObservableProperty]
+    private string _editPlaylistDescription = string.Empty;
+
+    [ObservableProperty]
+    private string? _editPlaylistErrorMessage;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotEditingPlaylist))]
+    private bool _isEditingPlaylist;
+
+    public bool IsNotEditingPlaylist => !IsEditingPlaylist;
+
+    [ObservableProperty]
+    private Playlist? _playlistToEdit;
+
+    // Delete Playlist dialog
+    [ObservableProperty]
+    private bool _isDeletePlaylistDialogOpen;
+
+    [ObservableProperty]
+    private Playlist? _playlistToDelete;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotDeletingPlaylist))]
+    private bool _isDeletingPlaylist;
+
+    public bool IsNotDeletingPlaylist => !IsDeletingPlaylist;
+
+    public string DeletePlaylistPromptText => PlaylistToDelete != null
+        ? (Loc?.CurrentLanguage == "en"
+            ? $"Are you sure you want to delete \"{PlaylistToDelete.Title}\"? This cannot be undone."
+            : $"Вы действительно хотите удалить плейлист «{PlaylistToDelete.Title}»? Это действие нельзя отменить.")
+        : string.Empty;
+
     public PlaylistsViewModel(
         IYandexMusicService musicService,
         IAudioPlayerService audioPlayer,
         ICredentialStorageService credentialStorage,
         ITrackPlaybackCoordinator playbackCoordinator,
-        IPinnedItemsService pinnedItemsService)
+        IPinnedItemsService pinnedItemsService,
+        ISpotifyImportService spotifyImportService)
     {
         _musicService = musicService;
         _audioPlayer = audioPlayer;
         _credentialStorage = credentialStorage;
         _playbackCoordinator = playbackCoordinator;
         _pinnedItemsService = pinnedItemsService;
+        _spotifyImportService = spotifyImportService;
 
         _pinnedItemsService.PinStateChanged += OnPinStateChanged;
         _musicService.AlbumLikeChanged += OnAlbumLikeChanged;
@@ -315,6 +479,382 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     {
         PreviousPageTag = null;
         SelectedCategoryIndex = category == "albums" ? 1 : 0;
+    }
+
+    [RelayCommand]
+    public void OpenImportDialog()
+    {
+        ImportUrl = string.Empty;
+        ImportCustomTitle = string.Empty;
+        IsImporting = false;
+        IsImportFinished = false;
+        ImportProgressValue = 0;
+        ImportStatusText = string.Empty;
+        ImportResultSummary = string.Empty;
+        LastImportedPlaylist = null;
+        IsImportDialogOpen = true;
+    }
+
+    [RelayCommand]
+    public void CloseImportDialog()
+    {
+        IsImportDialogOpen = false;
+    }
+
+    [RelayCommand]
+    public async Task StartImportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ImportUrl)) return;
+        if (!_spotifyImportService.IsSupportedUrl(ImportUrl))
+        {
+            ImportStatusText = Loc?.CurrentLanguage == "en"
+                ? "Invalid Spotify URL (playlist, album or track required)"
+                : "Некорректная ссылка на Spotify (нужен плейлист, альбом или трек)";
+            return;
+        }
+
+        IsImporting = true;
+        IsImportFinished = false;
+        ImportProgressValue = 0;
+        ImportStatusText = Loc?.CurrentLanguage == "en"
+            ? "Fetching track list from Spotify..."
+            : "Получение списка треков из Spotify...";
+
+        var spotifyData = await _spotifyImportService.FetchSpotifyPlaylistAsync(ImportUrl);
+        if (spotifyData == null || spotifyData.Tracks.Count == 0)
+        {
+            IsImporting = false;
+            ImportStatusText = Loc?.CurrentLanguage == "en"
+                ? "Failed to load tracks from Spotify. Please check the URL or your network."
+                : "Не удалось загрузить треки из Spotify. Проверьте ссылку или сетевое подключение.";
+            return;
+        }
+
+        string targetTitle = !string.IsNullOrWhiteSpace(ImportCustomTitle)
+            ? ImportCustomTitle
+            : spotifyData.Title;
+
+        var progress = new Progress<ImportProgressReport>(report =>
+        {
+            RunOnUi(() =>
+            {
+                ImportProgressValue = (double)report.Current / report.Total * 100.0;
+                ImportStatusText = Loc?.CurrentLanguage == "en"
+                    ? $"Searching Yandex Music: {report.Current} / {report.Total} (found: {report.FoundCount})...\n{report.CurrentTrackName}"
+                    : $"Поиск треков в Яндекс Музыке: {report.Current} / {report.Total} (найдено: {report.FoundCount})...\n{report.CurrentTrackName}";
+            });
+        });
+
+        var result = await _spotifyImportService.ImportToYandexAsync(
+            spotifyData,
+            targetTitle,
+            progress);
+
+        RunOnUi(async () =>
+        {
+            IsImporting = false;
+            IsImportFinished = true;
+            LastImportedPlaylist = result.CreatedPlaylist;
+
+            ImportResultSummary = Loc?.CurrentLanguage == "en"
+                ? $"Successfully imported {result.FoundTracks} of {result.TotalTracks} tracks into \"{result.CreatedPlaylist?.Title ?? targetTitle}\"!"
+                : $"Успешно импортировано {result.FoundTracks} из {result.TotalTracks} треков в плейлист «{result.CreatedPlaylist?.Title ?? targetTitle}»!";
+
+            // Refresh user playlists
+            await LoadPlaylistsAsync();
+        });
+    }
+
+    [RelayCommand]
+    public async Task OpenImportedPlaylistAsync()
+    {
+        if (LastImportedPlaylist != null)
+        {
+            IsImportDialogOpen = false;
+            await OpenPlaylistAsync(LastImportedPlaylist);
+        }
+    }
+
+    [RelayCommand]
+    public void OpenCreatePlaylistDialog()
+    {
+        NewPlaylistTitle = string.Empty;
+        NewPlaylistDescription = string.Empty;
+        IsNewPlaylistPublic = true;
+        CreatePlaylistErrorMessage = null;
+        IsCreatingPlaylist = false;
+        IsCreatePlaylistDialogOpen = true;
+    }
+
+    [RelayCommand]
+    public void CloseCreatePlaylistDialog()
+    {
+        IsCreatePlaylistDialogOpen = false;
+    }
+
+    [RelayCommand]
+    public async Task CreatePlaylistAsync()
+    {
+        string title = NewPlaylistTitle?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            CreatePlaylistErrorMessage = Loc?.CurrentLanguage == "en"
+                ? "Please enter a playlist name"
+                : "Введите название плейлиста";
+            return;
+        }
+
+        IsCreatingPlaylist = true;
+        CreatePlaylistErrorMessage = null;
+
+        try
+        {
+            var playlist = await _musicService.CreatePlaylistAsync(
+                title,
+                string.IsNullOrWhiteSpace(NewPlaylistDescription) ? null : NewPlaylistDescription.Trim(),
+                IsNewPlaylistPublic);
+
+            if (playlist != null)
+            {
+                playlist.IsPinned = false;
+                playlist.IsLiked = false;
+                Playlists.Insert(0, playlist);
+                IsCreatePlaylistDialogOpen = false;
+
+                ShowToast(string.Format(
+                    Loc?.CurrentLanguage == "en" ? "Playlist \"{0}\" created" : "Плейлист «{0}» создан",
+                    playlist.Title));
+
+                await OpenPlaylistAsync(playlist);
+            }
+            else
+            {
+                CreatePlaylistErrorMessage = Loc?.CurrentLanguage == "en"
+                    ? "Failed to create playlist. Please try again."
+                    : "Не удалось создать плейлист. Попробуйте снова.";
+            }
+        }
+        catch (Exception ex)
+        {
+            CreatePlaylistErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsCreatingPlaylist = false;
+        }
+    }
+
+    [RelayCommand]
+    public void OpenEditPlaylistDialog(Playlist? playlist = null)
+    {
+        var target = playlist ?? SelectedPlaylist;
+        if (target == null) return;
+
+        PlaylistToEdit = target;
+        EditPlaylistTitle = target.Title;
+        EditPlaylistDescription = target.Description ?? string.Empty;
+        EditPlaylistErrorMessage = null;
+        IsEditingPlaylist = false;
+        IsEditPlaylistDialogOpen = true;
+    }
+
+    [RelayCommand]
+    public void CloseEditPlaylistDialog()
+    {
+        IsEditPlaylistDialogOpen = false;
+        PlaylistToEdit = null;
+    }
+
+    [RelayCommand]
+    public async Task SaveEditPlaylistAsync()
+    {
+        var target = PlaylistToEdit ?? SelectedPlaylist;
+        if (target == null) return;
+
+        string title = EditPlaylistTitle?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            EditPlaylistErrorMessage = Loc?.CurrentLanguage == "en"
+                ? "Playlist name cannot be empty"
+                : "Название не может быть пустым";
+            return;
+        }
+
+        IsEditingPlaylist = true;
+        EditPlaylistErrorMessage = null;
+
+        try
+        {
+            string? desc = string.IsNullOrWhiteSpace(EditPlaylistDescription) ? null : EditPlaylistDescription.Trim();
+            bool ok = await _musicService.RenamePlaylistAsync(target.Uid, target.Kind, title, desc);
+            if (ok)
+            {
+                target.Title = title;
+                target.Description = desc;
+
+                // Refresh in Playlists collection if present
+                var inList = Playlists.FirstOrDefault(p => p.Uid == target.Uid && p.Kind == target.Kind);
+                if (inList != null)
+                {
+                    inList.Title = title;
+                    inList.Description = desc;
+                }
+
+                if (SelectedPlaylist?.Uid == target.Uid && SelectedPlaylist?.Kind == target.Kind)
+                {
+                    OnPropertyChanged(nameof(DetailTitle));
+                    OnPropertyChanged(nameof(DetailDescription));
+                }
+
+                IsEditPlaylistDialogOpen = false;
+                PlaylistToEdit = null;
+
+                ShowToast(Loc?.CurrentLanguage == "en" ? "Playlist updated" : "Плейлист обновлён");
+            }
+            else
+            {
+                EditPlaylistErrorMessage = Loc?.CurrentLanguage == "en"
+                    ? "Failed to update playlist. Please try again."
+                    : "Не удалось обновить плейлист. Попробуйте снова.";
+            }
+        }
+        catch (Exception ex)
+        {
+            EditPlaylistErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsEditingPlaylist = false;
+        }
+    }
+
+    [RelayCommand]
+    public void OpenDeletePlaylistDialog(Playlist? playlist = null)
+    {
+        PlaylistToDelete = playlist ?? SelectedPlaylist;
+        if (PlaylistToDelete == null) return;
+
+        OnPropertyChanged(nameof(DeletePlaylistPromptText));
+        IsDeletingPlaylist = false;
+        IsDeletePlaylistDialogOpen = true;
+    }
+
+    [RelayCommand]
+    public void CloseDeletePlaylistDialog()
+    {
+        IsDeletePlaylistDialogOpen = false;
+        PlaylistToDelete = null;
+    }
+
+    [RelayCommand]
+    public async Task ConfirmDeletePlaylistAsync()
+    {
+        var target = PlaylistToDelete;
+        if (target == null) return;
+
+        IsDeletingPlaylist = true;
+
+        try
+        {
+            bool isOwned = IsPlaylistOwned(target);
+            bool ok;
+            if (isOwned)
+            {
+                ok = await _musicService.DeletePlaylistAsync(target.Uid, target.Kind);
+            }
+            else
+            {
+                ok = await _musicService.UnlikePlaylistAsync(target.Uid, target.Kind);
+            }
+
+            if (ok)
+            {
+                var matching = Playlists.Where(p => (p.Uid == target.Uid && p.Kind == target.Kind) || (p.Kind == target.Kind && p.Kind != 0)).ToList();
+                foreach (var p in matching)
+                {
+                    Playlists.Remove(p);
+                }
+                Playlists.Remove(target);
+
+                if (_pinnedItemsService.IsPlaylistPinned(target.Uid, target.Kind))
+                {
+                    _pinnedItemsService.UnpinPlaylist(target.Uid, target.Kind);
+                }
+
+                if (SelectedPlaylist?.Uid == target.Uid && SelectedPlaylist?.Kind == target.Kind)
+                {
+                    CloseDetail();
+                }
+
+                IsDeletePlaylistDialogOpen = false;
+                PlaylistToDelete = null;
+
+                ShowToast(isOwned
+                    ? (Loc?.CurrentLanguage == "en" ? "Playlist deleted" : "Плейлист удалён")
+                    : (Loc?.CurrentLanguage == "en" ? "Playlist removed from library" : "Плейлист удалён из медиатеки"));
+
+                // Refresh playlists from server immediately so counts and lists stay fully synchronized
+                _ = LoadPlaylistsAsync();
+            }
+            else
+            {
+                ShowToast(Loc?.CurrentLanguage == "en" ? "Failed to delete playlist" : "Не удалось удалить плейлист");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message);
+        }
+        finally
+        {
+            IsDeletingPlaylist = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task RemoveTrackFromCurrentPlaylistAsync(Track? track)
+    {
+        if (track == null || SelectedPlaylist == null || !IsSelectedPlaylistOwned) return;
+
+        int index = SelectedPlaylistTracks.IndexOf(track);
+        if (index < 0) return;
+
+        try
+        {
+            bool ok = await _musicService.RemoveTrackFromPlaylistAsync(SelectedPlaylist.Uid, SelectedPlaylist.Kind, index);
+            if (ok)
+            {
+                SelectedPlaylistTracks.Remove(track);
+                _allSelectedTracks.Remove(track);
+                _playbackCoordinator.Sync(SelectedPlaylistTracks);
+                UpdateFormattedTrackCountAndDuration();
+                ShowToast(Loc?.CurrentLanguage == "en" ? "Track removed from playlist" : "Трек удалён из плейлиста");
+            }
+            else
+            {
+                ShowToast(Loc?.CurrentLanguage == "en" ? "Failed to remove track" : "Не удалось удалить трек");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message);
+        }
+    }
+
+    private void UpdateFormattedTrackCountAndDuration()
+    {
+        FormattedTrackCount = PluralizationHelper.FormatTrackCount(SelectedPlaylistTracks.Count);
+        long totalMs = SelectedPlaylistTracks.Sum(t => t.DurationMs);
+        var totalSpan = TimeSpan.FromMilliseconds(totalMs);
+        FormattedDuration = totalMs > 0 ? PluralizationHelper.FormatDuration(totalSpan) : string.Empty;
+        OnPropertyChanged(nameof(HasFormattedDuration));
+        OnPropertyChanged(nameof(HasTrackCountOrDuration));
+        OnPropertyChanged(nameof(HasTracksToFilter));
+    }
+
+    private void ShowToast(string message)
+    {
+        App.GetService<PlayerBarViewModel>()?.ShowToast(message);
     }
 
     [RelayCommand]
@@ -444,9 +984,28 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         {
             await _musicService.EnsureLikedTracksLoadedAsync().ConfigureAwait(false);
             await _musicService.EnsureLikedPlaylistsLoadedAsync().ConfigureAwait(false);
-            var fullPlaylist = await _musicService.GetPlaylistWithTracksAsync(playlist.Uid, playlist.Kind).ConfigureAwait(false);
+
+            long effectiveUid = playlist.Uid > 0 ? playlist.Uid : (playlist.Owner?.Uid ?? 0);
+            if (effectiveUid <= 0)
+            {
+                var myUserIdStr = _credentialStorage.GetUserId();
+                if (long.TryParse(myUserIdStr, out var parsed))
+                {
+                    effectiveUid = parsed;
+                }
+            }
+            if (playlist.Uid <= 0 && effectiveUid > 0)
+            {
+                playlist.Uid = effectiveUid;
+            }
+
+            var fullPlaylist = await _musicService.GetPlaylistWithTracksAsync(effectiveUid, playlist.Kind).ConfigureAwait(false);
             if (fullPlaylist != null)
             {
+                if (fullPlaylist.Uid <= 0 && effectiveUid > 0)
+                {
+                    fullPlaylist.Uid = effectiveUid;
+                }
                 fullPlaylist.IsPinned = _pinnedItemsService.IsPlaylistPinned(fullPlaylist.Uid, fullPlaylist.Kind);
                 fullPlaylist.IsLiked = _musicService.IsPlaylistLiked(fullPlaylist.Uid, fullPlaylist.Kind);
             }
@@ -508,12 +1067,22 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         FormattedTrackCount = playlist.FormattedTrackCount;
         OnPropertyChanged(nameof(IsDetailPinned));
         OnPropertyChanged(nameof(IsDetailLiked));
+        OnPropertyChanged(nameof(DetailTitle));
+        OnPropertyChanged(nameof(DetailSubtitle));
+        OnPropertyChanged(nameof(DetailCoverUrl));
+        OnPropertyChanged(nameof(DetailDescription));
+        OnPropertyChanged(nameof(DetailTypeBadge));
+        OnPropertyChanged(nameof(DetailPlayButtonText));
+        OnPropertyChanged(nameof(DetailPlayButtonGlyph));
 
         await SelectPlaylistAsync(playlist);
 
         long totalMs = SelectedPlaylistTracks.Sum(t => t.DurationMs);
         var totalSpan = TimeSpan.FromMilliseconds(totalMs);
         FormattedDuration = PluralizationHelper.FormatDuration(totalSpan);
+        OnPropertyChanged(nameof(FormattedTrackCount));
+        OnPropertyChanged(nameof(FormattedDuration));
+        OnPropertyChanged(nameof(HasFormattedDuration));
     }
 
     [RelayCommand]

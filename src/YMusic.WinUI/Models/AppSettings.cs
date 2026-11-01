@@ -26,7 +26,13 @@ public sealed class AppSettings
     public bool FckCensorEnabled { get; set; } = true;
 
     [JsonPropertyName("appTheme")]
-    public string AppTheme { get; set; } = "Dark"; // "Default", "Light", "Dark"
+    public string AppTheme { get; set; } = "Dark"; // "Default", "Light", "Dark", "OLED", "Midnight", "Sepia"
+
+    [JsonPropertyName("accentColorHex")]
+    public string AccentColorHex { get; set; } = "#FFEAB308";
+
+    [JsonPropertyName("backdropKind")]
+    public string BackdropKind { get; set; } = "Mica"; // "Mica", "MicaAlt", "Acrylic", "Solid"
 
     [JsonPropertyName("appFont")]
     public string AppFont { get; set; } = "Inter"; // "Inter", "System", "YandexSans"
@@ -60,4 +66,63 @@ public sealed class AppSettings
 
     [JsonPropertyName("autoBypassProxyForYandex")]
     public bool AutoBypassProxyForYandex { get; set; } = true;
+
+    [JsonPropertyName("crossfadeEnabled")]
+    public bool CrossfadeEnabled { get; set; } = true;
+
+    [JsonPropertyName("crossfadeDurationSeconds")]
+    public int CrossfadeDurationSeconds { get; set; } = 4;
+
+    [JsonPropertyName("globalHotkeysEnabled")]
+    public bool GlobalHotkeysEnabled { get; set; } = true;
+
+    [JsonPropertyName("gameOverlayEnabled")]
+    public bool GameOverlayEnabled { get; set; } = true;
+
+    [JsonPropertyName("showOverlayOnTrackChange")]
+    public bool ShowOverlayOnTrackChange { get; set; } = true;
+
+    [JsonPropertyName("gameOverlayDurationSeconds")]
+    public int GameOverlayDurationSeconds { get; set; } = 3;
+
+    [JsonPropertyName("gameOverlayPosition")]
+    public int GameOverlayPosition { get; set; } = 0; // 0 = TopRight, 1 = TopLeft, 2 = BottomRight, 3 = BottomLeft
+
+    // Modular UI settings
+    [JsonPropertyName("showWaveInNav")]
+    public bool ShowWaveInNav { get; set; } = true;
+
+    [JsonPropertyName("showLikesInNav")]
+    public bool ShowLikesInNav { get; set; } = true;
+
+    [JsonPropertyName("showPlaylistsInNav")]
+    public bool ShowPlaylistsInNav { get; set; } = true;
+
+    [JsonPropertyName("showSearchInNav")]
+    public bool ShowSearchInNav { get; set; } = true;
+
+    [JsonPropertyName("showLyricsButton")]
+    public bool ShowLyricsButton { get; set; } = true;
+
+    [JsonPropertyName("showEqualizerButton")]
+    public bool ShowEqualizerButton { get; set; } = true;
+
+    [JsonPropertyName("showQualityBadge")]
+    public bool ShowQualityBadge { get; set; } = true;
+
+    [JsonPropertyName("compactPlayerVolume")]
+    public bool CompactPlayerVolume { get; set; } = false;
+
+    // Home / Explore Page Modular settings
+    [JsonPropertyName("showPersonalPlaylistsOnHome")]
+    public bool ShowPersonalPlaylistsOnHome { get; set; } = true;
+
+    [JsonPropertyName("showNewReleasesOnHome")]
+    public bool ShowNewReleasesOnHome { get; set; } = true;
+
+    [JsonPropertyName("showEditorialPlaylistsOnHome")]
+    public bool ShowEditorialPlaylistsOnHome { get; set; } = true;
+
+    [JsonPropertyName("showChartOnHome")]
+    public bool ShowChartOnHome { get; set; } = true;
 }

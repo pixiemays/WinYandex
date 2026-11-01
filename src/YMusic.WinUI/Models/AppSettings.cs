@@ -57,4 +57,7 @@ public sealed class AppSettings
 
     [JsonPropertyName("autoplayWaveOnAlbumEnd")]
     public bool AutoplayWaveOnAlbumEnd { get; set; } = true;
+
+    [JsonPropertyName("autoBypassProxyForYandex")]
+    public bool AutoBypassProxyForYandex { get; set; } = true;
 }

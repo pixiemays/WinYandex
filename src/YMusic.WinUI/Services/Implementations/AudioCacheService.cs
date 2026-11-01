@@ -96,11 +96,7 @@ public sealed class AudioCacheService : IAudioCacheService
     public AudioCacheService(ISettingsService settingsService, HttpClient? httpClient = null)
     {
         _settingsService = settingsService;
-        _httpClient = httpClient ?? new HttpClient(new SocketsHttpHandler
-        {
-            PooledConnectionLifetime = TimeSpan.FromMinutes(15),
-            ConnectTimeout = TimeSpan.FromSeconds(15)
-        })
+        _httpClient = httpClient ?? new HttpClient(YandexBypassProxy.CreateHandler(TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(15)))
         {
             Timeout = TimeSpan.FromMinutes(2)
         };

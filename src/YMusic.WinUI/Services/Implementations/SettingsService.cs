@@ -274,6 +274,21 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public bool AutoBypassProxyForYandex
+    {
+        get => _settings.AutoBypassProxyForYandex;
+        set
+        {
+            if (_settings.AutoBypassProxyForYandex != value)
+            {
+                _settings.AutoBypassProxyForYandex = value;
+                YandexBypassProxy.Instance.IsEnabled = value;
+                Save();
+                NotifyChanged(nameof(AutoBypassProxyForYandex));
+            }
+        }
+    }
+
     private void Load()
     {
         lock (_lock)
@@ -307,6 +322,7 @@ public sealed class SettingsService : ISettingsService
         try
         {
             _musicService.PreferredQuality = _settings.PreferredQuality;
+            YandexBypassProxy.Instance.IsEnabled = _settings.AutoBypassProxyForYandex;
         }
         catch (Exception ex)
         {

@@ -53,6 +53,7 @@ public sealed class YandexMusicService : IYandexMusicService
     private string? _token;
 
     public event EventHandler? UnauthorizedResponseReceived;
+    public event EventHandler? RegionRestrictionDetected;
     public event EventHandler<(string TrackId, bool IsLiked)>? TrackLikeChanged;
     public event EventHandler<(string TrackId, bool IsDisliked)>? TrackDislikeChanged;
     public event EventHandler<(long AlbumId, bool IsLiked)>? AlbumLikeChanged;
@@ -66,14 +67,7 @@ public sealed class YandexMusicService : IYandexMusicService
     public YandexMusicService(ICredentialStorageService? credentialStorage = null, HttpClient? httpClient = null)
     {
         _credentialStorage = credentialStorage;
-        _httpClient = httpClient ?? new HttpClient(new SocketsHttpHandler
-        {
-            PooledConnectionLifetime = TimeSpan.FromMinutes(15),
-            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
-            MaxConnectionsPerServer = 20,
-            EnableMultipleHttp2Connections = true,
-            ConnectTimeout = TimeSpan.FromSeconds(10)
-        });
+        _httpClient = httpClient ?? new HttpClient(YandexBypassProxy.CreateHandler(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(15)));
         _httpClient.BaseAddress = new Uri(ApiBaseUrl);
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentHeader);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -1562,10 +1556,20 @@ public sealed class YandexMusicService : IYandexMusicService
         using var downloadInfoResponse = await SendRequestAsync(HttpMethod.Get, $"tracks/{trackId}/download-info", null, cancellationToken).ConfigureAwait(false);
         if (downloadInfoResponse == null || !downloadInfoResponse.IsSuccessStatusCode)
         {
+            if (downloadInfoResponse?.StatusCode == HttpStatusCode.Forbidden)
+            {
+                RegionRestrictionDetected?.Invoke(this, EventArgs.Empty);
+            }
             return (null, null);
         }
 
         var json = await downloadInfoResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        if (json.Contains("not-available-for-other-regions", StringComparison.OrdinalIgnoreCase))
+        {
+            RegionRestrictionDetected?.Invoke(this, EventArgs.Empty);
+            return (null, null);
+        }
+
         var apiResult = JsonSerializer.Deserialize<YandexApiResponse<List<DownloadInfo>>>(json, _jsonOptions);
 
         if (apiResult?.Result == null || apiResult.Result.Count == 0)
@@ -2851,24 +2855,61 @@ public sealed class YandexMusicService : IYandexMusicService
         HttpContent? content,
         CancellationToken cancellationToken)
     {
-        var request = new HttpRequestMessage(method, endpoint);
-        if (content != null)
+        HttpRequestMessage CreateRequest()
         {
-            request.Content = content;
+            var req = new HttpRequestMessage(method, endpoint);
+            if (content != null)
+            {
+                req.Content = content;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_token) && req.Headers.Authorization == null)
+            {
+                req.Headers.Authorization = new AuthenticationHeaderValue("OAuth", _token);
+            }
+            return req;
         }
 
-        if (!string.IsNullOrWhiteSpace(_token) && request.Headers.Authorization == null)
+        var request = CreateRequest();
+
+        try
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", _token);
+            var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                UnauthorizedResponseReceived?.Invoke(this, EventArgs.Empty);
+            }
+            else if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                YandexBypassProxy.Instance.ReportProxyFailure();
+            }
+            else if (response.IsSuccessStatusCode)
+            {
+                YandexBypassProxy.Instance.ReportDirectSuccess();
+            }
+
+            return response;
         }
-
-        var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        catch (HttpRequestException) when (!YandexBypassProxy.Instance.FallbackToProxy)
         {
-            UnauthorizedResponseReceived?.Invoke(this, EventArgs.Empty);
+            // Direct connection to Yandex failed (e.g. ISP block); try falling back to system proxy once
+            YandexBypassProxy.Instance.ReportDirectFailure();
+            if (YandexBypassProxy.Instance.FallbackToProxy)
+            {
+                using var retryReq = CreateRequest();
+                var retryResponse = await _httpClient.SendAsync(retryReq, cancellationToken).ConfigureAwait(false);
+                if (retryResponse.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    UnauthorizedResponseReceived?.Invoke(this, EventArgs.Empty);
+                }
+                else if (retryResponse.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    YandexBypassProxy.Instance.ReportProxyFailure();
+                }
+                return retryResponse;
+            }
+            throw;
         }
-
-        return response;
     }
 }

@@ -14,6 +14,7 @@ using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using YMusic.WinUI.Models;
+using YMusic.WinUI.Services.Implementations;
 using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.ViewModels;
 
@@ -332,7 +333,7 @@ public static class TrackMenuHelper
                 }
                 string destPath = Path.Combine(destDir, cleanName);
 
-                using var httpClient = new HttpClient();
+                using var httpClient = YandexBypassProxy.CreateHttpClient(TimeSpan.FromMinutes(2));
                 using var response = await httpClient.GetAsync(streamUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 

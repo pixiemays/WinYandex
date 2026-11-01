@@ -10,6 +10,7 @@ public interface IYandexMusicService
     void SetOAuthToken(string token);
 
     event EventHandler? UnauthorizedResponseReceived;
+    event EventHandler? RegionRestrictionDetected;
 
     Task<UserProfile?> GetAccountStatusAsync(CancellationToken cancellationToken = default);
     Task<(UserProfile? Profile, string? Error)> GetAccountStatusDetailedAsync(CancellationToken cancellationToken = default);

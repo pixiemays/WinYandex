@@ -446,6 +446,25 @@
                         </Grid>
                     </Border>
 
+                    <!-- Auto Bypass Proxy for Yandex Card -->
+                    <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4" Margin="0,0,16,0">
+                                <TextBlock Text="{x:Bind ViewModel.AutoBypassProxyTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind ViewModel.AutoBypassProxyDesc, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1"
+                                          IsOn="{x:Bind ViewModel.IsAutoBypassProxyEnabled, Mode=TwoWay}"
+                                          OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                          OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                          VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
                     <!-- FckCensor Card -->
                     <Border Padding="18,16" CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                         <Grid>

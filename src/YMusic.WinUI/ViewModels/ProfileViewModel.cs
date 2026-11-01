@@ -142,6 +142,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private bool _isAutoplayWaveEnabled;
 
     [ObservableProperty]
+    private bool _isAutoBypassProxyEnabled;
+
+    [ObservableProperty]
     private bool _isMinimizeToTrayEnabled;
 
     [ObservableProperty]
@@ -212,6 +215,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
 
     public string AutoplayWaveTitle => IsRussian ? "Моя волна после окончания альбома" : "Autoplay Wave on Album End";
     public string AutoplayWaveDesc => IsRussian ? "Автоматически запускать радио/волну по альбому после завершения последнего трека" : "Automatically transition to Wave based on the album when the last track finishes";
+
+    public string AutoBypassProxyTitle => IsRussian ? "Обход системного VPN/прокси для Яндекса" : "Bypass System Proxy for Yandex";
+    public string AutoBypassProxyDesc => IsRussian ? "Направлять запросы к сервисам Яндекса напрямую, предотвращая сбои воспроизведения при включенном VPN или прокси" : "Route Yandex API and audio stream requests directly, preventing playback issues when system VPN or proxy is active";
 
     [RelayCommand]
     public void CopyObsUrl()
@@ -392,6 +398,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
             IsDiscordRpcEnabled = _settingsService.DiscordRpcEnabled;
             IsObsOverlayEnabled = _settingsService.ObsOverlayEnabled;
             IsAutoplayWaveEnabled = _settingsService.AutoplayWaveOnAlbumEnd;
+            IsAutoBypassProxyEnabled = _settingsService.AutoBypassProxyForYandex;
             IsMinimizeToTrayEnabled = _settingsService.MinimizeToTrayOnClose;
             IsTrackNotificationsEnabled = _settingsService.TrackNotificationsEnabled;
             IsFckCensorEnabled = _settingsService.FckCensorEnabled;
@@ -475,6 +482,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
             else if (propName == nameof(ISettingsService.AutoplayWaveOnAlbumEnd))
             {
                 IsAutoplayWaveEnabled = _settingsService.AutoplayWaveOnAlbumEnd;
+            }
+            else if (propName == nameof(ISettingsService.AutoBypassProxyForYandex))
+            {
+                IsAutoBypassProxyEnabled = _settingsService.AutoBypassProxyForYandex;
             }
             else if (propName == nameof(ISettingsService.MinimizeToTrayOnClose))
             {
@@ -574,6 +585,12 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         if (_isInitializingSettings) return;
         _settingsService.AutoplayWaveOnAlbumEnd = value;
+    }
+
+    partial void OnIsAutoBypassProxyEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.AutoBypassProxyForYandex = value;
     }
 
     partial void OnIsMinimizeToTrayEnabledChanged(bool value)
@@ -1246,6 +1263,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(OpenObsDashboardButtonText));
         OnPropertyChanged(nameof(AutoplayWaveTitle));
         OnPropertyChanged(nameof(AutoplayWaveDesc));
+        OnPropertyChanged(nameof(AutoBypassProxyTitle));
+        OnPropertyChanged(nameof(AutoBypassProxyDesc));
         OnPropertyChanged(nameof(FckCensorTitle));
         OnPropertyChanged(nameof(FckCensorDesc));
         OnPropertyChanged(nameof(FckCensorAuthorCreditText));

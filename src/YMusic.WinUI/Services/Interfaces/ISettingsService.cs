@@ -24,6 +24,7 @@ public interface ISettingsService
     string ObsOverlayTheme { get; set; }
     bool ObsOverlayHideOnPause { get; set; }
     bool AutoplayWaveOnAlbumEnd { get; set; }
+    bool AutoBypassProxyForYandex { get; set; }
 
     event EventHandler<string>? SettingChanged;
 

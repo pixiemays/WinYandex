@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using YMusic.WinUI.Helpers;
 using YMusic.WinUI.Models;
+using YMusic.WinUI.Services.Implementations;
 using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.Views.Controls;
 
@@ -19,6 +20,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     private readonly IEqualizerService _equalizer;
     private readonly INavigationService _navigationService;
     private bool _isUserSeeking;
+    private DateTime _lastRegionWarningTime = DateTime.MinValue;
 
     public IEqualizerService Equalizer => _equalizer;
     public IReadOnlyList<EqualizerBand> EqualizerBands => _equalizer.Bands;
@@ -409,6 +411,29 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         _audioPlayer.MuteChanged += OnMuteChanged;
         _audioPlayer.RepeatModeChanged += OnRepeatModeChanged;
         _audioPlayer.IsShuffleChanged += OnIsShuffleChanged;
+        _audioPlayer.PlaybackFailed += (s, reason) =>
+        {
+            RunOnUi(() =>
+            {
+                var isEn = Loc?.CurrentLanguage == "en";
+                ShowToast(isEn
+                    ? "Playback paused: tracks unavailable in current region (check VPN)"
+                    : "Воспроизведение приостановлено: треки недоступны в регионе (проверьте VPN)");
+            });
+        };
+        _musicService.RegionRestrictionDetected += (s, e) =>
+        {
+            if (DateTime.UtcNow - _lastRegionWarningTime < TimeSpan.FromSeconds(15)) return;
+            _lastRegionWarningTime = DateTime.UtcNow;
+
+            RunOnUi(() =>
+            {
+                var isEn = Loc?.CurrentLanguage == "en";
+                ShowToast(isEn
+                    ? "Track unavailable: foreign region or VPN detected"
+                    : "Трек недоступен: обнаружен зарубежный регион или активен VPN");
+            });
+        };
         _equalizer.EqualizerChanged += OnEqualizerChanged;
 
         _musicService.TrackLikeChanged += (_, e) =>
@@ -1315,7 +1340,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             }
             string destPath = Path.Combine(destDir, cleanName);
 
-            using var httpClient = new HttpClient();
+            using var httpClient = YandexBypassProxy.CreateHttpClient(TimeSpan.FromMinutes(2));
             using var response = await httpClient.GetAsync(streamUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 

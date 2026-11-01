@@ -4,6 +4,17 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.61] — 2026-11-01
+
+### Seamless Playback with VPN & System Proxy
+* **No more VPN interruptions**: if you use a VPN or system proxy (Clash, v2rayN, Outline, etc.) for Discord or browsing, WinYandex now automatically routes Yandex requests directly. This eliminates geographic playback errors and access issues (403 Forbidden).
+* **Smart automatic fallback**: if your local ISP blocks Yandex services directly, the app automatically switches to routing through your active proxy.
+* **Queue skip protection**: if tracks are unavailable in the connected region, the player no longer silently skips through the entire playlist — it halts cleanly and informs you with a helpful toast notification.
+* **Full-speed downloads**: saving tracks to disk now also bypasses the proxy to download at your connection's maximum bandwidth.
+* **Customizable in settings**: an "Auto Bypass Proxy for Yandex" toggle has been added to the profile settings (enabled by default).
+
+---
+
 ## [0.9.60] — 2026-11-01
 
 ### Now Playing Widget (OBS Studio)

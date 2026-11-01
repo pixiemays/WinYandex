@@ -50,6 +50,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
     private TimeSpan _restoredPosition = TimeSpan.Zero;
     private DateTime _lastPeriodicSaveTime = DateTime.UtcNow;
     private readonly object _saveLock = new();
+    private int _consecutivePlaybackFailures = 0;
 
     public Track? CurrentTrack => _currentTrack;
     public StreamAudioQuality? CurrentQuality => _currentQuality;
@@ -185,6 +186,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
     public event EventHandler<bool>? IsShuffleChanged;
     public event EventHandler? QueueChanged;
     public event EventHandler<PlaybackMode>? PlaybackModeChanged;
+    public event EventHandler<string>? PlaybackFailed;
 
     public AudioPlayerService(
         IYandexMusicService yandexMusicService,
@@ -240,6 +242,10 @@ public sealed class AudioPlayerService : IAudioPlayerService
         _mediaPlayer.PlaybackSession.PlaybackStateChanged += OnPlaybackStateChanged;
         _mediaPlayer.PlaybackSession.NaturalDurationChanged += OnNaturalDurationChanged;
         _mediaPlayer.MediaEnded += OnMediaEnded;
+        _mediaPlayer.MediaFailed += (s, e) =>
+        {
+            System.Diagnostics.Debug.WriteLine($"[AudioPlayer] Media failed: {e.Error} - {e.ErrorMessage}");
+        };
 
         _smtc = _mediaPlayer.SystemMediaTransportControls;
         _smtc.IsPlayEnabled = true;
@@ -493,6 +499,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
     public async Task PlayTrackAsync(Track track, IEnumerable<Track>? newQueue = null)
     {
         if (track == null || !track.Available) return;
+        _consecutivePlaybackFailures = 0;
 
         if (newQueue != null)
         {
@@ -546,6 +553,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         {
             return;
         }
+        _consecutivePlaybackFailures = 0;
 
         bool isSame = IsSameQueue(_queue, tracks);
         if (!isSame)
@@ -1245,10 +1253,27 @@ public sealed class AudioPlayerService : IAudioPlayerService
         {
             if (requestId == _playRequestId)
             {
+                _consecutivePlaybackFailures++;
+                if (_consecutivePlaybackFailures >= 3)
+                {
+                    _consecutivePlaybackFailures = 0;
+                    _isPlaying = false;
+                    IsPlayingChanged?.Invoke(this, false);
+                    try
+                    {
+                        _mediaPlayer.Pause();
+                    }
+                    catch { }
+                    PlaybackFailed?.Invoke(this, "RegionRestrictionOrNetworkError");
+                    return;
+                }
+
                 await NextAsync().ConfigureAwait(false);
             }
             return;
         }
+
+        _consecutivePlaybackFailures = 0;
 
         var source = MediaSource.CreateFromUri(new Uri(streamUrl));
         source.OpenOperationCompleted += (s, args) =>

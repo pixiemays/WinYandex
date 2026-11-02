@@ -48,8 +48,10 @@
                                 QueryIcon="Find"
                                 Visibility="{x:Bind ViewModel.SearchNavVisibility, Mode=OneWay}"
                                 PlaceholderText="{x:Bind ViewModel.SearchPlaceholderText, Mode=OneWay}"
+                                GotFocus="NavAutoSuggestBox_GotFocus"
                                 TextChanged="NavAutoSuggestBox_TextChanged"
-                                QuerySubmitted="NavAutoSuggestBox_QuerySubmitted" />
+                                QuerySubmitted="NavAutoSuggestBox_QuerySubmitted"
+                                SuggestionChosen="NavAutoSuggestBox_SuggestionChosen" />
             </NavigationView.AutoSuggestBox>
 
             <NavigationView.MenuItems>

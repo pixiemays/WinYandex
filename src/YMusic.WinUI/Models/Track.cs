@@ -49,6 +49,21 @@ public sealed partial class Track : ObservableObject
 
     [ObservableProperty]
     [property: JsonIgnore]
+    private bool _isAiTrack;
+
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private int _aiScore;
+
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private string _aiTooltip = string.Empty;
+
+    [JsonIgnore]
+    public string AiBadgeLabel => App.Loc?.CurrentLanguage == "en" ? "AI" : "ИИ";
+
+    [ObservableProperty]
+    [property: JsonIgnore]
     private bool _isCached;
 
     [JsonIgnore]
@@ -135,6 +150,15 @@ public sealed partial class Track : ObservableObject
         }
     }
     private bool _available = true;
+
+    [JsonPropertyName("lyricsAvailable")]
+    public bool LyricsAvailable { get; set; } = true;
+
+    [JsonPropertyName("lyricsInfo")]
+    public TrackLyricsInfo? LyricsInfo { get; set; }
+
+    [JsonIgnore]
+    public bool HasLyricsOnYandex => LyricsAvailable || (LyricsInfo != null && (LyricsInfo.HasAvailableTextLyrics || LyricsInfo.HasAvailableSyncLyrics));
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Duration))]

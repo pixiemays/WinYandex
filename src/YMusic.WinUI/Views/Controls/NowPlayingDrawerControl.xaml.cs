@@ -363,6 +363,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
             DrawerTranslateTransform.Y = 0.0;
             CoverScaleTransform.ScaleX = 1.0;
             CoverScaleTransform.ScaleY = 1.0;
+            (App.MainWindow as ShellWindow)?.SetTitleBar(TitleBarDragRegion);
         };
 
         _currentTransition = sb;
@@ -576,6 +577,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
             DrawerTranslateTransform.Y = 0.0;
             CoverScaleTransform.ScaleX = 1.0;
             CoverScaleTransform.ScaleY = 1.0;
+            (App.MainWindow as ShellWindow)?.ResetTitleBar();
             onCompleted?.Invoke();
         };
 
@@ -586,6 +588,72 @@ public sealed partial class NowPlayingDrawerControl : UserControl
     private async void DrawerTrackOptionsFlyout_Opening(object? sender, object e)
     {
         await ViewModel.PopulatePlaylistSubItemAsync(DrawerAddToPlaylistSubItem);
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ReleaseCapture();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SendMessageW")]
+    private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    private const uint WM_SYSCOMMAND = 0x0112;
+    private const int SC_DRAGMOVE = 0xF012;
+
+    private void HeaderBarGrid_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        // Don't drag if clicked on an interactive control (Button, Slider, etc.)
+        if (e.OriginalSource is DependencyObject dep)
+        {
+            var parent = dep;
+            while (parent != null && parent != HeaderBarGrid)
+            {
+                if (parent is Microsoft.UI.Xaml.Controls.Primitives.ButtonBase)
+                {
+                    return;
+                }
+                parent = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(parent);
+            }
+        }
+
+        var point = e.GetCurrentPoint(this);
+        if (point.Properties.IsLeftButtonPressed)
+        {
+            IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            if (hwnd != IntPtr.Zero)
+            {
+                ReleaseCapture();
+                SendMessage(hwnd, WM_SYSCOMMAND, (IntPtr)SC_DRAGMOVE, IntPtr.Zero);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void HeaderBarGrid_DoubleTapped(object sender, Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject dep)
+        {
+            var parent = dep;
+            while (parent != null && parent != HeaderBarGrid)
+            {
+                if (parent is Microsoft.UI.Xaml.Controls.Primitives.ButtonBase)
+                {
+                    return;
+                }
+                parent = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(parent);
+            }
+        }
+
+        if (App.MainWindow?.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+        {
+            if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized)
+            {
+                presenter.Restore();
+            }
+            else
+            {
+                presenter.Maximize();
+            }
+        }
     }
 }
 

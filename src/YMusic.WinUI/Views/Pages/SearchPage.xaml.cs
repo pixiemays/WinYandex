@@ -63,6 +63,14 @@ public sealed partial class SearchPage : Page
         }
     }
 
+    private void DeleteRecentQueryButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string query)
+        {
+            ViewModel.RemoveRecentQuery(query);
+        }
+    }
+
     private void SuggestionChipButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string chip)

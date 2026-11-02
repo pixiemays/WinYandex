@@ -811,6 +811,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0"
                                                    Text="{x:Bind FullTitle}"
@@ -860,6 +861,21 @@
                                             <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                                 <FontIcon Glyph="&#xE787;" FontSize="8" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                                 <TextBlock Text="{x:Bind UnavailableBadgeText, Mode=OneWay}" FontSize="8" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="4"
+                                                Margin="6,0,0,0"
+                                                Visibility="{x:Bind IsAiTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                Padding="4,1"
+                                                CornerRadius="3"
+                                                Background="#26EF4444"
+                                                BorderBrush="#80EF4444"
+                                                BorderThickness="1"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="{x:Bind AiTooltip, Mode=OneWay}">
+                                            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                <FontIcon Glyph="&#xE99A;" FontSize="8" Foreground="#FFEF4444" />
+                                                <TextBlock Text="{x:Bind AiBadgeLabel, Mode=OneWay}" FontSize="8" FontWeight="Bold" Foreground="#FFEF4444" />
                                             </StackPanel>
                                         </Border>
                                     </Grid>

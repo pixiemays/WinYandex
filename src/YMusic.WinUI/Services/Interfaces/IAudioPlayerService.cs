@@ -35,6 +35,7 @@ public interface IAudioPlayerService : IDisposable
     event EventHandler? QueueChanged;
     event EventHandler<PlaybackMode>? PlaybackModeChanged;
     event EventHandler<string>? PlaybackFailed;
+    event EventHandler<string>? TrackSkippedWithReason;
 
     Task PlayTrackAsync(Track track, IEnumerable<Track>? newQueue = null);
     Task PlayQueueAsync(IEnumerable<Track> queue, int startIndex = 0);

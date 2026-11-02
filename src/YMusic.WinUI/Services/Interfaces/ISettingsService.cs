@@ -12,6 +12,12 @@ public interface ISettingsService
     bool MinimizeToTrayOnClose { get; set; }
     bool TrackNotificationsEnabled { get; set; }
     bool FckCensorEnabled { get; set; }
+    bool SloplessEnabled { get; set; }
+    string SloplessBehavior { get; set; }
+    string SloplessDetectionMode { get; set; }
+    int SloplessArtistThreshold { get; set; }
+    bool SloplessShowTrackLabels { get; set; }
+    bool SloplessShowArtistLabels { get; set; }
     string AppTheme { get; set; }
     string AccentColorHex { get; set; }
     string BackdropKind { get; set; }

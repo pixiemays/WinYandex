@@ -58,6 +58,7 @@ public partial class App : Application
         services.AddSingleton<IYandexMusicService, YandexMusicService>();
         services.AddSingleton<IFckCensorService, FckCensorService>();
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<ISloplessService, SloplessService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IAudioCacheService, AudioCacheService>();
         services.AddSingleton<IAudioPlayerService, AudioPlayerService>();

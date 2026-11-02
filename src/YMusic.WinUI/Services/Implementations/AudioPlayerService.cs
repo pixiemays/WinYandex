@@ -21,6 +21,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
     private readonly IFckCensorService _fckCensorService;
     private readonly IAudioCacheService _audioCacheService;
     private readonly ISettingsService _settingsService;
+    private readonly ISloplessService _sloplessService;
     private readonly MediaPlayer _mediaPlayer;
     private readonly SystemMediaTransportControls _smtc;
     private readonly System.Timers.Timer _positionTimer;
@@ -190,6 +191,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
     public event EventHandler? QueueChanged;
     public event EventHandler<PlaybackMode>? PlaybackModeChanged;
     public event EventHandler<string>? PlaybackFailed;
+    public event EventHandler<string>? TrackSkippedWithReason;
 
     public AudioPlayerService(
         IYandexMusicService yandexMusicService,
@@ -197,7 +199,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
         IPlaybackStateStorageService playbackStateStorage,
         IFckCensorService fckCensorService,
         IAudioCacheService audioCacheService,
-        ISettingsService settingsService)
+        ISettingsService settingsService,
+        ISloplessService sloplessService)
     {
         _yandexMusicService = yandexMusicService;
         _equalizerService = equalizerService;
@@ -205,6 +208,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         _fckCensorService = fckCensorService;
         _audioCacheService = audioCacheService;
         _settingsService = settingsService;
+        _sloplessService = sloplessService;
 
         IsPreloadingEnabled = _settingsService.GaplessPreloadEnabled;
         _settingsService.SettingChanged += async (_, prop) =>
@@ -1093,9 +1097,10 @@ public sealed class AudioPlayerService : IAudioPlayerService
         // Prefetch lyrics in background
         _ = _yandexMusicService.GetTrackLyricsAsync(
             nextTrack.Id,
-            nextTrack.Title,
+            nextTrack.FullTitle,
             nextTrack.ArtistNames,
             nextTrack.Duration.TotalSeconds,
+            nextTrack.HasLyricsOnYandex,
             token);
 
         // Check if nextTrack is in cache or resolve and enqueue
@@ -1430,6 +1435,11 @@ public sealed class AudioPlayerService : IAudioPlayerService
         UpdateSmtcMetadata(track);
         RequestSaveState();
 
+        if (_sloplessService != null && _settingsService.SloplessEnabled)
+        {
+            _ = HandleSloplessAiCheckAsync(track, requestId);
+        }
+
         string? streamUrl = null;
         StreamAudioQuality? quality = null;
 
@@ -1734,6 +1744,53 @@ public sealed class AudioPlayerService : IAudioPlayerService
                 (_playOrder[i], _playOrder[j]) = (_playOrder[j], _playOrder[i]);
             }
         }
+    }
+
+    private async Task HandleSloplessAiCheckAsync(Track track, int requestId)
+    {
+        try
+        {
+            var evaluation = await _sloplessService.EvaluateTrackAsync(track).ConfigureAwait(false);
+            if (!evaluation.IsAi) return;
+
+            if (requestId != _playRequestId || _currentTrack?.Id != track.Id) return;
+
+            string behavior = _settingsService.SloplessBehavior;
+            if (behavior == "nothing") return;
+
+            await Task.Delay(350).ConfigureAwait(false);
+            if (requestId != _playRequestId || _currentTrack?.Id != track.Id) return;
+
+            bool isLiked = track.IsLiked || _yandexMusicService.IsTrackLiked(track.Id);
+
+            if (behavior == "dislike" || (behavior == "dislike_if_not_liked" && !isLiked))
+            {
+                try
+                {
+                    await _yandexMusicService.DislikeTrackAsync(track.Id).ConfigureAwait(false);
+                    track.IsDisliked = true;
+                }
+                catch { }
+
+                TrackSkippedWithReason?.Invoke(this, App.Loc?.CurrentLanguage == "en" ? "AI track skipped & disliked (Slopless)" : "ИИ-трек пропущен и заблокирован (Slopless)");
+                await NextAsync().ConfigureAwait(false);
+            }
+            else if (behavior == "skip" || (behavior == "skip_if_not_liked" && !isLiked))
+            {
+                TrackSkippedWithReason?.Invoke(this, App.Loc?.CurrentLanguage == "en" ? "AI track skipped (Slopless)" : "ИИ-трек пропущен (Slopless)");
+                await NextAsync().ConfigureAwait(false);
+            }
+            else if (behavior == "like")
+            {
+                try
+                {
+                    await _yandexMusicService.LikeTrackAsync(track.Id).ConfigureAwait(false);
+                    track.IsLiked = true;
+                }
+                catch { }
+            }
+        }
+        catch { }
     }
 
     public void Dispose()

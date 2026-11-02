@@ -4,6 +4,32 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.71] — 2026-11-02
+
+### AI Music Filtering (Slopless Integration)
+* **AI Track Detection**: built-in integration with [Slopless](https://github.com/tslyf/slopless-pulsesync) to identify AI-generated music.
+* **Automated Actions**: option to automatically skip or dislike generated tracks during playback in My Wave and playlists.
+* **Configurable Sensitivity**: choose between track-level and artist-level detection criteria, with an adjustable probability threshold.
+* **Visual Badges**: neat probability badges displayed next to generated track titles across the player, Now Playing drawer, and track lists.
+* **Optimized Caching**: fast local caching of detection results to prevent redundant network requests.
+* **Attribution**: featured link to the original project [tslyf / slopless-pulsesync](https://github.com/tslyf/slopless-pulsesync) in settings.
+
+### Lyrics
+* **Mismatched Lyrics Fix**: resolved an issue where lyrics from unrelated songs could appear on instrumental pieces or tracks with short titles.
+* **Instrumental Protection**: tracks without lyrics no longer display false or mismatched text.
+* **Stricter Matching**: improved verification of titles, artists, and durations when searching for lyrics.
+
+### Search History
+* **Reliable History Saving**: search queries are now saved automatically when selecting a result or pausing typing, not just when pressing Enter.
+* **Recent Search Suggestions**: clicking the search bar displays your recent queries for quick access.
+* **Individual Item Removal**: added the ability to remove specific queries from search history.
+
+### Window Management
+* **Window Dragging in Now Playing**: the window can now be smoothly moved by dragging the top bar inside the Now Playing view.
+* **Double-Click to Maximize**: double-clicking empty areas of the Now Playing header maximizes or restores the window.
+
+---
+
 ## [0.9.7] — 2026-11-01
 
 ### Theming System & Visual Customization

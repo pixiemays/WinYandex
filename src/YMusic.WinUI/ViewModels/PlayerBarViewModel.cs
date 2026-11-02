@@ -447,6 +447,13 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                     : "Воспроизведение приостановлено: треки недоступны в регионе (проверьте VPN)");
             });
         };
+        _audioPlayer.TrackSkippedWithReason += (s, reason) =>
+        {
+            RunOnUi(() =>
+            {
+                ShowToast(reason);
+            });
+        };
         _musicService.RegionRestrictionDetected += (s, e) =>
         {
             if (DateTime.UtcNow - _lastRegionWarningTime < TimeSpan.FromSeconds(15)) return;
@@ -597,7 +604,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         try
         {
             double durationSec = track.DurationMs > 0 ? track.DurationMs / 1000.0 : DurationSeconds;
-            var lines = await _musicService.GetTrackLyricsAsync(track.Id, track.Title, track.ArtistNames, durationSec, token).ConfigureAwait(false);
+            var lines = await _musicService.GetTrackLyricsAsync(track.Id, track.FullTitle, track.ArtistNames, durationSec, track.HasLyricsOnYandex, token).ConfigureAwait(false);
             if (token.IsCancellationRequested) return;
 
             RunOnUi(() =>

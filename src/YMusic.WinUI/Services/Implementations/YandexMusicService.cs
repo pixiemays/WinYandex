@@ -1985,6 +1985,7 @@ public sealed class YandexMusicService : IYandexMusicService
         string? title = null,
         string? artist = null,
         double durationSeconds = 0,
+        bool? lyricsAvailable = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(trackId))
@@ -2000,13 +2001,20 @@ public sealed class YandexMusicService : IYandexMusicService
             return cached;
         }
 
+        bool isTitleInstrumental = IsLikelyInstrumental(title, null);
+
         // FckCensor feature: prefer clean, uncensored lyrics from LRCLIB for censored tracks
         bool isReplaced = Track.IsTrackReplacedChecker?.Invoke(cleanTrackId) ?? false;
-        if (isReplaced && !string.IsNullOrWhiteSpace(title))
+        if (isReplaced && !string.IsNullOrWhiteSpace(title) && !isTitleInstrumental)
         {
             try
             {
-                var (fckSynced, fckPlain) = await FetchFromLrclibAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                var (fckSynced, fckPlain, fckInst) = await FetchFromLrclibAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                if (fckInst)
+                {
+                    _lyricsCache[cleanTrackId] = new List<LyricLine>();
+                    return new List<LyricLine>();
+                }
                 var fckLines = fckSynced ?? fckPlain;
                 if (fckLines != null && fckLines.Count > 0)
                 {
@@ -2047,13 +2055,37 @@ public sealed class YandexMusicService : IYandexMusicService
             ? signedLyrics
             : supplementLyrics;
 
+        // If the track title itself indicates an instrumental, do not query external fuzzy sources (prevents matching vocal lyrics)
+        if (isTitleInstrumental)
+        {
+            var res = fallbackPlainLyrics ?? new List<LyricLine>();
+            _lyricsCache[cleanTrackId] = res;
+            return res;
+        }
+
+        // If Yandex explicitly marks this track as having no lyrics (e.g. instrumental, post-rock, ambient, score)
+        // and track was not replaced by FckCensor, never fall back to external web scrapers (prevents fake uploads / wrong song hallucinations)
+        if (lyricsAvailable == false && !isReplaced)
+        {
+            var res = fallbackPlainLyrics ?? new List<LyricLine>();
+            _lyricsCache[cleanTrackId] = res;
+            return res;
+        }
+
         // 2. Query LRCLIB for synchronized (or fallback plain) lyrics
         List<LyricLine>? lrclibPlainFallback = null;
         if (!string.IsNullOrWhiteSpace(title))
         {
             try
             {
-                var (lrclibSynced, lrclibPlain) = await FetchFromLrclibAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                var (lrclibSynced, lrclibPlain, lrclibInst) = await FetchFromLrclibAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                if (lrclibInst)
+                {
+                    var res = fallbackPlainLyrics ?? new List<LyricLine>();
+                    _lyricsCache[cleanTrackId] = res;
+                    return res;
+                }
+
                 if (lrclibSynced != null && lrclibSynced.Count > 0)
                 {
                     _lyricsCache[cleanTrackId] = lrclibSynced;
@@ -2080,12 +2112,17 @@ public sealed class YandexMusicService : IYandexMusicService
             return lrclibPlainFallback;
         }
 
-        // 4. Fallback to Genius if neither Yandex nor LRCLIB had lyrics
-        if (!string.IsNullOrWhiteSpace(title))
+        // 4. Fallback to Genius if neither Yandex nor LRCLIB had lyrics (requires non-empty artist to prevent hallucinations)
+        if (!string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(artist))
         {
             try
             {
-                var geniusLines = await FetchFromGeniusAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                var (geniusLines, isGeniusInst) = await FetchFromGeniusAsync(title, artist, durationSeconds, cancellationToken).ConfigureAwait(false);
+                if (isGeniusInst)
+                {
+                    _lyricsCache[cleanTrackId] = new List<LyricLine>();
+                    return new List<LyricLine>();
+                }
                 if (geniusLines != null && geniusLines.Count > 0)
                 {
                     _lyricsCache[cleanTrackId] = geniusLines;
@@ -2198,7 +2235,7 @@ public sealed class YandexMusicService : IYandexMusicService
         return null;
     }
 
-    private async Task<(List<LyricLine>? Synced, List<LyricLine>? Plain)> FetchFromLrclibAsync(
+    private async Task<(List<LyricLine>? Synced, List<LyricLine>? Plain, bool IsInstrumental)> FetchFromLrclibAsync(
         string title,
         string? artist,
         double durationSeconds,
@@ -2213,43 +2250,47 @@ public sealed class YandexMusicService : IYandexMusicService
         List<LyricLine>? fallbackPlain = null;
 
         // 1. Exact query: /api/get?track_name=...&artist_name=...&duration=...
-        var (exactSynced, exactPlain) = await TryLrclibGetAsync(rawTitle, rawArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
-        if (exactSynced != null) return (exactSynced, exactPlain);
+        var (exactSynced, exactPlain, exactInst) = await TryLrclibGetAsync(rawTitle, rawArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
+        if (exactInst) return (null, null, true);
+        if (exactSynced != null) return (exactSynced, exactPlain, false);
         if (exactPlain != null && fallbackPlain == null) fallbackPlain = exactPlain;
 
         // If title or artist had extra info, try /api/get with cleaned title & primary artist
         if (!string.Equals(cleanTitle, rawTitle, StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(primaryArtist, rawArtist, StringComparison.OrdinalIgnoreCase))
         {
-            var (cleanSynced, cleanPlain) = await TryLrclibGetAsync(cleanTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
-            if (cleanSynced != null) return (cleanSynced, cleanPlain);
+            var (cleanSynced, cleanPlain, cleanInst) = await TryLrclibGetAsync(cleanTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
+            if (cleanInst) return (null, null, true);
+            if (cleanSynced != null) return (cleanSynced, cleanPlain, false);
             if (cleanPlain != null && fallbackPlain == null) fallbackPlain = cleanPlain;
         }
 
         // 2. Search query: /api/search?track_name=...&artist_name=...
         // First search with clean title and primary artist
-        var (searchSynced, searchPlain) = await TryLrclibSearchAsync(cleanTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
-        if (searchSynced != null) return (searchSynced, searchPlain);
+        var (searchSynced, searchPlain, searchInst) = await TryLrclibSearchAsync(cleanTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
+        if (searchInst) return (null, null, true);
+        if (searchSynced != null) return (searchSynced, searchPlain, false);
         if (searchPlain != null && fallbackPlain == null) fallbackPlain = searchPlain;
 
         // If clean search failed, also try raw title search
         if (!string.Equals(cleanTitle, rawTitle, StringComparison.OrdinalIgnoreCase))
         {
-            var (rawSearchSynced, rawSearchPlain) = await TryLrclibSearchAsync(rawTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
-            if (rawSearchSynced != null) return (rawSearchSynced, rawSearchPlain);
+            var (rawSearchSynced, rawSearchPlain, rawSearchInst) = await TryLrclibSearchAsync(rawTitle, primaryArtist, durationSeconds, cancellationToken).ConfigureAwait(false);
+            if (rawSearchInst) return (null, null, true);
+            if (rawSearchSynced != null) return (rawSearchSynced, rawSearchPlain, false);
             if (rawSearchPlain != null && fallbackPlain == null) fallbackPlain = rawSearchPlain;
         }
 
-        return (null, fallbackPlain);
+        return (null, fallbackPlain, false);
     }
 
-    private async Task<(List<LyricLine>? Synced, List<LyricLine>? Plain)> TryLrclibGetAsync(
+    private async Task<(List<LyricLine>? Synced, List<LyricLine>? Plain, bool IsInstrumental)> TryLrclibGetAsync(
         string trackName,
         string artistName,
         double durationSeconds,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(trackName)) return (null, null);
+        if (string.IsNullOrWhiteSpace(trackName)) return (null, null, false);
 
         try
         {
@@ -2271,10 +2312,26 @@ public sealed class YandexMusicService : IYandexMusicService
                 var lrclibItem = JsonSerializer.Deserialize<LrclibResponse>(json, _jsonOptions);
                 if (lrclibItem != null)
                 {
-                    // Strict duration check: if duration differs by > 4.5 seconds, reject (different cut/version)
+                    // Check if explicitly marked instrumental in LRCLIB
+                    if (lrclibItem.Instrumental)
+                    {
+                        return (null, null, true);
+                    }
+
+                    // Strict duration check: if duration differs by > 4.5 seconds, reject (different edit/cut)
                     if (durationSeconds > 0 && lrclibItem.Duration > 0 && Math.Abs(lrclibItem.Duration - durationSeconds) > 4.5)
                     {
-                        return (null, null);
+                        return (null, null, false);
+                    }
+
+                    // Strict title & artist verification
+                    if (!TitlesMatch(trackName, lrclibItem.TrackName ?? ""))
+                    {
+                        return (null, null, false);
+                    }
+                    if (!string.IsNullOrWhiteSpace(artistName) && !ArtistsMatch(artistName, lrclibItem.ArtistName ?? ""))
+                    {
+                        return (null, null, false);
                     }
 
                     List<LyricLine>? synced = null;
@@ -2297,22 +2354,22 @@ public sealed class YandexMusicService : IYandexMusicService
                         }
                     }
 
-                    return (synced, plain);
+                    return (synced, plain, false);
                 }
             }
         }
         catch { }
 
-        return (null, null);
+        return (null, null, false);
     }
 
-    private async Task<(List<LyricLine>? Synced, List<LyricLine>? Plain)> TryLrclibSearchAsync(
+    private async Task<(List<LyricLine>? Synced, List<LyricLine>? Plain, bool IsInstrumental)> TryLrclibSearchAsync(
         string trackName,
         string artistName,
         double durationSeconds,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(trackName)) return (null, null);
+        if (string.IsNullOrWhiteSpace(trackName)) return (null, null, false);
 
         try
         {
@@ -2324,13 +2381,28 @@ public sealed class YandexMusicService : IYandexMusicService
                 var items = JsonSerializer.Deserialize<List<LrclibResponse>>(json, _jsonOptions);
                 if (items != null && items.Count > 0)
                 {
+                    // Strict filtering: candidate MUST match title and artist!
+                    var validCandidates = items.Where(x =>
+                        TitlesMatch(trackName, x.TrackName ?? "") &&
+                        (string.IsNullOrWhiteSpace(artistName) || ArtistsMatch(artistName, x.ArtistName ?? ""))
+                    ).ToList();
+
+                    if (validCandidates.Count == 0) return (null, null, false);
+
+                    // Check if an instrumental candidate was identified
+                    if (validCandidates.Any(x => x.Instrumental &&
+                        (durationSeconds <= 0 || x.Duration <= 0 || Math.Abs(x.Duration - durationSeconds) <= 4.0)))
+                    {
+                        return (null, null, true);
+                    }
+
                     // 1. Filter candidates that actually have SyncedLyrics
                     List<LyricLine>? bestSynced = null;
-                    var syncedCandidates = items.Where(x => !string.IsNullOrWhiteSpace(x.SyncedLyrics)).ToList();
+                    var syncedCandidates = validCandidates.Where(x => !string.IsNullOrWhiteSpace(x.SyncedLyrics)).ToList();
                     if (syncedCandidates.Count > 0)
                     {
                         var compatible = syncedCandidates
-                            .Where(x => durationSeconds <= 0 || x.Duration <= 0 || Math.Abs(x.Duration - durationSeconds) <= 4.5)
+                            .Where(x => durationSeconds <= 0 || x.Duration <= 0 || Math.Abs(x.Duration - durationSeconds) <= 3.5)
                             .OrderBy(x => durationSeconds > 0 && x.Duration > 0 ? Math.Abs(x.Duration - durationSeconds) : 0.0)
                             .ThenBy(x =>
                             {
@@ -2360,20 +2432,20 @@ public sealed class YandexMusicService : IYandexMusicService
                         }
                     }
 
-                    // 2. Filter candidates that have PlainLyrics as fallback
+                    // 2. Filter candidates that have PlainLyrics as fallback (ONLY if duration matches within 3s!)
                     List<LyricLine>? bestPlain = null;
-                    var plainCandidates = items.Where(x => !string.IsNullOrWhiteSpace(x.PlainLyrics)).ToList();
+                    var plainCandidates = validCandidates.Where(x => !string.IsNullOrWhiteSpace(x.PlainLyrics)).ToList();
                     if (plainCandidates.Count > 0)
                     {
                         var compatiblePlain = plainCandidates
-                            .Where(x => durationSeconds <= 0 || x.Duration <= 0 || Math.Abs(x.Duration - durationSeconds) <= 6.0)
+                            .Where(x => durationSeconds <= 0 || x.Duration <= 0 || Math.Abs(x.Duration - durationSeconds) <= 3.0)
                             .OrderBy(x => durationSeconds > 0 && x.Duration > 0 ? Math.Abs(x.Duration - durationSeconds) : 0.0)
                             .ToList();
 
-                        var chosen = compatiblePlain.Count > 0 ? compatiblePlain[0] : plainCandidates[0];
-                        if (!string.IsNullOrWhiteSpace(chosen.PlainLyrics))
+                        var plainText = compatiblePlain.Count > 0 ? compatiblePlain[0].PlainLyrics : null;
+                        if (!string.IsNullOrWhiteSpace(plainText))
                         {
-                            var lines = LyricLine.ParseLrc(chosen.PlainLyrics, durationSeconds);
+                            var lines = LyricLine.ParseLrc(plainText, durationSeconds);
                             if (lines.Count > 0)
                             {
                                 bestPlain = lines;
@@ -2381,68 +2453,66 @@ public sealed class YandexMusicService : IYandexMusicService
                         }
                     }
 
-                    return (bestSynced, bestPlain);
+                    return (bestSynced, bestPlain, false);
                 }
             }
         }
         catch { }
 
-        return (null, null);
+        return (null, null, false);
     }
 
-    private async Task<List<LyricLine>?> FetchFromGeniusAsync(
+    private async Task<(List<LyricLine>? Lines, bool IsInstrumental)> FetchFromGeniusAsync(
         string title,
         string? artist,
         double durationSeconds,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(artist)) return (null, false); // NEVER query Genius without an artist (prevents matching random popular songs)
+
         string rawTitle = title.Trim();
         string rawArtist = (artist ?? string.Empty).Trim();
         string cleanTitle = CleanTitleForLyrics(rawTitle);
         string primaryArtist = GetPrimaryArtist(rawArtist);
 
         // Try primary artist + clean title
-        var lines = await TryGeniusSearchAndExtractAsync(cleanTitle, primaryArtist, cancellationToken).ConfigureAwait(false);
-        if (lines != null && lines.Count > 0) return lines;
+        var (lines, isInst) = await TryGeniusSearchAndExtractAsync(cleanTitle, primaryArtist, cancellationToken).ConfigureAwait(false);
+        if (isInst) return (null, true);
+        if (lines != null && lines.Count > 0) return (lines, false);
 
         // Try primary artist + raw title if clean was different
         if (!string.Equals(cleanTitle, rawTitle, StringComparison.OrdinalIgnoreCase))
         {
-            lines = await TryGeniusSearchAndExtractAsync(rawTitle, primaryArtist, cancellationToken).ConfigureAwait(false);
-            if (lines != null && lines.Count > 0) return lines;
+            (lines, isInst) = await TryGeniusSearchAndExtractAsync(rawTitle, primaryArtist, cancellationToken).ConfigureAwait(false);
+            if (isInst) return (null, true);
+            if (lines != null && lines.Count > 0) return (lines, false);
         }
 
         // Try full artist name + clean title if composite artist
         if (!string.IsNullOrWhiteSpace(primaryArtist) && !string.Equals(primaryArtist, rawArtist, StringComparison.OrdinalIgnoreCase))
         {
-            lines = await TryGeniusSearchAndExtractAsync(cleanTitle, rawArtist, cancellationToken).ConfigureAwait(false);
-            if (lines != null && lines.Count > 0) return lines;
+            (lines, isInst) = await TryGeniusSearchAndExtractAsync(cleanTitle, rawArtist, cancellationToken).ConfigureAwait(false);
+            if (isInst) return (null, true);
+            if (lines != null && lines.Count > 0) return (lines, false);
         }
 
-        // Try clean title only
-        if (!string.IsNullOrWhiteSpace(primaryArtist))
-        {
-            lines = await TryGeniusSearchAndExtractAsync(cleanTitle, string.Empty, cancellationToken).ConfigureAwait(false);
-            if (lines != null && lines.Count > 0) return lines;
-        }
-
-        return null;
+        return (null, false);
     }
 
-    private async Task<List<LyricLine>?> TryGeniusSearchAndExtractAsync(
+    private async Task<(List<LyricLine>? Lines, bool IsInstrumental)> TryGeniusSearchAndExtractAsync(
         string trackName,
         string artistName,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(trackName)) return null;
+        if (string.IsNullOrWhiteSpace(trackName) || string.IsNullOrWhiteSpace(artistName)) return (null, false);
 
         try
         {
-            string query = string.IsNullOrWhiteSpace(artistName) ? trackName : $"{artistName} {trackName}";
+            string query = $"{artistName} {trackName}";
             string searchUrl = $"https://genius.com/api/search/multi?q={Uri.EscapeDataString(query)}";
 
             using var searchResp = await _geniusHttpClient.GetAsync(searchUrl, cancellationToken).ConfigureAwait(false);
-            if (!searchResp.IsSuccessStatusCode) return null;
+            if (!searchResp.IsSuccessStatusCode) return (null, false);
 
             var json = await searchResp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
@@ -2450,7 +2520,7 @@ public sealed class YandexMusicService : IYandexMusicService
             if (!doc.RootElement.TryGetProperty("response", out var respProp) ||
                 !respProp.TryGetProperty("sections", out var sectionsProp))
             {
-                return null;
+                return (null, false);
             }
 
             string? targetUrl = null;
@@ -2470,10 +2540,6 @@ public sealed class YandexMusicService : IYandexMusicService
                     string hitType = resultProp.TryGetProperty("_type", out var tp) ? tp.GetString() ?? "" : "";
                     if (hitType != "song") continue;
 
-                    if (!resultProp.TryGetProperty("url", out var urlProp)) continue;
-                    string? url = urlProp.GetString();
-                    if (string.IsNullOrWhiteSpace(url) || !url.Contains("-lyrics")) continue;
-
                     string hitTitle = resultProp.TryGetProperty("title", out var tit) ? tit.GetString() ?? "" : "";
                     string hitArtist = resultProp.TryGetProperty("artist_names", out var art) ? art.GetString() ?? "" : "";
 
@@ -2485,16 +2551,21 @@ public sealed class YandexMusicService : IYandexMusicService
                         continue;
                     }
 
-                    // Check reasonable artist / title matching
-                    bool artistMatches = string.IsNullOrWhiteSpace(artistName) ||
-                        hitArtist.Contains(artistName, StringComparison.OrdinalIgnoreCase) ||
-                        artistName.Contains(hitArtist, StringComparison.OrdinalIgnoreCase);
+                    // Strict matching: BOTH artist AND title must match!
+                    bool artistMatches = ArtistsMatch(artistName, hitArtist);
+                    bool titleMatches = TitlesMatch(trackName, hitTitle);
 
-                    bool titleMatches = hitTitle.Contains(trackName, StringComparison.OrdinalIgnoreCase) ||
-                        trackName.Contains(hitTitle, StringComparison.OrdinalIgnoreCase);
-
-                    if (artistMatches || titleMatches)
+                    if (artistMatches && titleMatches)
                     {
+                        if (resultProp.TryGetProperty("instrumental", out var instProp) && instProp.GetBoolean())
+                        {
+                            return (null, true);
+                        }
+
+                        if (!resultProp.TryGetProperty("url", out var urlProp)) continue;
+                        string? url = urlProp.GetString();
+                        if (string.IsNullOrWhiteSpace(url) || !url.Contains("-lyrics")) continue;
+
                         targetUrl = url;
                         break;
                     }
@@ -2503,18 +2574,18 @@ public sealed class YandexMusicService : IYandexMusicService
                 if (targetUrl != null) break;
             }
 
-            if (string.IsNullOrWhiteSpace(targetUrl)) return null;
+            if (string.IsNullOrWhiteSpace(targetUrl)) return (null, false);
 
             // Fetch the lyrics webpage from Genius
             using var pageResp = await _geniusHttpClient.GetAsync(targetUrl, cancellationToken).ConfigureAwait(false);
-            if (!pageResp.IsSuccessStatusCode) return null;
+            if (!pageResp.IsSuccessStatusCode) return (null, false);
 
             var html = await pageResp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
             // Container regex: <div data-lyrics-container="true"...>(.*?)</div>
             var containerRegex = new Regex(@"<div[^>]*data-lyrics-container=[""']true[""'][^>]*>(.*?)</div>(?=(?:<div[^>]*data-lyrics-container|$))", RegexOptions.Singleline);
             var matches = containerRegex.Matches(html);
-            if (matches.Count == 0) return null;
+            if (matches.Count == 0) return (null, false);
 
             var sb = new StringBuilder();
             foreach (Match match in matches)
@@ -2529,14 +2600,22 @@ public sealed class YandexMusicService : IYandexMusicService
             string rawLyrics = sb.ToString().Trim();
             rawLyrics = CleanGeniusLyrics(rawLyrics);
 
-            if (string.IsNullOrWhiteSpace(rawLyrics)) return null;
+            if (string.IsNullOrWhiteSpace(rawLyrics)) return (null, false);
+
+            // Check if page indicates it's purely instrumental
+            string lowerTrimmed = rawLyrics.Trim().Trim('[', ']', '(', ')', '{', '}', '*', '-', ' ', '♪', '•').ToLowerInvariant();
+            if (lowerTrimmed == "instrumental" || lowerTrimmed == "инструментал" ||
+                lowerTrimmed == "this song is an instrumental" || lowerTrimmed.Contains("this song is an instrumental"))
+            {
+                return (null, true);
+            }
 
             var lines = LyricLine.ParseLrc(rawLyrics, 0);
-            return lines.Count > 0 ? lines : null;
+            return (lines.Count > 0 ? lines : null, false);
         }
         catch { }
 
-        return null;
+        return (null, false);
     }
 
     private static string CleanGeniusLyrics(string lyrics)
@@ -2564,8 +2643,8 @@ public sealed class YandexMusicService : IYandexMusicService
     {
         if (string.IsNullOrWhiteSpace(title)) return string.Empty;
 
-        // Strip parenthetical/bracketed suffixes like "(Remastered 2021)", "[Deluxe Edition]", "(feat. Drake)", etc.
-        string cleaned = Regex.Replace(title, @"\s*[\(\[](?:remastered|remaster|deluxe|bonus|anniversary|feat\.?|featuring|version|mono|stereo)[^\)\]]*[\)\]]", "", RegexOptions.IgnoreCase);
+        // Strip parenthetical/bracketed suffixes like "(Remastered 2021)", "[Deluxe Edition]", "(feat. Drake)"
+        string cleaned = Regex.Replace(title, @"\s*[\(\[](?:remastered|remaster|deluxe|bonus|anniversary|feat\.?|featuring|prod\.?|produced)[^\)\]]*[\)\]]", "", RegexOptions.IgnoreCase);
 
         // Strip trailing " - Remastered..." etc.
         cleaned = Regex.Replace(cleaned, @"\s+-\s+(?:remastered|remaster|deluxe|mono|stereo|bonus track).*$", "", RegexOptions.IgnoreCase);
@@ -2582,6 +2661,125 @@ public sealed class YandexMusicService : IYandexMusicService
             return artist.Substring(0, commaIndex).Trim();
         }
         return artist.Trim();
+    }
+
+    private static string NormalizeForComparison(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var sb = new StringBuilder(text.Length);
+        foreach (char c in text.ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                sb.Append(c);
+            }
+        }
+        return sb.ToString();
+    }
+
+    private static string NormalizeTitleForComparison(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return string.Empty;
+        string cleaned = Regex.Replace(title, @"\s*[\(\[][^\)\]]*[\)\]]", " ").Trim();
+        return NormalizeForComparison(cleaned);
+    }
+
+    private static List<string> SplitArtistNames(string artist)
+    {
+        var list = new List<string>();
+        if (string.IsNullOrWhiteSpace(artist)) return list;
+
+        string[] parts = Regex.Split(artist, @"\s*(?:,|&|/|\bfeat\.?\b|\bft\.?\b|\bfeaturing\b|\bx\b|\bwith\b|\band\b)\s*", RegexOptions.IgnoreCase);
+        foreach (var p in parts)
+        {
+            string norm = NormalizeForComparison(p);
+            if (!string.IsNullOrWhiteSpace(norm))
+            {
+                list.Add(norm);
+            }
+        }
+        return list;
+    }
+
+    private static bool ArtistsMatch(string requested, string candidate)
+    {
+        if (string.IsNullOrWhiteSpace(requested) || string.IsNullOrWhiteSpace(candidate))
+            return false;
+
+        string normReq = NormalizeForComparison(requested);
+        string normCand = NormalizeForComparison(candidate);
+
+        if (normReq == normCand) return true;
+
+        string stripReq = StripArtistPrefixes(normReq);
+        string stripCand = StripArtistPrefixes(normCand);
+        if (stripReq == stripCand && !string.IsNullOrWhiteSpace(stripReq)) return true;
+
+        var reqArtists = SplitArtistNames(requested);
+        var candArtists = SplitArtistNames(candidate);
+
+        foreach (var r in reqArtists)
+        {
+            if (r.Length < 3) continue;
+            string stripR = StripArtistPrefixes(r);
+            foreach (var c in candArtists)
+            {
+                if (c.Length < 3) continue;
+                string stripC = StripArtistPrefixes(c);
+                if (r == c || stripR == stripC) return true;
+
+                // Close match: only if both are long (>= 5 chars) and length ratio >= 0.85
+                if (r.Length >= 5 && c.Length >= 5)
+                {
+                    double ratio = (double)Math.Min(r.Length, c.Length) / Math.Max(r.Length, c.Length);
+                    if (ratio >= 0.85 && (r.Contains(c) || c.Contains(r)))
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static string StripArtistPrefixes(string text)
+    {
+        if (text.StartsWith("the") && text.Length > 3) return text.Substring(3);
+        if (text.StartsWith("dj") && text.Length > 2) return text.Substring(2);
+        return text;
+    }
+
+    private static bool TitlesMatch(string requested, string candidate)
+    {
+        if (string.IsNullOrWhiteSpace(requested) || string.IsNullOrWhiteSpace(candidate))
+            return false;
+
+        string normReq = NormalizeTitleForComparison(requested);
+        string normCand = NormalizeTitleForComparison(candidate);
+
+        if (normReq == normCand) return true;
+
+        if (normReq.Length >= 4 && normCand.Length >= 4)
+        {
+            double ratio = (double)Math.Min(normReq.Length, normCand.Length) / Math.Max(normReq.Length, normCand.Length);
+            if (ratio >= 0.85 && (normReq.Contains(normCand) || normCand.Contains(normReq)))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsLikelyInstrumental(string? title, string? version)
+    {
+        string combined = $"{title} {version}".ToLowerInvariant();
+        return combined.Contains("instrumental") ||
+               combined.Contains("инструментал") ||
+               combined.Contains("минус") ||
+               combined.Contains("minus") ||
+               combined.Contains("караоке") ||
+               combined.Contains("karaoke") ||
+               combined.Contains("orchestral version") ||
+               combined.Contains("piano version") ||
+               combined.Contains("backing track");
     }
 
     public async Task<IReadOnlyList<Playlist>> GetPersonalPlaylistsAsync(CancellationToken cancellationToken = default)

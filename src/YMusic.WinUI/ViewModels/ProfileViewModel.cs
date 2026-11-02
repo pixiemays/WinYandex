@@ -177,6 +177,24 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private bool _isFckCensorEnabled;
 
     [ObservableProperty]
+    private bool _isSloplessEnabled;
+
+    [ObservableProperty]
+    private int _sloplessBehaviorIndex;
+
+    [ObservableProperty]
+    private int _sloplessDetectionModeIndex;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SloplessArtistThresholdText))]
+    private double _sloplessArtistThreshold;
+
+    public string SloplessArtistThresholdText => $"{Math.Round(SloplessArtistThreshold):0}%";
+
+    [ObservableProperty]
+    private bool _isSloplessShowTrackLabelsEnabled;
+
+    [ObservableProperty]
     private bool _shouldScrollToUpdates;
 
     [ObservableProperty]
@@ -267,6 +285,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public ObservableCollection<string> BackdropOptions { get; } = new();
     public ObservableCollection<string> FontOptions { get; } = new();
     public ObservableCollection<string> CacheLimitOptions { get; } = new();
+    public ObservableCollection<string> SloplessBehaviorOptions { get; } = new();
+    public ObservableCollection<string> SloplessDetectionModeOptions { get; } = new();
 
     public IReadOnlyList<AccentPreset> AvailableAccents => _themeService.AvailableAccents;
     public IReadOnlyList<ThemePreset> AvailableThemes => _themeService.AvailableThemes;
@@ -506,6 +526,32 @@ public sealed partial class ProfileViewModel : BaseViewModel
         catch { }
     }
 
+    public string SloplessTitle => "Slopless (фильтрация ИИ-музыки)";
+    public string SloplessDesc => IsRussian
+        ? "Автоматически помечает сгенерированную нейросетями музыку и пропускает её в Моей волне и плейлистах"
+        : "Automatically detects AI-generated music and filters/dislikes it in My Wave and playlists";
+    public string SloplessAuthorCreditText => IsRussian
+        ? "Оригинальный аддон: tslyf / slopless-pulsesync (GitHub)"
+        : "Original addon: tslyf / slopless-pulsesync (GitHub)";
+    public string SloplessBehaviorTitle => IsRussian ? "Действие при воспроизведении" : "Action on AI playback";
+    public string SloplessBehaviorDesc => IsRussian ? "Что плеер делает, когда начинает играть трек от ИИ" : "Action taken when an AI-generated song begins playing";
+    public string SloplessDetectionModeTitle => IsRussian ? "Критерий определения ИИ" : "Detection Criteria";
+    public string SloplessDetectionModeDesc => IsRussian ? "По каким критериям плагин считает трек нейросетевым" : "Conditions used to classify a song as AI-generated";
+    public string SloplessArtistThresholdTitle => IsRussian ? "Порог нейро-артиста" : "Artist AI Threshold";
+    public string SloplessArtistThresholdDesc => IsRussian ? "Процент ИИ-треков у автора для признания его нейросетевым (рекомендуется 10%)" : "Percent of AI tracks for an artist to be classified as AI (10% recommended)";
+    public string SloplessShowTrackLabelsTitle => IsRussian ? "Показывать бейдж «ИИ» на треках" : "Show AI badge on track rows";
+    public string SloplessShowTrackLabelsDesc => IsRussian ? "Отображать метку «ИИ» рядом с названиями сгенерированных треков" : "Display an 'AI' badge next to titles of generated songs";
+
+    [RelayCommand]
+    public async Task OpenSloplessRepoAsync()
+    {
+        try
+        {
+            await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/tslyf/slopless-pulsesync"));
+        }
+        catch { }
+    }
+
     public string MinimizeToTrayTitle => IsRussian ? "Сворачивать в системный трей Windows" : "Minimize to Windows System Tray";
     public string MinimizeToTrayDesc => IsRussian ? "При нажатии крестика плеер продолжит играть в фоне и свернется в трей" : "Keep music playing in background and minimize to the taskbar notification tray when window is closed";
 
@@ -676,6 +722,25 @@ public sealed partial class ProfileViewModel : BaseViewModel
             IsMinimizeToTrayEnabled = _settingsService.MinimizeToTrayOnClose;
             IsTrackNotificationsEnabled = _settingsService.TrackNotificationsEnabled;
             IsFckCensorEnabled = _settingsService.FckCensorEnabled;
+            IsSloplessEnabled = _settingsService.SloplessEnabled;
+            SloplessBehaviorIndex = _settingsService.SloplessBehavior switch
+            {
+                "dislike" => 0,
+                "dislike_if_not_liked" => 1,
+                "skip" => 2,
+                "skip_if_not_liked" => 3,
+                "nothing" => 4,
+                _ => 0
+            };
+            SloplessDetectionModeIndex = _settingsService.SloplessDetectionMode switch
+            {
+                "balance" => 0,
+                "paranoid" => 1,
+                "track_only" => 2,
+                _ => 0
+            };
+            SloplessArtistThreshold = _settingsService.SloplessArtistThreshold;
+            IsSloplessShowTrackLabelsEnabled = _settingsService.SloplessShowTrackLabels;
             IsAudioCacheEnabled = _settingsService.AudioCacheEnabled;
 
             SelectedCacheLimitIndex = _settingsService.CacheSizeLimitMb switch
@@ -831,6 +896,44 @@ public sealed partial class ProfileViewModel : BaseViewModel
             else if (propName == nameof(ISettingsService.FckCensorEnabled))
             {
                 IsFckCensorEnabled = _settingsService.FckCensorEnabled;
+            }
+            else if (propName == nameof(ISettingsService.SloplessEnabled))
+            {
+                if (IsSloplessEnabled != _settingsService.SloplessEnabled) IsSloplessEnabled = _settingsService.SloplessEnabled;
+            }
+            else if (propName == nameof(ISettingsService.SloplessBehavior))
+            {
+                int bIdx = _settingsService.SloplessBehavior switch
+                {
+                    "dislike" => 0,
+                    "dislike_if_not_liked" => 1,
+                    "skip" => 2,
+                    "skip_if_not_liked" => 3,
+                    "nothing" => 4,
+                    _ => 0
+                };
+                if (SloplessBehaviorIndex != bIdx) SloplessBehaviorIndex = bIdx;
+            }
+            else if (propName == nameof(ISettingsService.SloplessDetectionMode))
+            {
+                int mIdx = _settingsService.SloplessDetectionMode switch
+                {
+                    "balance" => 0,
+                    "paranoid" => 1,
+                    "track_only" => 2,
+                    _ => 0
+                };
+                if (SloplessDetectionModeIndex != mIdx) SloplessDetectionModeIndex = mIdx;
+            }
+            else if (propName == nameof(ISettingsService.SloplessArtistThreshold))
+            {
+                if (Math.Abs(SloplessArtistThreshold - _settingsService.SloplessArtistThreshold) > 0.01)
+                    SloplessArtistThreshold = _settingsService.SloplessArtistThreshold;
+            }
+            else if (propName == nameof(ISettingsService.SloplessShowTrackLabels))
+            {
+                if (IsSloplessShowTrackLabelsEnabled != _settingsService.SloplessShowTrackLabels)
+                    IsSloplessShowTrackLabelsEnabled = _settingsService.SloplessShowTrackLabels;
             }
             else if (propName == nameof(ISettingsService.AudioCacheEnabled))
             {
@@ -1042,6 +1145,55 @@ public sealed partial class ProfileViewModel : BaseViewModel
         ShowNotification(value
             ? (IsRussian ? "FckCensor включен: воспроизводятся нецензурированные версии." : "FckCensor enabled: Uncensored audio active.")
             : (IsRussian ? "FckCensor выключен." : "FckCensor disabled."));
+    }
+
+    partial void OnIsSloplessEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.SloplessEnabled = value;
+        ShowNotification(value
+            ? (IsRussian ? "Slopless включен: ИИ-музыка фильтруется." : "Slopless enabled: AI music filtering active.")
+            : (IsRussian ? "Slopless выключен." : "Slopless disabled."));
+    }
+
+    partial void OnSloplessBehaviorIndexChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+        string beh = value switch
+        {
+            0 => "dislike",
+            1 => "dislike_if_not_liked",
+            2 => "skip",
+            3 => "skip_if_not_liked",
+            4 => "nothing",
+            _ => "dislike"
+        };
+        _settingsService.SloplessBehavior = beh;
+    }
+
+    partial void OnSloplessDetectionModeIndexChanged(int value)
+    {
+        if (_isInitializingSettings) return;
+        string mode = value switch
+        {
+            0 => "balance",
+            1 => "paranoid",
+            2 => "track_only",
+            _ => "balance"
+        };
+        _settingsService.SloplessDetectionMode = mode;
+    }
+
+    partial void OnSloplessArtistThresholdChanged(double value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.SloplessArtistThreshold = (int)Math.Round(value);
+    }
+
+    partial void OnIsSloplessShowTrackLabelsEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.SloplessShowTrackLabels = value;
     }
 
     partial void OnIsAudioCacheEnabledChanged(bool value)
@@ -1812,6 +1964,17 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(FckCensorTitle));
         OnPropertyChanged(nameof(FckCensorDesc));
         OnPropertyChanged(nameof(FckCensorAuthorCreditText));
+        OnPropertyChanged(nameof(SloplessTitle));
+        OnPropertyChanged(nameof(SloplessDesc));
+        OnPropertyChanged(nameof(SloplessAuthorCreditText));
+        OnPropertyChanged(nameof(SloplessBehaviorTitle));
+        OnPropertyChanged(nameof(SloplessBehaviorDesc));
+        OnPropertyChanged(nameof(SloplessDetectionModeTitle));
+        OnPropertyChanged(nameof(SloplessDetectionModeDesc));
+        OnPropertyChanged(nameof(SloplessArtistThresholdTitle));
+        OnPropertyChanged(nameof(SloplessArtistThresholdDesc));
+        OnPropertyChanged(nameof(SloplessShowTrackLabelsTitle));
+        OnPropertyChanged(nameof(SloplessShowTrackLabelsDesc));
         OnPropertyChanged(nameof(MinimizeToTrayTitle));
         OnPropertyChanged(nameof(MinimizeToTrayDesc));
         OnPropertyChanged(nameof(TrackNotificationsTitle));
@@ -2036,6 +2199,42 @@ public sealed partial class ProfileViewModel : BaseViewModel
             }
             SelectedGameOverlayPositionIndex = pIdx;
             NotifyPositionProperties();
+
+            int slopBehIdx = SloplessBehaviorIndex;
+            SloplessBehaviorOptions.Clear();
+            if (IsRussian)
+            {
+                SloplessBehaviorOptions.Add("Ставить дизлайк и пропускать (Рекомендуется)");
+                SloplessBehaviorOptions.Add("Ставить дизлайк, если нет лайка");
+                SloplessBehaviorOptions.Add("Просто пропускать");
+                SloplessBehaviorOptions.Add("Пропускать, если нет лайка");
+                SloplessBehaviorOptions.Add("Ничего не делать (только бейджи)");
+            }
+            else
+            {
+                SloplessBehaviorOptions.Add("Dislike and skip (Recommended)");
+                SloplessBehaviorOptions.Add("Dislike if not liked");
+                SloplessBehaviorOptions.Add("Just skip");
+                SloplessBehaviorOptions.Add("Skip if not liked");
+                SloplessBehaviorOptions.Add("Do nothing (badges only)");
+            }
+            SloplessBehaviorIndex = slopBehIdx;
+
+            int slopModeIdx = SloplessDetectionModeIndex;
+            SloplessDetectionModeOptions.Clear();
+            if (IsRussian)
+            {
+                SloplessDetectionModeOptions.Add("Баланс (Трек или артист > порога)");
+                SloplessDetectionModeOptions.Add("Строгий (Любой след ИИ у артиста)");
+                SloplessDetectionModeOptions.Add("Только по оценке трека");
+            }
+            else
+            {
+                SloplessDetectionModeOptions.Add("Balanced (Track score or artist ratio)");
+                SloplessDetectionModeOptions.Add("Paranoid (Any artist AI track)");
+                SloplessDetectionModeOptions.Add("Track AI score only");
+            }
+            SloplessDetectionModeIndex = slopModeIdx;
         }
         finally
         {

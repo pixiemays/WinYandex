@@ -105,20 +105,38 @@
                                                  Command="{x:Bind ViewModel.OpenCurrentAlbumCommand}"
                                                  ToolTipService.ToolTip="{x:Bind ViewModel.TrackTitle, Mode=OneWay}" />
 
-                    <!-- Replaced by FckCensor Badge (Pinned right next to title, guaranteed visible) -->
-                    <Border Grid.Column="1"
-                            Margin="6,0,0,0"
-                            Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                            Padding="5,1.5"
-                            CornerRadius="4"
-                            Background="{ThemeResource AccentFillColorDefaultBrush}"
-                            VerticalAlignment="Center"
-                            ToolTipService.ToolTip="{x:Bind ViewModel.FckBadgeTooltip, Mode=OneWay}">
-                        <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                            <FontIcon Glyph="&#xE70F;" FontSize="9" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
-                            <TextBlock Text="FCK" FontSize="10" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
-                        </StackPanel>
-                    </Border>
+                    <!-- Badges (FCK & AI) -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Replaced by FckCensor Badge -->
+                        <Border Margin="6,0,0,0"
+                                Visibility="{x:Bind ViewModel.IsCurrentTrackReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Padding="5,1.5"
+                                CornerRadius="4"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.FckBadgeTooltip, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE70F;" FontSize="9" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                <TextBlock Text="FCK" FontSize="10" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Slopless AI Music Badge -->
+                        <Border Margin="6,0,0,0"
+                                Visibility="{x:Bind ViewModel.CurrentTrack.IsAiTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Padding="5,1.5"
+                                CornerRadius="4"
+                                Background="#26EF4444"
+                                BorderBrush="#80EF4444"
+                                BorderThickness="1"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.CurrentTrack.AiTooltip, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE99A;" FontSize="9" Foreground="#FFEF4444" />
+                                <TextBlock Text="{x:Bind ViewModel.CurrentTrack.AiBadgeLabel, Mode=OneWay}" FontSize="10" FontWeight="Bold" Foreground="#FFEF4444" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
                 </Grid>
                 <HyperlinkButton x:Name="PlayerArtistButton"
                                  Grid.Row="1"

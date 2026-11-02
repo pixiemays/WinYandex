@@ -155,11 +155,13 @@ public sealed partial class ShellWindow : Window
 
                     if (isOpen)
                     {
+                        NowPlayingDrawer.Visibility = Visibility.Visible;
+                        NowPlayingDrawer.IsHitTestVisible = true;
                         SetTitleBar(NowPlayingDrawer.TitleBarDragRegion);
                     }
                     else
                     {
-                        SetTitleBar(AppTitleBar);
+                        ResetTitleBar();
                     }
                     UpdateTitleBarButtonColors(isOpen);
                 });
@@ -284,11 +286,18 @@ public sealed partial class ShellWindow : Window
         NavigateToTag(tag);
     }
 
+    private void NavAutoSuggestBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        UpdateNavAutoSuggestBoxSuggestions(sender as AutoSuggestBox);
+    }
+
     private void NavAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
         {
             string query = sender.Text ?? string.Empty;
+
+            UpdateNavAutoSuggestBoxSuggestions(sender);
 
             if (!string.IsNullOrEmpty(query))
             {
@@ -304,6 +313,39 @@ public sealed partial class ShellWindow : Window
             {
                 searchVm.Query = query;
             }
+        }
+    }
+
+    private void UpdateNavAutoSuggestBoxSuggestions(AutoSuggestBox? box)
+    {
+        if (box == null) return;
+        var searchVm = App.GetService<SearchViewModel>();
+        if (searchVm == null) return;
+
+        string query = box.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(query))
+        {
+            box.ItemsSource = searchVm.RecentQueries.ToList();
+        }
+        else
+        {
+            box.ItemsSource = searchVm.RecentQueries
+                .Where(q => q.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void NavAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        if (args.SelectedItem is string chosen)
+        {
+            sender.Text = chosen;
+            if (CurrentPageTag != "Search")
+            {
+                NavigateToTag("Search");
+            }
+            var searchVm = App.GetService<SearchViewModel>();
+            searchVm?.SetQueryAndSearch(chosen);
         }
     }
 
@@ -764,5 +806,13 @@ public sealed partial class ShellWindow : Window
     private void UpdateInfoBar_CloseButtonClick(InfoBar sender, object args)
     {
         ViewModel.DismissUpdateBannerCommand.Execute(null);
+    }
+
+    public void ResetTitleBar()
+    {
+        SetTitleBar(AppTitleBar);
+        AppTitleBar.Opacity = 1.0;
+        AppTitleBar.IsHitTestVisible = true;
+        UpdateTitleBarButtonColors(false);
     }
 }

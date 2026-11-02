@@ -25,6 +25,24 @@ public sealed class AppSettings
     [JsonPropertyName("fckCensorEnabled")]
     public bool FckCensorEnabled { get; set; } = true;
 
+    [JsonPropertyName("sloplessEnabled")]
+    public bool SloplessEnabled { get; set; } = true;
+
+    [JsonPropertyName("sloplessBehavior")]
+    public string SloplessBehavior { get; set; } = "dislike"; // "dislike", "dislike_if_not_liked", "skip", "skip_if_not_liked", "nothing", "like"
+
+    [JsonPropertyName("sloplessDetectionMode")]
+    public string SloplessDetectionMode { get; set; } = "balance"; // "balance", "paranoid", "track_only"
+
+    [JsonPropertyName("sloplessArtistThreshold")]
+    public int SloplessArtistThreshold { get; set; } = 10; // percent 1..100
+
+    [JsonPropertyName("sloplessShowTrackLabels")]
+    public bool SloplessShowTrackLabels { get; set; } = true;
+
+    [JsonPropertyName("sloplessShowArtistLabels")]
+    public bool SloplessShowArtistLabels { get; set; } = true;
+
     [JsonPropertyName("appTheme")]
     public string AppTheme { get; set; } = "Dark"; // "Default", "Light", "Dark", "OLED", "Midnight", "Sepia"
 

@@ -85,7 +85,7 @@
                     
                     <!-- Recent Searches (if any) -->
                     <StackPanel Spacing="12"
-                                Visibility="{x:Bind ViewModel.RecentQueries.Count, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}">
+                                Visibility="{x:Bind ViewModel.HasRecentQueries, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                         <Grid>
                             <TextBlock Text="{x:Bind ViewModel.RecentSearchesTitle, Mode=OneWay}"
                                        FontSize="18"
@@ -102,7 +102,7 @@
                                       VerticalScrollBarVisibility="Disabled"
                                       HorizontalScrollMode="Enabled"
                                       VerticalScrollMode="Disabled">
-                            <ItemsControl ItemsSource="{x:Bind ViewModel.RecentQueries}">
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.RecentQueries, Mode=OneWay}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal" Spacing="8" />
@@ -110,18 +110,38 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="x:String">
-                                        <Button Click="RecentQueryButton_Click"
-                                                Tag="{x:Bind}"
-                                                Padding="14,8"
-                                                CornerRadius="20"
-                                                helpers:CursorHelper.UseHandCursor="True"
+                                        <Border CornerRadius="20"
                                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <FontIcon Glyph="&#xE81C;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                <TextBlock Text="{x:Bind}" FontSize="13" />
+                                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                BorderThickness="1"
+                                                Padding="12,4,6,4">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <Button Click="RecentQueryButton_Click"
+                                                        Tag="{x:Bind}"
+                                                        Padding="0"
+                                                        Background="Transparent"
+                                                        BorderThickness="0"
+                                                        helpers:CursorHelper.UseHandCursor="True">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <FontIcon Glyph="&#xE81C;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                        <TextBlock Text="{x:Bind}" FontSize="13" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button Click="DeleteRecentQueryButton_Click"
+                                                        Tag="{x:Bind}"
+                                                        Width="22"
+                                                        Height="22"
+                                                        Padding="0"
+                                                        Margin="4,0,0,0"
+                                                        CornerRadius="11"
+                                                        Background="Transparent"
+                                                        BorderThickness="0"
+                                                        helpers:CursorHelper.UseHandCursor="True"
+                                                        ToolTipService.ToolTip="Удалить">
+                                                    <FontIcon Glyph="&#xE711;" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                                </Button>
                                             </StackPanel>
-                                        </Button>
+                                        </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -412,6 +432,7 @@
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="Auto" MaxWidth="360" />
                                                                 <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="Auto" />
                                                             </Grid.ColumnDefinitions>
                                                             <TextBlock Grid.Column="0"
                                                                        Text="{x:Bind FullTitle}"
@@ -431,6 +452,21 @@
                                                                 <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                                     <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                                                     <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                                                </StackPanel>
+                                                            </Border>
+                                                            <Border Grid.Column="2"
+                                                                    Margin="6,0,0,0"
+                                                                    Visibility="{x:Bind IsAiTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                                    Padding="4,1"
+                                                                    CornerRadius="3"
+                                                                    Background="#26EF4444"
+                                                                    BorderBrush="#80EF4444"
+                                                                    BorderThickness="1"
+                                                                    VerticalAlignment="Center"
+                                                                    ToolTipService.ToolTip="{x:Bind AiTooltip, Mode=OneWay}">
+                                                                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                                    <FontIcon Glyph="&#xE99A;" FontSize="8" Foreground="#FFEF4444" />
+                                                                    <TextBlock Text="{x:Bind AiBadgeLabel, Mode=OneWay}" FontSize="8" FontWeight="Bold" Foreground="#FFEF4444" />
                                                                 </StackPanel>
                                                             </Border>
                                                         </Grid>
@@ -647,6 +683,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" MaxWidth="360" />
                                                         <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Grid.Column="0"
                                                                Text="{x:Bind FullTitle}" FontWeight="SemiBold" FontSize="15"
@@ -664,6 +701,21 @@
                                                         <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                             <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                                             <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="2"
+                                                            Margin="6,0,0,0"
+                                                            Visibility="{x:Bind IsAiTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                            Padding="4,1"
+                                                            CornerRadius="3"
+                                                            Background="#26EF4444"
+                                                            BorderBrush="#80EF4444"
+                                                            BorderThickness="1"
+                                                            VerticalAlignment="Center"
+                                                            ToolTipService.ToolTip="{x:Bind AiTooltip, Mode=OneWay}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                            <FontIcon Glyph="&#xE99A;" FontSize="8" Foreground="#FFEF4444" />
+                                                            <TextBlock Text="{x:Bind AiBadgeLabel, Mode=OneWay}" FontSize="8" FontWeight="Bold" Foreground="#FFEF4444" />
                                                         </StackPanel>
                                                     </Border>
                                                 </Grid>

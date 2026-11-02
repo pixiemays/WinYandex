@@ -101,6 +101,7 @@
                                  BorderThickness="0"
                                  Background="Transparent"
                                  VerticalAlignment="Center"
+                                 VerticalContentAlignment="Center"
                                  Padding="0,0,4,0">
                             <TextBox.Resources>
                                 <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
@@ -223,6 +224,7 @@
                                             <ColumnDefinition Width="Auto" MaxWidth="360" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0"
                                                    Text="{x:Bind FullTitle}"
@@ -257,6 +259,21 @@
                                             <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                                 <FontIcon Glyph="&#xE896;" FontSize="8" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
                                                 <TextBlock Text="CACHED" FontSize="8" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="3"
+                                                Margin="6,0,0,0"
+                                                Visibility="{x:Bind IsAiTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                Padding="4,1"
+                                                CornerRadius="3"
+                                                Background="#26EF4444"
+                                                BorderBrush="#80EF4444"
+                                                BorderThickness="1"
+                                                VerticalAlignment="Center"
+                                                ToolTipService.ToolTip="{x:Bind AiTooltip, Mode=OneWay}">
+                                            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                <FontIcon Glyph="&#xE99A;" FontSize="8" Foreground="#FFEF4444" />
+                                                <TextBlock Text="{x:Bind AiBadgeLabel, Mode=OneWay}" FontSize="8" FontWeight="Bold" Foreground="#FFEF4444" />
                                             </StackPanel>
                                         </Border>
                                     </Grid>

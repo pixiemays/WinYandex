@@ -22,6 +22,7 @@ public sealed partial class SearchViewModel : BaseViewModel
     private readonly ITrackPlaybackCoordinator _trackCoordinator;
 
     private DispatcherQueueTimer? _debounceTimer;
+    private DispatcherQueueTimer? _commitHistoryTimer;
     private CancellationTokenSource? _searchCts;
 
     private int _tracksCurrentPage;
@@ -34,6 +35,9 @@ public sealed partial class SearchViewModel : BaseViewModel
     public ObservableCollection<Playlist> Playlists { get; } = new();
     public ObservableCollection<string> RecentQueries { get; } = new();
     public ObservableCollection<string> SuggestionChips { get; } = new();
+
+    [ObservableProperty]
+    private bool _hasRecentQueries;
 
     public string PageTitle => GetLoc("Search_Title", Loc?.CurrentLanguage == "en" ? "Search" : "Поиск");
     public string SearchPlaceholder => Loc?.CurrentLanguage == "en" 
@@ -192,11 +196,23 @@ public sealed partial class SearchViewModel : BaseViewModel
                     _ = PerformSearchAsync(Query.Trim(), isLiveDebounce: true);
                 }
             };
+
+            _commitHistoryTimer = dispatcher.CreateTimer();
+            _commitHistoryTimer.Interval = TimeSpan.FromMilliseconds(1400);
+            _commitHistoryTimer.Tick += (s, e) =>
+            {
+                _commitHistoryTimer.Stop();
+                if (!string.IsNullOrWhiteSpace(Query) && Query.Trim().Length >= 2 && HasResults)
+                {
+                    AddRecentQuery(Query.Trim());
+                }
+            };
         }
     }
 
     partial void OnQueryChanged(string value)
     {
+        _commitHistoryTimer?.Stop();
         if (string.IsNullOrWhiteSpace(value))
         {
             _debounceTimer?.Stop();
@@ -214,6 +230,7 @@ public sealed partial class SearchViewModel : BaseViewModel
     public void SetQueryAndSearch(string newQuery)
     {
         _debounceTimer?.Stop();
+        _commitHistoryTimer?.Stop();
         Query = newQuery;
         if (!string.IsNullOrWhiteSpace(newQuery))
         {
@@ -240,6 +257,7 @@ public sealed partial class SearchViewModel : BaseViewModel
     public async Task SearchAsync()
     {
         _debounceTimer?.Stop();
+        _commitHistoryTimer?.Stop();
         if (!string.IsNullOrWhiteSpace(Query))
         {
             await PerformSearchAsync(Query.Trim(), isLiveDebounce: false);
@@ -256,13 +274,6 @@ public sealed partial class SearchViewModel : BaseViewModel
     public void UseRecentQuery(string recent)
     {
         SetQueryAndSearch(recent);
-    }
-
-    [RelayCommand]
-    public void ClearRecentQueries()
-    {
-        RecentQueries.Clear();
-        SaveRecentQueries();
     }
 
     public async Task PerformSearchAsync(string text, bool isLiveDebounce = false)
@@ -513,7 +524,13 @@ public sealed partial class SearchViewModel : BaseViewModel
 
                 if (!isLiveDebounce)
                 {
+                    _commitHistoryTimer?.Stop();
                     AddRecentQuery(text);
+                }
+                else if (HasResults && text.Trim().Length >= 2)
+                {
+                    _commitHistoryTimer?.Stop();
+                    _commitHistoryTimer?.Start();
                 }
             });
         }
@@ -575,6 +592,7 @@ public sealed partial class SearchViewModel : BaseViewModel
     public async Task PlayTrackAsync(Track? track)
     {
         if (track == null) return;
+        AddRecentQuery(Query);
         await _audioPlayer.PlayTrackAsync(track, Tracks.ToList()).ConfigureAwait(false);
     }
 
@@ -608,6 +626,7 @@ public sealed partial class SearchViewModel : BaseViewModel
     public async Task OpenArtistAsync(Artist? artist)
     {
         if (artist == null) return;
+        AddRecentQuery(Query);
         await _navigationService.NavigateToArtistAsync(artist);
     }
 
@@ -615,6 +634,7 @@ public sealed partial class SearchViewModel : BaseViewModel
     public async Task OpenAlbumAsync(Album? album)
     {
         if (album == null) return;
+        AddRecentQuery(Query);
         await _navigationService.NavigateToAlbumAsync(album);
     }
 
@@ -622,6 +642,7 @@ public sealed partial class SearchViewModel : BaseViewModel
     public async Task OpenPlaylistAsync(Playlist? playlist)
     {
         if (playlist == null) return;
+        AddRecentQuery(Query);
         await _navigationService.NavigateToPlaylistAsync(playlist);
     }
 
@@ -629,6 +650,7 @@ public sealed partial class SearchViewModel : BaseViewModel
     public async Task PlayBestResultAsync()
     {
         if (BestResult == null) return;
+        AddRecentQuery(Query);
 
         switch (BestResult.Type)
         {
@@ -744,26 +766,69 @@ public sealed partial class SearchViewModel : BaseViewModel
         }
     }
 
-    private void AddRecentQuery(string q)
+    public void AddRecentQuery(string? q)
+    {
+        if (string.IsNullOrWhiteSpace(q)) return;
+        q = q.Trim();
+        if (q.Length < 2) return;
+
+        RunOnUi(() =>
+        {
+            // If the latest query was an incomplete prefix of the new one (e.g. "que" before "queen"), replace it
+            if (RecentQueries.Count > 0 && q.StartsWith(RecentQueries[0], StringComparison.OrdinalIgnoreCase))
+            {
+                RecentQueries.RemoveAt(0);
+            }
+
+            for (int i = RecentQueries.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(RecentQueries[i], q, StringComparison.OrdinalIgnoreCase))
+                {
+                    RecentQueries.RemoveAt(i);
+                }
+            }
+
+            RecentQueries.Insert(0, q);
+            while (RecentQueries.Count > 15)
+            {
+                RecentQueries.RemoveAt(RecentQueries.Count - 1);
+            }
+
+            HasRecentQueries = RecentQueries.Count > 0;
+            SaveRecentQueries();
+        });
+    }
+
+    [RelayCommand]
+    public void RemoveRecentQuery(string? q)
     {
         if (string.IsNullOrWhiteSpace(q)) return;
         q = q.Trim();
 
-        for (int i = RecentQueries.Count - 1; i >= 0; i--)
+        RunOnUi(() =>
         {
-            if (string.Equals(RecentQueries[i], q, StringComparison.OrdinalIgnoreCase))
+            for (int i = RecentQueries.Count - 1; i >= 0; i--)
             {
-                RecentQueries.RemoveAt(i);
+                if (string.Equals(RecentQueries[i], q, StringComparison.OrdinalIgnoreCase))
+                {
+                    RecentQueries.RemoveAt(i);
+                }
             }
-        }
 
-        RecentQueries.Insert(0, q);
-        while (RecentQueries.Count > 10)
+            HasRecentQueries = RecentQueries.Count > 0;
+            SaveRecentQueries();
+        });
+    }
+
+    [RelayCommand]
+    public void ClearRecentQueries()
+    {
+        RunOnUi(() =>
         {
-            RecentQueries.RemoveAt(RecentQueries.Count - 1);
-        }
-
-        SaveRecentQueries();
+            RecentQueries.Clear();
+            HasRecentQueries = false;
+            SaveRecentQueries();
+        });
     }
 
     private void LoadRecentQueries()
@@ -781,12 +846,19 @@ public sealed partial class SearchViewModel : BaseViewModel
                     RecentQueries.Clear();
                     foreach (var item in list)
                     {
-                        RecentQueries.Add(item);
+                        if (!string.IsNullOrWhiteSpace(item))
+                        {
+                            RecentQueries.Add(item.Trim());
+                        }
                     }
                 }
             }
         }
         catch { }
+        finally
+        {
+            HasRecentQueries = RecentQueries.Count > 0;
+        }
     }
 
     private void SaveRecentQueries()

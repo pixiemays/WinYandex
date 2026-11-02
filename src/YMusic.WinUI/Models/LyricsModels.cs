@@ -39,6 +39,15 @@ public sealed class TrackSupplementResult
     public TrackLyricsResult? Lyrics { get; set; }
 }
 
+public sealed class TrackLyricsInfo
+{
+    [JsonPropertyName("hasAvailableSyncLyrics")]
+    public bool HasAvailableSyncLyrics { get; set; }
+
+    [JsonPropertyName("hasAvailableTextLyrics")]
+    public bool HasAvailableTextLyrics { get; set; }
+}
+
 public sealed class LrclibResponse
 {
     [JsonPropertyName("id")]
@@ -185,6 +194,16 @@ public sealed partial class LyricLine : ObservableObject
         }
 
         result.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+
+        if (result.Count > 0 && result.All(line =>
+        {
+            string t = line.Text.Trim().Trim('[', ']', '(', ')', '{', '}', '*', '-', ' ', '♪', '•').ToLowerInvariant();
+            return t == "instrumental" || t == "инструментал" || t == "this song is an instrumental" || t == "lyrics not available" || t == "no lyrics";
+        }))
+        {
+            return new List<LyricLine>();
+        }
+
         return result;
     }
 }

@@ -120,6 +120,90 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public bool SloplessEnabled
+    {
+        get => _settings.SloplessEnabled;
+        set
+        {
+            if (_settings.SloplessEnabled != value)
+            {
+                _settings.SloplessEnabled = value;
+                Save();
+                NotifyChanged(nameof(SloplessEnabled));
+            }
+        }
+    }
+
+    public string SloplessBehavior
+    {
+        get => _settings.SloplessBehavior;
+        set
+        {
+            if (_settings.SloplessBehavior != value)
+            {
+                _settings.SloplessBehavior = value;
+                Save();
+                NotifyChanged(nameof(SloplessBehavior));
+            }
+        }
+    }
+
+    public string SloplessDetectionMode
+    {
+        get => _settings.SloplessDetectionMode;
+        set
+        {
+            if (_settings.SloplessDetectionMode != value)
+            {
+                _settings.SloplessDetectionMode = value;
+                Save();
+                NotifyChanged(nameof(SloplessDetectionMode));
+            }
+        }
+    }
+
+    public int SloplessArtistThreshold
+    {
+        get => _settings.SloplessArtistThreshold;
+        set
+        {
+            if (_settings.SloplessArtistThreshold != value)
+            {
+                _settings.SloplessArtistThreshold = value;
+                Save();
+                NotifyChanged(nameof(SloplessArtistThreshold));
+            }
+        }
+    }
+
+    public bool SloplessShowTrackLabels
+    {
+        get => _settings.SloplessShowTrackLabels;
+        set
+        {
+            if (_settings.SloplessShowTrackLabels != value)
+            {
+                _settings.SloplessShowTrackLabels = value;
+                Save();
+                NotifyChanged(nameof(SloplessShowTrackLabels));
+            }
+        }
+    }
+
+    public bool SloplessShowArtistLabels
+    {
+        get => _settings.SloplessShowArtistLabels;
+        set
+        {
+            if (_settings.SloplessShowArtistLabels != value)
+            {
+                _settings.SloplessShowArtistLabels = value;
+                Save();
+                NotifyChanged(nameof(SloplessShowArtistLabels));
+            }
+        }
+    }
+
     public string AppTheme
     {
         get => _settings.AppTheme;

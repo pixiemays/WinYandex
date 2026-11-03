@@ -171,6 +171,13 @@ public sealed class ObsOverlayService : IObsOverlayService
     private DateTime _lastBroadcastTime = DateTime.MinValue;
     private void OnPositionChanged(object? sender, TimeSpan position)
     {
+        if (!IsRunning) return;
+
+        lock (_sseLock)
+        {
+            if (_sseClients.Count == 0) return;
+        }
+
         // Throttle position updates to SSE to twice per second to reduce traffic
         if ((DateTime.UtcNow - _lastBroadcastTime).TotalMilliseconds >= 500)
         {
@@ -209,6 +216,11 @@ public sealed class ObsOverlayService : IObsOverlayService
 
     private void BroadcastState()
     {
+        lock (_sseLock)
+        {
+            if (_sseClients.Count == 0) return;
+        }
+
         string json = BuildCurrentStateJson();
         string sseData = $"data: {json}\n\n";
         byte[] bytes = Encoding.UTF8.GetBytes(sseData);

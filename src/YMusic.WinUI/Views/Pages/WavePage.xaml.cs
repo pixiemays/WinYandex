@@ -17,6 +17,7 @@ public sealed partial class WavePage : Page
 
     public WavePage()
     {
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
         try
         {
             Log("WavePage ctor starting...");

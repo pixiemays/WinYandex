@@ -684,7 +684,10 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         {
             Position = position;
             PositionSeconds = position.TotalSeconds;
-            UpdateActiveLyric(position);
+            if (IsNowPlayingDrawerOpen)
+            {
+                UpdateActiveLyric(position);
+            }
         });
     }
 
@@ -706,6 +709,12 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                 activeIndex = i;
                 break;
             }
+        }
+
+        // Fast path: if the active lyric line hasn't changed, skip heavy collection passes
+        if (currentActive == ActiveLyricLine)
+        {
+            return;
         }
 
         // Update IsPast for all lines

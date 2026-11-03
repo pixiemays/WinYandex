@@ -17,6 +17,7 @@ public sealed partial class ExplorePage : Page
 
     public ExplorePage()
     {
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
         InitializeComponent();
         ViewModel = App.GetService<ExploreViewModel>();
 

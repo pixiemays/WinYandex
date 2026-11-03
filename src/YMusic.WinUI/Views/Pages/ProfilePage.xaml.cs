@@ -16,6 +16,7 @@ public sealed partial class ProfilePage : Page
 
     public ProfilePage()
     {
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
         ViewModel = App.GetService<ProfileViewModel>();
         DataContext = ViewModel;
         InitializeComponent();

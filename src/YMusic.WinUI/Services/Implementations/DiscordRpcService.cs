@@ -170,18 +170,24 @@ public sealed class DiscordRpcService : IDiscordRpcService
     {
         lock (_syncLock)
         {
-            _debounceTimer?.Dispose();
-            _debounceTimer = new System.Threading.Timer(_ =>
+            if (_debounceTimer == null)
             {
-                try
+                _debounceTimer = new System.Threading.Timer(_ =>
                 {
-                    UpdatePresence(_audioPlayer.CurrentTrack, _audioPlayer.IsPlaying, _audioPlayer.Position, _audioPlayer.Duration);
-                }
-                catch (Exception ex)
-                {
-                    Log($"Debounced UpdatePresence error: {ex.Message}");
-                }
-            }, null, delayMs, System.Threading.Timeout.Infinite);
+                    try
+                    {
+                        UpdatePresence(_audioPlayer.CurrentTrack, _audioPlayer.IsPlaying, _audioPlayer.Position, _audioPlayer.Duration);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Debounced UpdatePresence error: {ex.Message}");
+                    }
+                }, null, delayMs, System.Threading.Timeout.Infinite);
+            }
+            else
+            {
+                _debounceTimer.Change(delayMs, System.Threading.Timeout.Infinite);
+            }
         }
     }
 

@@ -17,6 +17,7 @@ public sealed partial class SearchPage : Page
 
     public SearchPage()
     {
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
         InitializeComponent();
     }
 

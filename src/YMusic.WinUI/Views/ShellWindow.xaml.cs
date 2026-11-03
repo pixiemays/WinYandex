@@ -217,8 +217,25 @@ public sealed partial class ShellWindow : Window
 
         Closed += (_, _) =>
         {
-            App.GetService<IAudioPlayerService>()?.SaveCurrentState();
-            trayService.Dispose();
+            try
+            {
+                App.GetService<IAudioPlayerService>()?.SaveCurrentState();
+                trayService.Dispose();
+                App.GetService<IDiscordRpcService>()?.Dispose();
+                App.GetService<IObsOverlayService>()?.Dispose();
+                App.GetService<IGameOverlayService>()?.Dispose();
+                App.GetService<IAudioPlayerService>()?.Dispose();
+            }
+            catch { }
+            finally
+            {
+                try
+                {
+                    Application.Current.Exit();
+                }
+                catch { }
+                Environment.Exit(0);
+            }
         };
 
         App.GetService<INavigationService>().Initialize(this);

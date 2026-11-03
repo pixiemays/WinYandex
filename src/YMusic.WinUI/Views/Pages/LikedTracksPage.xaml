@@ -98,12 +98,14 @@
                                  Text="{x:Bind ViewModel.SearchFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  PlaceholderText="{x:Bind ViewModel.FilterPlaceholder, Mode=OneWay}"
                                  FontSize="13"
+                                 MinHeight="0"
                                  BorderThickness="0"
                                  Background="Transparent"
                                  VerticalAlignment="Center"
                                  VerticalContentAlignment="Center"
                                  Padding="0,0,4,0">
                             <TextBox.Resources>
+                                <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
                                 <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
                                 <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
                                 <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />

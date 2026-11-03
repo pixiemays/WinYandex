@@ -733,19 +733,58 @@ public sealed class TrayNotificationService : ITrayNotificationService
     {
         if (_shellWindow == null || _hWnd == IntPtr.Zero) return;
 
-        if (_appWindow != null && !_appWindow.IsVisible)
-        {
-            _appWindow.Show();
-        }
-
-        ShowWindow(_hWnd, SW_RESTORE);
-        SetForegroundWindow(_hWnd);
         try
         {
-            SwitchToThisWindow(_hWnd, true);
+            if (_appWindow != null)
+            {
+                _appWindow.Show();
+            }
+
+            ForceForegroundWindow(_hWnd);
+            _shellWindow.Activate();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[TrayNotificationService] RestoreWindow error: {ex}");
+        }
+    }
+
+    private static void ForceForegroundWindow(IntPtr hWnd)
+    {
+        if (hWnd == IntPtr.Zero) return;
+
+        try
+        {
+            ShowWindow(hWnd, SW_SHOWNORMAL);
+            ShowWindow(hWnd, SW_RESTORE);
+
+            IntPtr foreWnd = GetForegroundWindow();
+            if (foreWnd != hWnd)
+            {
+                uint foreThread = GetWindowThreadProcessId(foreWnd, IntPtr.Zero);
+                uint appThread = GetCurrentThreadId();
+
+                if (foreThread != 0 && foreThread != appThread)
+                {
+                    AttachThreadInput(appThread, foreThread, true);
+                    BringWindowToTop(hWnd);
+                    SetForegroundWindow(hWnd);
+                    AttachThreadInput(appThread, foreThread, false);
+                }
+                else
+                {
+                    BringWindowToTop(hWnd);
+                    SetForegroundWindow(hWnd);
+                }
+            }
+
+            try
+            {
+                SwitchToThisWindow(hWnd, true);
+            }
+            catch { }
         }
         catch { }
-        _shellWindow.Activate();
     }
 
     public void MinimizeToTray()
@@ -776,6 +815,9 @@ public sealed class TrayNotificationService : ITrayNotificationService
         try
         {
             App.GetService<IDiscordRpcService>()?.Dispose();
+            App.GetService<IObsOverlayService>()?.Dispose();
+            App.GetService<IGameOverlayService>()?.Dispose();
+            _audioPlayer.Dispose();
         }
         catch { }
 
@@ -791,10 +833,9 @@ public sealed class TrayNotificationService : ITrayNotificationService
         {
             Application.Current.Exit();
         }
-        catch
-        {
-            Environment.Exit(0);
-        }
+        catch { }
+
+        Environment.Exit(0);
     }
 
     private void ShowContextMenu()
@@ -1202,6 +1243,20 @@ public sealed class TrayNotificationService : ITrayNotificationService
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr hIcon);
+
+    private const int SW_SHOWNORMAL = 1;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr lpdwProcessId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool BringWindowToTop(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);

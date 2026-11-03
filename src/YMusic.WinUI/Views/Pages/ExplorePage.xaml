@@ -710,6 +710,7 @@
                                                         HorizontalAlignment="Right"
                                                         Margin="16,0,0,0"
                                                         VerticalAlignment="Center"
+                                                        VerticalContentAlignment="Center"
                                                         Visibility="{x:Bind ViewModel.HasTracksToFilter, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                                                         PlaceholderText="{x:Bind ViewModel.FilterPlaceholder, Mode=OneWay}"
                                                         QueryIcon="Find"

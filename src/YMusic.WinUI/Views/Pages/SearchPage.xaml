@@ -51,10 +51,23 @@
                                      Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      PlaceholderText="{x:Bind ViewModel.SearchPlaceholder, Mode=OneWay}"
                                      FontSize="15"
+                                     MinHeight="0"
                                      BorderThickness="0"
                                      Background="Transparent"
                                      VerticalAlignment="Center"
-                                     KeyDown="SearchInputBox_KeyDown" />
+                                     VerticalContentAlignment="Center"
+                                     Padding="0,0,4,0"
+                                     KeyDown="SearchInputBox_KeyDown">
+                                <TextBox.Resources>
+                                    <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
+                                    <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                                    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                                    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                                    <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                                    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                                    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                                </TextBox.Resources>
+                            </TextBox>
 
                             <!-- Right Controls: ProgressRing & Clear Button -->
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,4,0">

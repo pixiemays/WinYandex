@@ -4,6 +4,18 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.72.1] — 2026-11-03
+
+### Process Lifecycle & Taskbar Launch
+* **Fixed Taskbar Activation & Zombie Process Hang**: resolved an issue where clicking the pinned taskbar shortcut failed to launch or open the app while leaving an unresponsive process in Task Manager.
+* **Zombie Process Detection & Auto-Recovery**: added automatic detection and termination of unresponsive or orphaned background instances during startup, ensuring fresh launches always succeed.
+* **Guaranteed Clean Process Exit**: fixed window closing logic in unpackaged WinUI 3 mode to cleanly dispose background services (OBS Overlay, Discord RPC, Game HUD, Audio streams) and explicitly terminate the process instead of lingering indefinitely.
+* **Reliable Window Foregrounding**: implemented thread-input attachment (AttachThreadInput / BringWindowToTop) to bypass Windows OS foreground restrictions when restoring from tray or taskbar shortcuts.
+
+### UI & Alignment
+* **Search Input Vertical Centering**: fixed vertical alignment of search and filter inputs across the app (Liked Tracks capsule, Explore and Playlists in-page filters, and main Search page), eliminating upward text offset caused by WinUI 3 template minimum height constraints.
+
+---
 ## [0.9.72] — 2026-11-03
 
 ### Explore & Playlist View

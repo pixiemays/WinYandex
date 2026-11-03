@@ -518,7 +518,7 @@
 
         <!-- 2. DETAIL VIEW (when Playlist or Album is clicked) -->
         <Grid x:Name="DetailViewRoot"
-              Padding="18,14,18,14"
+              Padding="24,14,24,0"
               Visibility="Collapsed"
               Opacity="0">
             <Grid.RenderTransform>
@@ -526,157 +526,214 @@
             </Grid.RenderTransform>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Back Button -->
-            <Button Grid.Row="0"
-                    Click="DetailBackButton_Click"
-                    Margin="0,0,0,16"
-                    Height="34">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Glyph="&#xE72B;" FontSize="12" />
-                    <TextBlock Text="{x:Bind ViewModel.BackToExploreText, Mode=OneWay}" />
-                </StackPanel>
-            </Button>
-
-            <!-- Hero Section -->
-            <Grid x:Name="DetailHeroGrid"
-                  Grid.Row="1"
-                  Margin="0,0,0,20"
-                  Background="Transparent">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <!-- Cover Artwork -->
-                <Border x:Name="DetailCoverBorder"
-                        Grid.Column="0"
-                        Width="180"
-                        Height="180"
-                        CornerRadius="10"
-                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+            <!-- Top Navigation Bar -->
+            <Grid Grid.Row="0" Margin="0,0,0,10">
+                <Button Click="DetailBackButton_Click"
+                        Height="36"
+                        CornerRadius="18"
+                        Padding="14,0"
+                        helpers:CursorHelper.UseHandCursor="True"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1"
-                        VerticalAlignment="Center">
-                    <Grid>
-                        <FontIcon x:Name="DetailCoverIcon"
-                                  Glyph="&#xE8D6;"
-                                  FontSize="36"
-                                  Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center" />
-                        <Image Source="{x:Bind ViewModel.DetailCoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
-                               Stretch="UniformToFill" />
-                    </Grid>
-                </Border>
-
-                <!-- Metadata & Action Buttons -->
-                <StackPanel x:Name="DetailMetaStack"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Margin="24,0,0,0"
-                            Spacing="8">
-                    <Border x:Name="DetailBadgeBorder"
-                            Background="{ThemeResource AccentFillColorDefaultBrush}"
-                            Padding="8,3"
-                            CornerRadius="4"
-                            HorizontalAlignment="Left">
-                        <TextBlock Text="{x:Bind ViewModel.DetailTypeBadge, Mode=OneWay}"
-                                   FontSize="11"
-                                   FontWeight="Bold"
-                                   Foreground="Black" />
-                    </Border>
-
-                    <TextBlock x:Name="DetailTitleText"
-                               Text="{x:Bind ViewModel.DetailTitle, Mode=OneWay}"
-                               FontSize="30"
-                               FontWeight="Bold"
-                               TextTrimming="CharacterEllipsis"
-                               MaxLines="2" />
-
-                    <StackPanel x:Name="DetailExtraInfoPanel" Spacing="6">
-                        <TextBlock Text="{x:Bind ViewModel.DetailSubtitle, Mode=OneWay}"
-                                   FontSize="16"
-                                   FontWeight="SemiBold"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextTrimming="CharacterEllipsis" />
-
-                        <TextBlock Text="{x:Bind ViewModel.DetailDescription, Mode=OneWay}"
-                                   FontSize="13"
-                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                   TextWrapping="Wrap"
-                                   MaxLines="2"
-                                   Visibility="{x:Bind ViewModel.DetailDescription, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}" />
-
-                        <TextBlock Text="{x:Bind ViewModel.DetailMeta, Mode=OneWay}"
-                                   FontSize="12"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        BorderThickness="1">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE72B;" FontSize="12" />
+                        <TextBlock Text="{x:Bind ViewModel.BackToExploreText, Mode=OneWay}" FontWeight="SemiBold" FontSize="12.5" />
                     </StackPanel>
-
-                    <!-- Play All & Shuffle Buttons -->
-                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
-                        <Button Command="{x:Bind ViewModel.PlayDetailAllCommand}"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                Height="36">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE768;" FontSize="14" />
-                                <TextBlock Text="{x:Bind ViewModel.PlayAllText, Mode=OneWay}" />
-                            </StackPanel>
-                        </Button>
-
-                        <Button Command="{x:Bind ViewModel.ShufflePlayDetailCommand}"
-                                Height="36">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8B1;" FontSize="14" />
-                                <TextBlock Text="{x:Bind ViewModel.ShuffleText, Mode=OneWay}" />
-                            </StackPanel>
-                        </Button>
-
-                        <Button Command="{x:Bind ViewModel.ToggleDetailLikeCommand}"
-                                Height="36"
-                                Padding="14,0"
-                                ToolTipService.ToolTip="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeTooltipConverter}}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeGlyphConverter}}"
-                                          FontSize="13"
-                                          Foreground="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
-                                <TextBlock Text="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeButtonTextConverter}}"
-                                           FontWeight="SemiBold" />
-                            </StackPanel>
-                        </Button>
-
-                        <Button Command="{x:Bind ViewModel.ToggleDetailPinCommand}"
-                                Height="36"
-                                Padding="14,0"
-                                ToolTipService.ToolTip="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinTooltipConverter}}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinGlyphConverter}}"
-                                          FontSize="13"
-                                          Foreground="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinForegroundBrushConverter}}" />
-                                <TextBlock Text="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinButtonTextConverter}}"
-                                           FontWeight="SemiBold" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </StackPanel>
+                </Button>
             </Grid>
 
-            <!-- Detail Tracks List -->
-            <Grid Grid.Row="2">
+            <!-- Detail Tracks List (Full Height with integrated Header!) -->
+            <Grid Grid.Row="1">
                 <ProgressRing IsActive="{x:Bind ViewModel.IsLoadingDetail, Mode=OneWay}"
-                              Width="36"
-                              Height="36"
+                              Width="38"
+                              Height="38"
                               HorizontalAlignment="Center"
-                              VerticalAlignment="Center" />
+                              VerticalAlignment="Center"
+                              Canvas.ZIndex="10" />
 
                 <controls:ObservableListView x:Name="DetailTracksListView"
+                                             Padding="0,0,0,28"
                                              ItemsSource="{x:Bind ViewModel.DetailTracks, Mode=OneWay}"
                                              IsItemClickEnabled="True"
                                              ItemClick="DetailTrack_ItemClick"
                                              SelectionMode="None">
+                    <controls:ObservableListView.Header>
+                        <StackPanel Spacing="10">
+                            <!-- Hero Card -->
+                            <Grid Margin="0,4,0,8" Background="Transparent">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Cover Artwork -->
+                                <Border Grid.Column="0"
+                                        Width="170"
+                                        Height="170"
+                                        CornerRadius="14"
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        VerticalAlignment="Center">
+                                    <Grid>
+                                        <FontIcon Glyph="&#xE8D6;"
+                                                  FontSize="40"
+                                                  Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                                        <Image Source="{x:Bind ViewModel.DetailCoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
+                                               Stretch="UniformToFill" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Metadata & Action Buttons -->
+                                <StackPanel Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Margin="24,0,0,0"
+                                            Spacing="8">
+                                    <!-- Type Badge -->
+                                    <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="8,2.5"
+                                            HorizontalAlignment="Left">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Border Width="6" Height="6" CornerRadius="3" Background="{ThemeResource AccentFillColorDefaultBrush}" />
+                                            <TextBlock Text="{x:Bind ViewModel.DetailTypeBadge, Mode=OneWay}"
+                                                       FontSize="10.5"
+                                                       FontWeight="Bold"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Title -->
+                                    <TextBlock Text="{x:Bind ViewModel.DetailTitle, Mode=OneWay}"
+                                               FontSize="32"
+                                               FontWeight="Bold"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="2" />
+
+                                    <!-- Subtitle, Description & Meta -->
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE77B;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Text="{x:Bind ViewModel.DetailSubtitle, Mode=OneWay}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <TextBlock Text="{x:Bind ViewModel.DetailDescription, Mode=OneWay}"
+                                                   FontSize="13"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextWrapping="Wrap"
+                                                   MaxLines="2"
+                                                   Visibility="{x:Bind ViewModel.DetailDescription, Mode=OneWay, Converter={StaticResource NotNullToVisibilityConverter}}" />
+
+                                        <TextBlock Text="{x:Bind ViewModel.DetailMeta, Mode=OneWay}"
+                                                   FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    </StackPanel>
+
+                                    <!-- Actions Row + In-Playlist Filter -->
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <!-- Play All Accent Button -->
+                                            <Button Command="{x:Bind ViewModel.PlayDetailAllCommand}"
+                                                    Style="{ThemeResource AccentButtonStyle}"
+                                                    Height="40"
+                                                    Padding="20,0"
+                                                    CornerRadius="20"
+                                                    helpers:CursorHelper.UseHandCursor="True">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <FontIcon Glyph="&#xE768;" FontSize="13" />
+                                                    <TextBlock Text="{x:Bind ViewModel.PlayAllText, Mode=OneWay}" FontWeight="SemiBold" FontSize="13.5" />
+                                                </StackPanel>
+                                            </Button>
+
+                                            <!-- Shuffle Button -->
+                                            <Button Command="{x:Bind ViewModel.ShufflePlayDetailCommand}"
+                                                    Height="40"
+                                                    Padding="16,0"
+                                                    CornerRadius="20"
+                                                    helpers:CursorHelper.UseHandCursor="True"
+                                                    ToolTipService.ToolTip="{x:Bind ViewModel.ShuffleText, Mode=OneWay}">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <FontIcon Glyph="&#xE8B1;" FontSize="14" />
+                                                    <TextBlock Text="{x:Bind ViewModel.ShuffleText, Mode=OneWay}" FontWeight="SemiBold" FontSize="13.5" />
+                                                </StackPanel>
+                                            </Button>
+
+                                            <!-- Like / Favorite Round Button -->
+                                            <Button Command="{x:Bind ViewModel.ToggleDetailLikeCommand}"
+                                                    Height="40"
+                                                    Width="40"
+                                                    Padding="0"
+                                                    CornerRadius="20"
+                                                    helpers:CursorHelper.UseHandCursor="True"
+                                                    ToolTipService.ToolTip="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeTooltipConverter}}">
+                                                <FontIcon Glyph="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeGlyphConverter}}"
+                                                          FontSize="15"
+                                                          Foreground="{x:Bind ViewModel.IsDetailLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+                                            </Button>
+
+                                            <!-- Pin Round Button -->
+                                            <Button Command="{x:Bind ViewModel.ToggleDetailPinCommand}"
+                                                    Height="40"
+                                                    Width="40"
+                                                    Padding="0"
+                                                    CornerRadius="20"
+                                                    helpers:CursorHelper.UseHandCursor="True"
+                                                    ToolTipService.ToolTip="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinTooltipConverter}}">
+                                                <FontIcon Glyph="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinGlyphConverter}}"
+                                                          FontSize="14"
+                                                          Foreground="{x:Bind ViewModel.IsDetailPinned, Mode=OneWay, Converter={StaticResource BoolToPinForegroundBrushConverter}}" />
+                                            </Button>
+                                        </StackPanel>
+
+                                        <!-- In-Playlist Search / Filter -->
+                                        <AutoSuggestBox Grid.Column="1"
+                                                        Width="220"
+                                                        Height="38"
+                                                        CornerRadius="19"
+                                                        HorizontalAlignment="Right"
+                                                        Margin="16,0,0,0"
+                                                        VerticalAlignment="Center"
+                                                        Visibility="{x:Bind ViewModel.HasTracksToFilter, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                        PlaceholderText="{x:Bind ViewModel.FilterPlaceholder, Mode=OneWay}"
+                                                        QueryIcon="Find"
+                                                        Text="{x:Bind ViewModel.DetailSearchFilter, Mode=TwoWay}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Column Header Strip -->
+                            <Grid Height="30" Margin="4,8,4,0" ColumnSpacing="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" Padding="6,0,6,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="38" />
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="50" />
+                                    <ColumnDefinition Width="40" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="2" Text="{x:Bind ViewModel.ColumnHeaderTitle, Mode=OneWay}" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                <TextBlock Grid.Column="3" Text="{x:Bind ViewModel.ColumnHeaderAlbum, Mode=OneWay}" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                <FontIcon Grid.Column="4" Glyph="&#xE916;" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Right" Margin="0,0,6,0" />
+                            </Grid>
+                        </StackPanel>
+                    </controls:ObservableListView.Header>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem" BasedOn="{StaticResource TrackRowListViewItemStyle}">
                             <Setter Property="MinHeight" Value="48" />

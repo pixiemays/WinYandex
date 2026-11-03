@@ -23,6 +23,50 @@ public sealed partial class ExploreViewModel : BaseViewModel
     public ObservableCollection<Album> NewReleases { get; } = new();
     public ObservableCollection<Track> ChartTracks { get; } = new();
     public ObservableCollection<Track> DetailTracks { get; } = new();
+    private readonly List<Track> _allDetailTracks = new();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDetailSearchFilter))]
+    private string _detailSearchFilter = string.Empty;
+
+    public bool HasDetailSearchFilter => !string.IsNullOrWhiteSpace(DetailSearchFilter);
+    public bool HasTracksToFilter => _allDetailTracks.Count > 0;
+    public string FilterPlaceholder => Loc?.CurrentLanguage == "en" ? "Search in playlist..." : "Поиск по трекам...";
+    public string ColumnHeaderTitle => Loc?.CurrentLanguage == "en" ? "TITLE" : "НАЗВАНИЕ";
+    public string ColumnHeaderAlbum => Loc?.CurrentLanguage == "en" ? "ALBUM" : "АЛЬБОМ";
+
+    partial void OnDetailSearchFilterChanged(string value)
+    {
+        ApplyDetailFilter();
+    }
+
+    private void ApplyDetailFilter()
+    {
+        string query = DetailSearchFilter?.Trim() ?? string.Empty;
+        DetailTracks.Clear();
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            foreach (var t in _allDetailTracks)
+            {
+                DetailTracks.Add(t);
+            }
+        }
+        else
+        {
+            var matched = _allDetailTracks.Where(t =>
+                (t.Title != null && t.Title.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                (t.ArtistNames != null && t.ArtistNames.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                (t.AlbumTitle != null && t.AlbumTitle.Contains(query, StringComparison.OrdinalIgnoreCase)));
+
+            foreach (var t in matched)
+            {
+                DetailTracks.Add(t);
+            }
+        }
+
+        _playbackCoordinator.Sync(DetailTracks);
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsBrowseVisible))]
@@ -56,6 +100,9 @@ public sealed partial class ExploreViewModel : BaseViewModel
         OnPropertyChanged(nameof(BackToExploreText));
         OnPropertyChanged(nameof(PlayAllText));
         OnPropertyChanged(nameof(ShuffleText));
+        OnPropertyChanged(nameof(FilterPlaceholder));
+        OnPropertyChanged(nameof(ColumnHeaderTitle));
+        OnPropertyChanged(nameof(ColumnHeaderAlbum));
         if (ActivePlaylist != null)
         {
             DetailTypeBadge = Loc?.CurrentLanguage == "en"
@@ -278,18 +325,21 @@ public sealed partial class ExploreViewModel : BaseViewModel
                     ActivePlaylist = fullPlaylist;
                     IsDetailLiked = fullPlaylist.IsLiked;
                 }
-                DetailTracks.Clear();
+                _allDetailTracks.Clear();
+                _allDetailTracks.AddRange(tracks);
+
                 long totalMs = 0;
                 foreach (var t in tracks)
                 {
-                    DetailTracks.Add(t);
                     totalMs += t.DurationMs;
                 }
 
                 var totalSpan = TimeSpan.FromMilliseconds(totalMs);
-                DetailMeta = $"{PluralizationHelper.FormatTrackCount(DetailTracks.Count)} • {PluralizationHelper.FormatDuration(totalSpan)}";
+                DetailMeta = $"{PluralizationHelper.FormatTrackCount(_allDetailTracks.Count)} • {PluralizationHelper.FormatDuration(totalSpan)}";
 
-                _playbackCoordinator.Sync(DetailTracks);
+                DetailSearchFilter = string.Empty;
+                ApplyDetailFilter();
+                OnPropertyChanged(nameof(HasTracksToFilter));
             });
         }
         catch (Exception ex)
@@ -342,19 +392,22 @@ public sealed partial class ExploreViewModel : BaseViewModel
                     ActiveAlbum = fullAlbum;
                     IsDetailLiked = fullAlbum.IsLiked;
                 }
-                DetailTracks.Clear();
+                _allDetailTracks.Clear();
+                _allDetailTracks.AddRange(tracks);
+
                 long totalMs = 0;
                 foreach (var t in tracks)
                 {
-                    DetailTracks.Add(t);
                     totalMs += t.DurationMs;
                 }
 
                 var totalSpan = TimeSpan.FromMilliseconds(totalMs);
                 string yearStr = album.Year.HasValue ? $"{album.Year.Value} • " : string.Empty;
-                DetailMeta = $"{yearStr}{PluralizationHelper.FormatTrackCount(DetailTracks.Count)} • {PluralizationHelper.FormatDuration(totalSpan)}";
+                DetailMeta = $"{yearStr}{PluralizationHelper.FormatTrackCount(_allDetailTracks.Count)} • {PluralizationHelper.FormatDuration(totalSpan)}";
 
-                _playbackCoordinator.Sync(DetailTracks);
+                DetailSearchFilter = string.Empty;
+                ApplyDetailFilter();
+                OnPropertyChanged(nameof(HasTracksToFilter));
             });
         }
         catch (Exception ex)
@@ -374,6 +427,9 @@ public sealed partial class ExploreViewModel : BaseViewModel
         ActivePlaylist = null;
         ActiveAlbum = null;
         DetailTracks.Clear();
+        _allDetailTracks.Clear();
+        DetailSearchFilter = string.Empty;
+        OnPropertyChanged(nameof(HasTracksToFilter));
     }
 
     [RelayCommand]

@@ -119,11 +119,24 @@ public sealed partial class Playlist : ObservableObject
     public List<PlaylistTrackItem> Tracks { get; set; } = new();
 
     [JsonIgnore]
-    public string OwnerName => !string.IsNullOrWhiteSpace(Owner?.DisplayName)
-        ? Owner.DisplayName
-        : (!string.IsNullOrWhiteSpace(Owner?.Name)
-            ? Owner.Name
-            : (!string.IsNullOrWhiteSpace(Owner?.Login) ? Owner.Login : "Yandex Music"));
+    public string OwnerName
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Owner?.DisplayName)) return Owner.DisplayName;
+            if (!string.IsNullOrWhiteSpace(Owner?.Name)) return Owner.Name;
+            if (!string.IsNullOrWhiteSpace(Owner?.Login))
+            {
+                if (Owner.Login.StartsWith("yamusic", StringComparison.OrdinalIgnoreCase) ||
+                    Owner.Login.Equals("music.yandex", StringComparison.OrdinalIgnoreCase))
+                {
+                    return App.Loc?.CurrentLanguage == "en" ? "Yandex Music" : "Яндекс Музыка";
+                }
+                return Owner.Login;
+            }
+            return App.Loc?.CurrentLanguage == "en" ? "Yandex Music" : "Яндекс Музыка";
+        }
+    }
 
     [JsonIgnore]
     public List<Track> ResolvedTracks => Tracks

@@ -4,6 +4,24 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.72] — 2026-11-03
+
+### Explore & Playlist View
+* **Modern Playlist Detail Redesign**: redesigned the playlist and album view in Explore with unified natural scrolling (`ListView.Header`), placing artwork, description, and action controls in a seamless scrollable layout.
+* **Refined Action Controls**: modern rounded action buttons for Play All, Shuffle, Like (Favorite), and Pin.
+* **In-Playlist Search Filter**: quickly search and filter tracks within any opened playlist or album by track title, artist, or album name.
+* **Clean Creator Branding**: normalized creator titles (replacing technical usernames like `yamusic-daily` with clean "Яндекс Музыка" / "Yandex Music").
+* **Aligned Column Headers**: added visual column header strip (`TITLE`, `ALBUM`, duration) precisely aligned with track rows.
+
+### Performance & Responsiveness
+* **Volume Slider Smoothing**: eliminated lag and stuttering when rapidly dragging the volume slider by debouncing playback state serialization (1000ms) and breaking the slider event echo loop.
+* **Rapid Track Skipping Optimization**: separated playback state updates from full library metadata scans, preventing thousands of redundant service queries and UI locks when quickly skipping tracks.
+* **Smooth Now Playing Drawer Exit**: eliminated DWM compositor frame stutter during drawer collapse by keeping title bar reconfiguration stable until the animation finishes; fixed 1-frame opacity snap.
+* **Instant Page Navigation & Memory Leak Prevention**: enabled page caching across all primary pages (`ExplorePage`, `PlaylistsPage`, `SearchPage`, `WavePage`, `ProfilePage`), eliminating repeated XAML visual tree reconstructions and memory retention.
+* **CPU & Idle Optimizations**: optimized synchronized lyrics tracking (skipping redundant line passes) and suspended background JSON serialization in OBS Overlay when no clients are connected.
+
+---
+
 ## [0.9.71.1] — 2026-11-03
 
 ### Performance & Window Management

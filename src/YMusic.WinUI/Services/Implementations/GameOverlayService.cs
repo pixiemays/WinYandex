@@ -67,31 +67,12 @@ public sealed class GameOverlayService : IGameOverlayService
             if (App.MainWindow != null)
             {
                 _mainWindowHandle = WindowNative.GetWindowHandle(App.MainWindow);
-                if (_mainWindowHandle != IntPtr.Zero)
+                if (_mainWindowHandle != IntPtr.Zero && _settingsService.GlobalHotkeysEnabled)
                 {
                     SetWindowSubclass(_mainWindowHandle, _subclassProc, (UIntPtr)SubclassId, IntPtr.Zero);
-                    if (_settingsService.GlobalHotkeysEnabled)
-                    {
-                        RegisterHotkeys(_mainWindowHandle);
-                    }
+                    RegisterHotkeys(_mainWindowHandle);
                 }
             }
-
-            // Create overlay window on UI thread
-            App.MainDispatcherQueue?.TryEnqueue(() =>
-            {
-                try
-                {
-                    _overlayWindow = new GameOverlayWindow(_settingsService);
-                    // Pre-activate offscreen to initialize XAML composition pipeline
-                    _overlayWindow.Activate();
-                    _overlayWindow.HideWindow();
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[GameOverlayService] Overlay window creation failed: {ex.Message}");
-                }
-            });
 
             _audioPlayer.CurrentTrackChanged += OnTrackChanged;
             _settingsService.SettingChanged += OnSettingChanged;
@@ -120,11 +101,13 @@ public sealed class GameOverlayService : IGameOverlayService
             {
                 if (_settingsService.GlobalHotkeysEnabled)
                 {
+                    SetWindowSubclass(_mainWindowHandle, _subclassProc, (UIntPtr)SubclassId, IntPtr.Zero);
                     RegisterHotkeys(_mainWindowHandle);
                 }
                 else
                 {
                     UnregisterHotkeys(_mainWindowHandle);
+                    RemoveWindowSubclass(_mainWindowHandle, _subclassProc, (UIntPtr)SubclassId);
                 }
             }
         }
@@ -145,12 +128,17 @@ public sealed class GameOverlayService : IGameOverlayService
         {
             try
             {
+                if (_overlayWindow == null)
+                {
+                    _overlayWindow = new GameOverlayWindow(_settingsService);
+                }
+
                 var track = _audioPlayer.CurrentTrack;
                 var playerBar = _serviceProvider.GetService<PlayerBarViewModel>();
                 bool isLiked = playerBar?.IsCurrentTrackLiked ?? false;
                 bool isPlaying = _audioPlayer.IsPlaying;
 
-                _overlayWindow?.ShowOverlay(track, actionBadge ?? "WINYANDEX HUD", isLiked, isPlaying);
+                _overlayWindow.ShowOverlay(track, actionBadge ?? "WINYANDEX HUD", isLiked, isPlaying);
             }
             catch (Exception ex)
             {

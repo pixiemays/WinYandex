@@ -1809,6 +1809,21 @@ public sealed partial class ProfileViewModel : BaseViewModel
         }
     }
 
+    public void SetAvailableUpdate(UpdateInfo update)
+    {
+        AvailableUpdate = update;
+        IsUpdateAvailable = update.IsUpdateAvailable;
+
+        if (update.IsUpdateAvailable)
+        {
+            NewVersionTag = $"v{update.LatestVersion}";
+            UpdateReleaseNotes = update.GetReleaseNotes(IsRussian);
+            UpdateStatusText = IsRussian
+                ? $"Доступна новая версия: {NewVersionTag}!"
+                : $"New version available: {NewVersionTag}!";
+        }
+    }
+
     [RelayCommand]
     public async Task CheckForUpdatesAsync()
     {

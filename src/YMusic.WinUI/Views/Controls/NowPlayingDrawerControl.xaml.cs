@@ -363,7 +363,6 @@ public sealed partial class NowPlayingDrawerControl : UserControl
             DrawerTranslateTransform.Y = 0.0;
             CoverScaleTransform.ScaleX = 1.0;
             CoverScaleTransform.ScaleY = 1.0;
-            (App.MainWindow as ShellWindow)?.SetTitleBar(TitleBarDragRegion);
         };
 
         _currentTransition = sb;
@@ -577,7 +576,6 @@ public sealed partial class NowPlayingDrawerControl : UserControl
             DrawerTranslateTransform.Y = 0.0;
             CoverScaleTransform.ScaleX = 1.0;
             CoverScaleTransform.ScaleY = 1.0;
-            (App.MainWindow as ShellWindow)?.ResetTitleBar();
             onCompleted?.Invoke();
         };
 

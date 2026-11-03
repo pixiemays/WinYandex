@@ -17,6 +17,7 @@ public sealed partial class ShellViewModel : BaseViewModel
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly ISettingsService _settingsService;
+    private UpdateInfo? _detectedUpdate;
 
     [ObservableProperty]
     private PlayerBarViewModel _playerBar;
@@ -124,7 +125,18 @@ public sealed partial class ShellViewModel : BaseViewModel
     {
         IsUpdateBannerOpen = false;
         var profileVm = App.GetService<ProfileViewModel>();
-        profileVm.ShouldScrollToUpdates = true;
+        if (profileVm != null)
+        {
+            profileVm.ShouldScrollToUpdates = true;
+            if (_detectedUpdate != null && _detectedUpdate.IsUpdateAvailable)
+            {
+                profileVm.SetAvailableUpdate(_detectedUpdate);
+            }
+            else
+            {
+                _ = profileVm.CheckForUpdatesAsync();
+            }
+        }
         _navigationService.NavigateToTag("Account:Updates");
     }
 
@@ -199,6 +211,7 @@ public sealed partial class ShellViewModel : BaseViewModel
                 var update = await _updateService.CheckForUpdatesAsync();
                 if (update.IsUpdateAvailable)
                 {
+                    _detectedUpdate = update;
                     RunOnUi(() =>
                     {
                         UpdateBannerVersion = $"v{update.LatestVersion}";

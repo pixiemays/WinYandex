@@ -51,6 +51,10 @@ public sealed partial class ProfilePage : Page
     public void ScrollToUpdates()
     {
         ViewModel.SelectedCategoryIndex = 7;
+        if (!ViewModel.IsUpdateAvailable && !ViewModel.IsCheckingUpdates && !ViewModel.IsDownloadingUpdate)
+        {
+            _ = ViewModel.CheckForUpdatesAsync();
+        }
         DispatcherQueue.TryEnqueue(async () =>
         {
             await System.Threading.Tasks.Task.Delay(150);

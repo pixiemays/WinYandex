@@ -42,7 +42,10 @@ public sealed class UpdateService : IUpdateService
                 return plusIdx > 0 ? infoVersion.Substring(0, plusIdx) : infoVersion;
             }
             var ver = assembly.GetName().Version;
-            return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "1.0.0";
+            if (ver == null) return "1.0.0";
+            return ver.Revision > 0
+                ? $"{ver.Major}.{ver.Minor}.{ver.Build}.{ver.Revision}"
+                : $"{ver.Major}.{ver.Minor}.{ver.Build}";
         }
     }
 

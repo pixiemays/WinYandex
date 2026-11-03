@@ -4,6 +4,15 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.71.1] — 2026-11-03
+
+### Performance & Window Management
+* **Eliminated Window Drag Lag ("Jelly" Effect)**: resolved window movement latency and sluggishness by removing premature activation of the background Game Overlay window and removing full-screen transparent rasterization passes over Mica backdrops.
+* **Instant Update Navigation**: clicking the update notification banner now immediately displays the new version details, changelog, and download button in Settings without requiring a manual update check.
+* **Streamlined TitleBar Transitions**: removed redundant title bar registrations during Now Playing drawer transitions.
+
+---
+
 ## [0.9.71] — 2026-11-02
 
 ### AI Music Filtering (Slopless Integration)

@@ -34,7 +34,7 @@ public sealed class SloplessService : ISloplessService
         {
             Timeout = TimeSpan.FromSeconds(5)
         };
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "WinYandex/0.9.71 (Windows NT 10.0; Win64; x64)");
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", $"WinYandex/{UpdateService.AppVersion} (Windows NT 10.0; Win64; x64)");
     }
 
     private sealed record CacheEntry(object? Data, DateTime Expiration);

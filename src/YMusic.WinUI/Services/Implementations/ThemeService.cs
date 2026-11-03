@@ -317,7 +317,7 @@ public sealed class ThemeService : IThemeService
                 }
                 else
                 {
-                    shell.WindowRootGrid.Background = new SolidColorBrush(Colors.Transparent);
+                    shell.WindowRootGrid.Background = null;
                 }
                 break;
 
@@ -337,7 +337,7 @@ public sealed class ThemeService : IThemeService
                 }
                 else
                 {
-                    shell.WindowRootGrid.Background = new SolidColorBrush(Colors.Transparent);
+                    shell.WindowRootGrid.Background = null;
                 }
                 break;
 
@@ -358,7 +358,7 @@ public sealed class ThemeService : IThemeService
                 }
                 else
                 {
-                    shell.WindowRootGrid.Background = new SolidColorBrush(Colors.Transparent);
+                    shell.WindowRootGrid.Background = null;
                 }
                 break;
         }

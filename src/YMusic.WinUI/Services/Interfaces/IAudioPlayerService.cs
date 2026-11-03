@@ -50,5 +50,6 @@ public interface IAudioPlayerService : IDisposable
     void Seek(TimeSpan position);
     Task ReloadCurrentTrackQualityAsync();
     void SaveCurrentState();
+    void RequestSaveState();
     void StopAndClear();
 }

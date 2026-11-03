@@ -54,6 +54,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
     private TimeSpan _restoredPosition = TimeSpan.Zero;
     private DateTime _lastPeriodicSaveTime = DateTime.UtcNow;
     private readonly object _saveLock = new();
+    private readonly object _saveTimerLock = new();
+    private System.Threading.Timer? _debouncedSaveTimer;
     private int _consecutivePlaybackFailures = 0;
 
     public Track? CurrentTrack => _currentTrack;
@@ -97,7 +99,9 @@ public sealed class AudioPlayerService : IAudioPlayerService
         get => _volume;
         set
         {
-            _volume = Math.Clamp(value, 0.0, 100.0);
+            double clamped = Math.Clamp(value, 0.0, 100.0);
+            if (Math.Abs(_volume - clamped) < 0.01) return;
+            _volume = clamped;
             _mediaPlayer.Volume = _volume / 100.0;
             if (_deviceOutput != null)
             {
@@ -341,6 +345,11 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public void SaveCurrentState()
     {
+        lock (_saveTimerLock)
+        {
+            _debouncedSaveTimer?.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
+        }
+
         lock (_saveLock)
         {
             try
@@ -376,7 +385,20 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     public void RequestSaveState()
     {
-        _ = Task.Run(SaveCurrentState);
+        lock (_saveTimerLock)
+        {
+            if (_debouncedSaveTimer == null)
+            {
+                _debouncedSaveTimer = new System.Threading.Timer(_ =>
+                {
+                    SaveCurrentState();
+                }, null, 1000, System.Threading.Timeout.Infinite);
+            }
+            else
+            {
+                _debouncedSaveTimer.Change(1000, System.Threading.Timeout.Infinite);
+            }
+        }
     }
 
     private async Task InitializeAudioGraphAsync()

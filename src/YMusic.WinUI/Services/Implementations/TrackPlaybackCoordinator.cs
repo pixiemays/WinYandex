@@ -24,8 +24,8 @@ public sealed class TrackPlaybackCoordinator : ITrackPlaybackCoordinator
         _musicService = musicService;
         _fckCensorService = fckCensorService;
         _audioCacheService = audioCacheService;
-        _audioPlayer.CurrentTrackChanged += (_, _) => UpdateAll();
-        _audioPlayer.IsPlayingChanged += (_, _) => UpdateAll();
+        _audioPlayer.CurrentTrackChanged += (_, _) => UpdatePlaybackOnly();
+        _audioPlayer.IsPlayingChanged += (_, _) => UpdatePlaybackOnly();
         _musicService.TrackLikeChanged += OnTrackLikeChanged;
         _musicService.LikedTracksLoaded += (_, _) => UpdateAll();
         _musicService.TrackDislikeChanged += OnTrackDislikeChanged;
@@ -225,6 +225,53 @@ public sealed class TrackPlaybackCoordinator : ITrackPlaybackCoordinator
     private void UpdateAll()
     {
         Sync();
+    }
+
+    private void UpdatePlaybackOnly()
+    {
+        string? currentId = _audioPlayer.CurrentTrack?.Id;
+        bool isPlaying = _audioPlayer.IsPlaying;
+
+        void Execute()
+        {
+            List<IEnumerable<Track>> active;
+            lock (_lock)
+            {
+                CleanDeadReferences();
+                active = _trackedCollections
+                    .Select(r => r.TryGetTarget(out var target) ? target : null)
+                    .Where(t => t != null)
+                    .Select(t => t!)
+                    .ToList();
+            }
+
+            foreach (var col in active)
+            {
+                foreach (var track in col.ToList())
+                {
+                    bool isCurrent = Track.IsSameTrackId(track.Id, currentId);
+                    if (track.IsCurrent != isCurrent)
+                    {
+                        track.IsCurrent = isCurrent;
+                    }
+                    bool trackPlaying = isCurrent && isPlaying;
+                    if (track.IsPlaying != trackPlaying)
+                    {
+                        track.IsPlaying = trackPlaying;
+                    }
+                }
+            }
+        }
+
+        var dispatcher = App.MainDispatcherQueue;
+        if (dispatcher != null && !dispatcher.HasThreadAccess)
+        {
+            dispatcher.TryEnqueue(Execute);
+        }
+        else
+        {
+            Execute();
+        }
     }
 
     private void CleanDeadReferences()

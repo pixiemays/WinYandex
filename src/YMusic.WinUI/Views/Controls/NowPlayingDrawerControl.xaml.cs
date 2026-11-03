@@ -5,6 +5,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.ViewModels;
 
@@ -45,24 +46,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
 
         ViewModel.PropertyChanged += (s, e) =>
         {
-            if (e.PropertyName == nameof(PlayerBarViewModel.IsNowPlayingDrawerOpen))
-            {
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    if (ViewModel.IsNowPlayingDrawerOpen)
-                    {
-                        AnimateOpen();
-                    }
-                    else
-                    {
-                        if (Visibility == Visibility.Visible)
-                        {
-                            AnimateClose();
-                        }
-                    }
-                });
-            }
-            else if (e.PropertyName == nameof(PlayerBarViewModel.CurrentTrack))
+            if (e.PropertyName == nameof(PlayerBarViewModel.CurrentTrack))
             {
                 DispatcherQueue.TryEnqueue(AnimateTrackChange);
             }
@@ -302,6 +286,15 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         IsHitTestVisible = true;
 
         UpdateFullscreenIcon();
+        string? hdUrl = ViewModel.HdCoverUrl;
+        if (!string.IsNullOrEmpty(hdUrl) && (CoverImageCurrent.Source == null || !string.Equals(_currentDisplayedCoverUrl, hdUrl, StringComparison.OrdinalIgnoreCase)))
+        {
+            _currentDisplayedCoverUrl = hdUrl;
+            var bmp = new BitmapImage(new Uri(hdUrl));
+            CoverImageCurrent.Source = bmp;
+            AmbientGlowCurrent.Source = bmp;
+        }
+
         if (ViewModel.ActiveLyricLine != null)
         {
             ScrollLyricIntoCenter(ViewModel.ActiveLyricLine);
@@ -376,16 +369,18 @@ public sealed partial class NowPlayingDrawerControl : UserControl
     {
         string? newUrl = ViewModel.HdCoverUrl;
 
-        // If drawer is closed or not visible, keep in sync immediately without animations
+        // If drawer is closed or not visible, do not decode heavy bitmaps
         if (!ViewModel.IsNowPlayingDrawerOpen || Visibility != Visibility.Visible)
         {
-            _currentDisplayedCoverUrl = newUrl;
+            _currentDisplayedCoverUrl = null;
             _crossfadeStoryboard?.Stop();
             _crossfadeStoryboard = null;
             CoverImageNext.Opacity = 0.0;
             CoverImageNext.Source = null;
             AmbientGlowNext.Opacity = 0.0;
             AmbientGlowNext.Source = null;
+            CoverImageCurrent.Source = null;
+            AmbientGlowCurrent.Source = null;
             return;
         }
 
@@ -571,11 +566,11 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         {
             _currentTransition = null;
             Visibility = Visibility.Collapsed;
-            IsHitTestVisible = true;
-            RootDrawerGrid.Opacity = 1.0;
-            DrawerTranslateTransform.Y = 0.0;
-            CoverScaleTransform.ScaleX = 1.0;
-            CoverScaleTransform.ScaleY = 1.0;
+            IsHitTestVisible = false;
+            RootDrawerGrid.Opacity = 0.0;
+            DrawerTranslateTransform.Y = 50.0;
+            CoverScaleTransform.ScaleX = 0.94;
+            CoverScaleTransform.ScaleY = 0.94;
             onCompleted?.Invoke();
         };
 

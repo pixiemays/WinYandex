@@ -71,6 +71,14 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     [ObservableProperty]
     private bool _isNowPlayingDrawerOpen;
 
+    partial void OnIsNowPlayingDrawerOpenChanged(bool value)
+    {
+        if (value && CurrentTrack != null && Lyrics.Count == 0 && !IsLoadingLyrics)
+        {
+            _ = LoadLyricsForTrackAsync(CurrentTrack);
+        }
+    }
+
     [ObservableProperty]
     private bool _isAutoScrollEnabled = true;
 
@@ -579,7 +587,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
         UpdateFckCensorState();
 
-        if (track != null)
+        if (track != null && IsNowPlayingDrawerOpen)
         {
             _ = LoadLyricsForTrackAsync(track);
         }
@@ -595,14 +603,19 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         _lyricsCts = cts;
         var token = cts.Token;
 
-        RunOnUi(() =>
-        {
-            IsLoadingLyrics = true;
-            LyricsStatusText = "Loading lyrics...";
-        });
-
         try
         {
+            // Debounce rapid track switching (150ms) so we don't spam network requests
+            await Task.Delay(150, token).ConfigureAwait(false);
+            if (token.IsCancellationRequested) return;
+
+            RunOnUi(() =>
+            {
+                if (token.IsCancellationRequested) return;
+                IsLoadingLyrics = true;
+                LyricsStatusText = "Loading lyrics...";
+            });
+
             double durationSec = track.DurationMs > 0 ? track.DurationMs / 1000.0 : DurationSeconds;
             var lines = await _musicService.GetTrackLyricsAsync(track.Id, track.FullTitle, track.ArtistNames, durationSec, track.HasLyricsOnYandex, token).ConfigureAwait(false);
             if (token.IsCancellationRequested) return;
@@ -758,7 +771,10 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     private void OnVolumeChanged(object? sender, double volume)
     {
-        RunOnUi(() => Volume = volume);
+        if (Math.Abs(Volume - volume) > 0.5)
+        {
+            RunOnUi(() => Volume = volume);
+        }
     }
 
     private void OnMuteChanged(object? sender, bool isMuted)

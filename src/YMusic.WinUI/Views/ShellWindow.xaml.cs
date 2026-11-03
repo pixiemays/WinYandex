@@ -149,21 +149,24 @@ public sealed partial class ShellWindow : Window
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     bool isOpen = ViewModel.PlayerBar.IsNowPlayingDrawerOpen;
-                    UpdatePlayerBarVisibility();
-                    AppTitleBar.Opacity = isOpen ? 0.0 : 1.0;
-                    AppTitleBar.IsHitTestVisible = !isOpen;
-
                     if (isOpen)
                     {
-                        NowPlayingDrawer.Visibility = Visibility.Visible;
-                        NowPlayingDrawer.IsHitTestVisible = true;
+                        UpdatePlayerBarVisibility();
+                        AppTitleBar.Opacity = 0.0;
+                        AppTitleBar.IsHitTestVisible = false;
+                        NowPlayingDrawer.AnimateOpen();
                         SetTitleBar(NowPlayingDrawer.TitleBarDragRegion);
+                        UpdateTitleBarButtonColors(true);
                     }
                     else
                     {
-                        ResetTitleBar();
+                        // Smoothly animate drawer closed, keeping DWM title bar stable without compositor lag
+                        NowPlayingDrawer.AnimateClose(() =>
+                        {
+                            UpdatePlayerBarVisibility();
+                            ResetTitleBar();
+                        });
                     }
-                    UpdateTitleBarButtonColors(isOpen);
                 });
             }
         };
@@ -201,13 +204,15 @@ public sealed partial class ShellWindow : Window
 
         AppWindow.Closing += (sender, args) =>
         {
-            App.GetService<IAudioPlayerService>()?.SaveCurrentState();
-
             if (!trayService.IsExplicitExit && settingsService.MinimizeToTrayOnClose)
             {
                 args.Cancel = true;
                 trayService.MinimizeToTray();
+                App.GetService<IAudioPlayerService>()?.RequestSaveState();
+                return;
             }
+
+            App.GetService<IAudioPlayerService>()?.SaveCurrentState();
         };
 
         Closed += (_, _) =>

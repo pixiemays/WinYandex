@@ -964,16 +964,25 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         {
             SelectedPlaylist = playlist;
             OnPropertyChanged(nameof(IsDetailPinned));
+
+            _allSelectedTracks.Clear();
+            SelectedPlaylistTracks.Clear();
+            FormattedDuration = string.Empty;
+            SearchFilter = string.Empty;
+
+            var existingTracks = playlist?.ResolvedTracks ?? playlist?.Tracks?.Select(ti => ti.Track).OfType<Track>().ToList();
+            if (existingTracks != null && existingTracks.Count > 0)
+            {
+                foreach (var t in existingTracks)
+                {
+                    _allSelectedTracks.Add(t);
+                }
+                ApplyTrackFilter();
+            }
         });
 
         if (playlist == null)
         {
-            RunOnUi(() =>
-            {
-                _allSelectedTracks.Clear();
-                SearchFilter = string.Empty;
-                SelectedPlaylistTracks.Clear();
-            });
             return;
         }
 
@@ -1023,6 +1032,8 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
 
             RunOnUi(() =>
             {
+                if (SelectedPlaylist?.Uid != playlist.Uid || SelectedPlaylist?.Kind != playlist.Kind) return;
+
                 if (fullPlaylist != null)
                 {
                     SelectedPlaylist = fullPlaylist;
@@ -1112,6 +1123,20 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         OnPropertyChanged(nameof(DetailPlayButtonGlyph));
         OnPropertyChanged(nameof(IsDetailPreSave));
         OnPropertyChanged(nameof(IsPreSaveEmptyState));
+
+        _allSelectedTracks.Clear();
+        SelectedPlaylistTracks.Clear();
+        FormattedDuration = string.Empty;
+        SearchFilter = string.Empty;
+
+        if (album.AllTracks != null && album.AllTracks.Count > 0)
+        {
+            foreach (var t in album.AllTracks)
+            {
+                _allSelectedTracks.Add(t);
+            }
+            ApplyTrackFilter();
+        }
 
         SetBusy(true);
         ClearError();
@@ -1257,6 +1282,8 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
 
             RunOnUi(() =>
             {
+                if (SelectedAlbum?.Id != album.Id) return;
+
                 if (fullAlbum != null)
                 {
                     fullAlbum.IsLiked = _musicService.IsAlbumLiked(fullAlbum.Id) || _musicService.IsAlbumPresaved(fullAlbum.Id);

@@ -58,11 +58,30 @@ public sealed class NavigationService : INavigationService
         {
             try
             {
+                playlistsVm.SelectedCategoryIndex = 1; // Albums tab
+
+                async System.Threading.Tasks.Task LoadAsync()
+                {
+                    try
+                    {
+                        await playlistsVm.OpenAlbumAsync(album);
+                        _shellWindow.CurrentPlaylistsPage?.ResetScrollAndHeader();
+                        tcs.TrySetResult();
+                    }
+                    catch (Exception loadEx)
+                    {
+                        tcs.TrySetException(loadEx);
+                    }
+                }
+
+                _ = LoadAsync();
+
                 if (isFromPinned)
                 {
                     playlistsVm.IsBackButtonVisible = false;
                     playlistsVm.PreviousPageTag = null;
                     _shellWindow.EnsurePlaylistsPageVisible();
+                    _shellWindow.SelectPinnedItem($"album:{album.Id}");
                 }
                 else
                 {
@@ -80,17 +99,6 @@ public sealed class NavigationService : INavigationService
                         _shellWindow.SelectPlaylistsTab();
                     }
                 }
-
-                playlistsVm.SelectedCategoryIndex = 1; // Albums tab
-
-                _ = playlistsVm.OpenAlbumAsync(album).ContinueWith(_ =>
-                {
-                    App.MainDispatcherQueue?.TryEnqueue(() =>
-                    {
-                        _shellWindow.CurrentPlaylistsPage?.ResetScrollAndHeader();
-                        tcs.TrySetResult();
-                    });
-                });
             }
             catch (Exception ex)
             {
@@ -146,11 +154,30 @@ public sealed class NavigationService : INavigationService
         {
             try
             {
+                playlistsVm.SelectedCategoryIndex = 0; // Playlists tab
+
+                async System.Threading.Tasks.Task LoadAsync()
+                {
+                    try
+                    {
+                        await playlistsVm.OpenPlaylistAsync(playlist);
+                        _shellWindow.CurrentPlaylistsPage?.ResetScrollAndHeader();
+                        tcs.TrySetResult();
+                    }
+                    catch (Exception loadEx)
+                    {
+                        tcs.TrySetException(loadEx);
+                    }
+                }
+
+                _ = LoadAsync();
+
                 if (isFromPinned)
                 {
                     playlistsVm.IsBackButtonVisible = false;
                     playlistsVm.PreviousPageTag = null;
                     _shellWindow.EnsurePlaylistsPageVisible();
+                    _shellWindow.SelectPinnedItem($"playlist:{playlist.Uid}:{playlist.Kind}");
                 }
                 else
                 {
@@ -168,17 +195,6 @@ public sealed class NavigationService : INavigationService
                         _shellWindow.SelectPlaylistsTab();
                     }
                 }
-
-                playlistsVm.SelectedCategoryIndex = 0; // Playlists tab
-
-                _ = playlistsVm.OpenPlaylistAsync(playlist).ContinueWith(_ =>
-                {
-                    App.MainDispatcherQueue?.TryEnqueue(() =>
-                    {
-                        _shellWindow.CurrentPlaylistsPage?.ResetScrollAndHeader();
-                        tcs.TrySetResult();
-                    });
-                });
             }
             catch (Exception ex)
             {

@@ -58,11 +58,17 @@ public sealed class PinnedItemsService : IPinnedItemsService
 
     private void Save()
     {
+        List<PinnedItemRecord> snapshot;
         lock (_lock)
+        {
+            snapshot = _records.ToList();
+        }
+
+        _ = System.Threading.Tasks.Task.Run(() =>
         {
             try
             {
-                var data = new PinnedItemsData { Items = _records };
+                var data = new PinnedItemsData { Items = snapshot };
                 string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(_filePath, json);
             }
@@ -70,7 +76,7 @@ public sealed class PinnedItemsService : IPinnedItemsService
             {
                 Debug.WriteLine($"[PinnedItemsService] Error saving pinned items: {ex.Message}");
             }
-        }
+        });
     }
 
     public static string MakePlaylistKey(long uid, int kind) => $"playlist:{uid}:{kind}";
@@ -202,6 +208,78 @@ public sealed class PinnedItemsService : IPinnedItemsService
             int removed = _records.RemoveAll(r => string.Equals(r.Key, key, StringComparison.OrdinalIgnoreCase));
             if (removed > 0)
             {
+                changed = true;
+                Save();
+            }
+        }
+
+        if (changed)
+        {
+            PinStateChanged?.Invoke(this, key);
+        }
+    }
+
+    public void MovePinnedItem(string key, int targetIndex)
+    {
+        bool changed = false;
+        lock (_lock)
+        {
+            int oldIndex = _records.FindIndex(r => string.Equals(r.Key, key, StringComparison.OrdinalIgnoreCase));
+            if (oldIndex < 0) return;
+
+            var item = _records[oldIndex];
+            _records.RemoveAt(oldIndex);
+
+            if (targetIndex < 0) targetIndex = 0;
+            if (targetIndex > _records.Count) targetIndex = _records.Count;
+
+            _records.Insert(targetIndex, item);
+            changed = (oldIndex != targetIndex);
+            if (changed)
+            {
+                Save();
+            }
+        }
+
+        if (changed)
+        {
+            PinStateChanged?.Invoke(this, key);
+        }
+    }
+
+    public void MovePinnedItemUp(string key)
+    {
+        bool changed = false;
+        lock (_lock)
+        {
+            int index = _records.FindIndex(r => string.Equals(r.Key, key, StringComparison.OrdinalIgnoreCase));
+            if (index > 0)
+            {
+                var item = _records[index];
+                _records.RemoveAt(index);
+                _records.Insert(index - 1, item);
+                changed = true;
+                Save();
+            }
+        }
+
+        if (changed)
+        {
+            PinStateChanged?.Invoke(this, key);
+        }
+    }
+
+    public void MovePinnedItemDown(string key)
+    {
+        bool changed = false;
+        lock (_lock)
+        {
+            int index = _records.FindIndex(r => string.Equals(r.Key, key, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0 && index < _records.Count - 1)
+            {
+                var item = _records[index];
+                _records.RemoveAt(index);
+                _records.Insert(index + 1, item);
                 changed = true;
                 Save();
             }

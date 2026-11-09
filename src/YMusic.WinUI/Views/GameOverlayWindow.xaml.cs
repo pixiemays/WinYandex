@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
@@ -23,12 +22,7 @@ public sealed partial class GameOverlayWindow : Window
     private SubclassProc? _subclassDelegate;
 
     private bool _isCardVisible;
-    private double _currentAlpha = 0;
-    private double _targetAlpha = 0;
-    private double _animationStartAlpha = 0;
-    private DateTime _animationStartTime;
-    private double _animationDurationMs;
-    private Action? _onAnimationCompleted;
+    private Storyboard? _fadeStoryboard;
 
     private const int OverlayWidth = 370;
     private const int OverlayHeight = 88;
@@ -69,12 +63,10 @@ public sealed partial class GameOverlayWindow : Window
         ApplyWindowStyles();
         PositionWindow();
 
-        // Initially fully transparent at the OS window manager level
-        SetLayeredWindowAttributes(_hWnd, 0, 0, LWA_ALPHA);
-        RootCard.Opacity = 1.0;
+        RootCard.Opacity = 0.0;
         RootCard.RequestedTheme = ElementTheme.Dark;
 
-        _eqTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+        _eqTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(240) };
         _eqTimer.Tick += (s, e) =>
         {
             _eqStep = (_eqStep + 1) % EqPatterns.Length;
@@ -114,7 +106,11 @@ public sealed partial class GameOverlayWindow : Window
                     string? coverUrl = track.CoverUrl;
                     if (!string.IsNullOrWhiteSpace(coverUrl) && Uri.TryCreate(coverUrl, UriKind.Absolute, out var uri))
                     {
-                        CoverImage.Source = new BitmapImage(uri);
+                        CoverImage.Source = new BitmapImage(uri)
+                        {
+                            DecodePixelWidth = 132,
+                            DecodePixelHeight = 132
+                        };
                     }
                     else
                     {
@@ -187,10 +183,35 @@ public sealed partial class GameOverlayWindow : Window
     private void PlayEntranceAnimation()
     {
         _isCardVisible = true;
-        StartFadeAnimation(255.0, 220.0);
+        _fadeStoryboard?.Stop();
+
+        var fade = new DoubleAnimation
+        {
+            From = RootCard.Opacity,
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(fade, RootCard);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+
+        var slide = new DoubleAnimation
+        {
+            From = -6.0,
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(slide, CardTransform);
+        Storyboard.SetTargetProperty(slide, "TranslateY");
+
+        _fadeStoryboard = new Storyboard();
+        _fadeStoryboard.Children.Add(fade);
+        _fadeStoryboard.Children.Add(slide);
+        _fadeStoryboard.Begin();
     }
 
-    private void PlayExitAnimation(Action onCompleted)
+    private void PlayExitAnimation(Action? onCompleted)
     {
         if (!_isCardVisible)
         {
@@ -198,58 +219,33 @@ public sealed partial class GameOverlayWindow : Window
             return;
         }
 
-        StartFadeAnimation(0.0, 200.0, () =>
+        _fadeStoryboard?.Stop();
+
+        var fade = new DoubleAnimation
         {
+            From = RootCard.Opacity,
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(160),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(fade, RootCard);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+
+        _fadeStoryboard = new Storyboard();
+        _fadeStoryboard.Children.Add(fade);
+
+        void OnCompletedHandler(object? sender, object e)
+        {
+            if (_fadeStoryboard != null)
+            {
+                _fadeStoryboard.Completed -= OnCompletedHandler;
+            }
             _isCardVisible = false;
             onCompleted?.Invoke();
-        });
-    }
-
-    private void StartFadeAnimation(double targetAlpha, double durationMs, Action? onCompleted = null)
-    {
-        _animationStartAlpha = _currentAlpha;
-        _targetAlpha = targetAlpha;
-        _animationDurationMs = Math.Max(10.0, durationMs);
-        _animationStartTime = DateTime.UtcNow;
-        _onAnimationCompleted = onCompleted;
-
-        CompositionTarget.Rendering -= OnCompositionRendering;
-        CompositionTarget.Rendering += OnCompositionRendering;
-    }
-
-    private void OnCompositionRendering(object? sender, object e)
-    {
-        double elapsed = (DateTime.UtcNow - _animationStartTime).TotalMilliseconds;
-        double progress = Math.Clamp(elapsed / _animationDurationMs, 0.0, 1.0);
-
-        // Smooth cubic ease: ease-out for appearing, ease-in for disappearing
-        double easedProgress;
-        if (_targetAlpha > _animationStartAlpha)
-        {
-            // Ease out: 1 - (1 - t)^3
-            double inv = 1.0 - progress;
-            easedProgress = 1.0 - (inv * inv * inv);
-        }
-        else
-        {
-            // Ease in: t * t * t
-            easedProgress = progress * progress * progress;
         }
 
-        _currentAlpha = _animationStartAlpha + (_targetAlpha - _animationStartAlpha) * easedProgress;
-        byte byteAlpha = (byte)Math.Clamp((int)Math.Round(_currentAlpha), 0, 255);
-        SetLayeredWindowAttributes(_hWnd, 0, byteAlpha, LWA_ALPHA);
-
-        if (progress >= 1.0)
-        {
-            CompositionTarget.Rendering -= OnCompositionRendering;
-            _currentAlpha = _targetAlpha;
-            SetLayeredWindowAttributes(_hWnd, 0, (byte)Math.Clamp((int)Math.Round(_targetAlpha), 0, 255), LWA_ALPHA);
-
-            var cb = _onAnimationCompleted;
-            _onAnimationCompleted = null;
-            cb?.Invoke();
-        }
+        _fadeStoryboard.Completed += OnCompletedHandler;
+        _fadeStoryboard.Begin();
     }
 
     private void PlayUpdatePulse()
@@ -279,7 +275,6 @@ public sealed partial class GameOverlayWindow : Window
             double scale = dpi > 0 ? dpi / 96.0 : 1.0;
             int physWidth = (int)Math.Round(OverlayWidth * scale);
             int physHeight = (int)Math.Round(OverlayHeight * scale);
-            int cornerRadius = (int)Math.Round(18 * scale);
 
             int x = _settingsService.GameOverlayPosition switch
             {
@@ -303,13 +298,6 @@ public sealed partial class GameOverlayWindow : Window
             };
 
             AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(x, y, physWidth, physHeight));
-
-            // Clip the window exactly to the rounded rectangle so zero black background is drawn outside the card!
-            IntPtr hRgn = CreateRoundRectRgn(0, 0, physWidth + 1, physHeight + 1, cornerRadius * 2, cornerRadius * 2);
-            if (SetWindowRgn(_hWnd, hRgn, true) == 0)
-            {
-                DeleteObject(hRgn);
-            }
         }
         catch (Exception ex)
         {
@@ -333,7 +321,6 @@ public sealed partial class GameOverlayWindow : Window
     {
         try
         {
-            // Strip caption, thickframe and standard borders from GWL_STYLE so Windows treats this as a pure borderless popup
             const int GWL_STYLE = -16;
             const long WS_CAPTION = 0x00C00000L;
             const long WS_THICKFRAME = 0x00040000L;
@@ -350,40 +337,15 @@ public sealed partial class GameOverlayWindow : Window
             const long WS_EX_NOACTIVATE = 0x08000000L;
             const long WS_EX_TOPMOST = 0x00000008L;
             const long WS_EX_TRANSPARENT = 0x00000020L;
-            const long WS_EX_LAYERED = 0x00080000L;
 
             IntPtr curEx = GetWindowLongPtrUniversal(_hWnd, GWL_EXSTYLE);
-            long newEx = curEx.ToInt64() | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED;
+            long newEx = curEx.ToInt64() | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_TRANSPARENT;
             SetWindowLongPtrUniversal(_hWnd, GWL_EXSTYLE, new IntPtr(newEx));
 
-            // Inform the window manager to strip non-client frames and borders immediately
             SetWindowPos(_hWnd, IntPtr.Zero, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
-            // Set dark mode and rounded corners in DWM
-            int darkMode = 1;
-            DwmSetWindowAttribute(_hWnd, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */, ref darkMode, sizeof(int));
-            int roundCorner = 2; /* DWMWCP_ROUND */
-            DwmSetWindowAttribute(_hWnd, 33 /* DWMWA_WINDOW_CORNER_PREFERENCE */, ref roundCorner, sizeof(int));
-
-            // Remove DWM border and caption frame colors (DWMWA_COLOR_NONE = 0xFFFFFFFE)
-            int noneColor = unchecked((int)0xFFFFFFFE);
-            DwmSetWindowAttribute(_hWnd, 34 /* DWMWA_BORDER_COLOR */, ref noneColor, sizeof(int));
-            DwmSetWindowAttribute(_hWnd, 35 /* DWMWA_CAPTION_COLOR */, ref noneColor, sizeof(int));
-
-            // Extend frame into client area so DWM treats the entire window with desktop composition
             var margins = new MARGINS { cxLeftWidth = -1, cxRightWidth = -1, cyTopHeight = -1, cyBottomHeight = -1 };
             DwmExtendFrameIntoClientArea(_hWnd, ref margins);
-
-            // Enable blur behind with an empty region to force transparent composition
-            IntPtr emptyRgn = CreateRectRgn(0, 0, 0, 0);
-            var blurBehind = new DWM_BLURBEHIND
-            {
-                dwFlags = 0x00000001 | 0x00000002, // DWM_BB_ENABLE | DWM_BB_BLURREGION
-                fEnable = true,
-                hRgnBlur = emptyRgn
-            };
-            DwmEnableBlurBehindWindow(_hWnd, ref blurBehind);
-            DeleteObject(emptyRgn);
         }
         catch (Exception ex)
         {
@@ -395,7 +357,6 @@ public sealed partial class GameOverlayWindow : Window
 
     private const int SW_HIDE = 0;
     private const int SW_SHOWNOACTIVATE = 4;
-    private const uint LWA_ALPHA = 0x00000002;
 
     private const uint SWP_NOSIZE = 0x0001;
     private const uint SWP_NOMOVE = 0x0002;
@@ -417,12 +378,6 @@ public sealed partial class GameOverlayWindow : Window
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint crKey, byte bAlpha, uint dwFlags);
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
-
     [DllImport("user32.dll", EntryPoint = "GetWindowLongW", SetLastError = true)]
     private static extern IntPtr GetWindowLong32(IntPtr hWnd, int nIndex);
 
@@ -434,18 +389,6 @@ public sealed partial class GameOverlayWindow : Window
 
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
     private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
-
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-
-    [DllImport("gdi32.dll")]
-    private static extern bool DeleteObject(IntPtr hObject);
-
-    [DllImport("user32.dll")]
-    private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);
@@ -461,20 +404,6 @@ public sealed partial class GameOverlayWindow : Window
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS pMarInset);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct DWM_BLURBEHIND
-    {
-        public uint dwFlags;
-        [MarshalAs(UnmanagedType.Bool)]
-        public bool fEnable;
-        public IntPtr hRgnBlur;
-        [MarshalAs(UnmanagedType.Bool)]
-        public bool fTransitionOnMaximized;
-    }
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmEnableBlurBehindWindow(IntPtr hWnd, ref DWM_BLURBEHIND pBlurBehind);
 
     private static IntPtr GetWindowLongPtrUniversal(IntPtr hWnd, int nIndex)
     {

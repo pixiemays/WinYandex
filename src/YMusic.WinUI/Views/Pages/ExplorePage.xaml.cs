@@ -14,6 +14,23 @@ public sealed partial class ExplorePage : Page
 
     private Storyboard? _currentTransition;
     private bool _isAnimating;
+    private string? _currentDisplayedDetailKey;
+    private DateTime _lastDetailOpenTime = DateTime.MinValue;
+    private DateTime _lastPageNavigatedTime = DateTime.MinValue;
+
+    private string? GetCurrentDetailKey()
+    {
+        if (ViewModel.ActiveAlbum != null)
+        {
+            return $"album:{ViewModel.ActiveAlbum.Id}";
+        }
+        if (ViewModel.ActivePlaylist != null)
+        {
+            long effectiveUid = ViewModel.ActivePlaylist.Uid > 0 ? ViewModel.ActivePlaylist.Uid : (ViewModel.ActivePlaylist.Owner?.Uid ?? 0);
+            return $"playlist:{effectiveUid}:{ViewModel.ActivePlaylist.Kind}:{ViewModel.ActivePlaylist.Title}";
+        }
+        return null;
+    }
 
     public ExplorePage()
     {
@@ -31,6 +48,8 @@ public sealed partial class ExplorePage : Page
                 {
                     if (ViewModel.IsDetailOpen)
                     {
+                        _lastDetailOpenTime = DateTime.UtcNow;
+                        _currentDisplayedDetailKey = GetCurrentDetailKey();
                         ResetDetailScroll();
                         if (DetailViewRoot.Visibility != Visibility.Visible || DetailViewRoot.Opacity < 0.9)
                         {
@@ -39,6 +58,7 @@ public sealed partial class ExplorePage : Page
                     }
                     else
                     {
+                        _currentDisplayedDetailKey = null;
                         if (!_isAnimating && DetailViewRoot.Visibility == Visibility.Visible)
                         {
                             AnimateToBrowse();
@@ -51,10 +71,37 @@ public sealed partial class ExplorePage : Page
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    if (ViewModel.IsDetailOpen && !_isAnimating)
+                    if (!ViewModel.IsDetailOpen) return;
+
+                    string? newKey = GetCurrentDetailKey();
+                    if (string.IsNullOrEmpty(newKey)) return;
+
+                    // If it's the exact same item, don't replay transition
+                    if (string.Equals(_currentDisplayedDetailKey, newKey, StringComparison.OrdinalIgnoreCase))
                     {
-                        ResetDetailScroll();
-                        AnimateDetailContentCrossfade();
+                        return;
+                    }
+
+                    // If the page itself just entered via Frame transition (within 500ms),
+                    // or detail view was opened recently from browse (within 500ms), do not play double animation!
+                    if ((DateTime.UtcNow - _lastPageNavigatedTime) < TimeSpan.FromMilliseconds(500) ||
+                        (DateTime.UtcNow - _lastDetailOpenTime) < TimeSpan.FromMilliseconds(500))
+                    {
+                        _currentDisplayedDetailKey = newKey;
+                        DetailHeroGrid.Opacity = 1.0;
+                        return;
+                    }
+
+                    _currentDisplayedDetailKey = newKey;
+                    ResetDetailScroll();
+
+                    if (DetailViewRoot.Visibility == Visibility.Visible && DetailViewRoot.Opacity >= 0.95 && !_isAnimating)
+                    {
+                        AnimateHeaderFadeIn();
+                    }
+                    else
+                    {
+                        DetailHeroGrid.Opacity = 1.0;
                     }
                 });
             }
@@ -63,25 +110,48 @@ public sealed partial class ExplorePage : Page
 
     private void ApplyInitialViewState()
     {
+        BrowseTranslateTransform.Y = 0.0;
+        DetailTranslateTransform.Y = 0.0;
+
         if (ViewModel.IsDetailOpen)
         {
+            _currentDisplayedDetailKey = GetCurrentDetailKey();
+            _lastDetailOpenTime = DateTime.UtcNow;
             BrowseViewRoot.Visibility = Visibility.Collapsed;
             BrowseViewRoot.Opacity = 0.0;
-            BrowseTranslateTransform.Y = -16.0;
 
             DetailViewRoot.Visibility = Visibility.Visible;
             DetailViewRoot.Opacity = 1.0;
-            DetailTranslateTransform.Y = 0.0;
         }
         else
         {
             BrowseViewRoot.Visibility = Visibility.Visible;
             BrowseViewRoot.Opacity = 1.0;
-            BrowseTranslateTransform.Y = 0.0;
 
             DetailViewRoot.Visibility = Visibility.Collapsed;
             DetailViewRoot.Opacity = 0.0;
-            DetailTranslateTransform.Y = 28.0;
+        }
+    }
+
+    protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        _lastPageNavigatedTime = DateTime.UtcNow;
+        DetailHeroGrid.Opacity = 1.0;
+
+        if (ViewModel.IsDetailOpen)
+        {
+            DetailViewRoot.Visibility = Visibility.Visible;
+            DetailViewRoot.Opacity = 1.0;
+            BrowseViewRoot.Visibility = Visibility.Collapsed;
+            BrowseViewRoot.Opacity = 0.0;
+        }
+        else
+        {
+            BrowseViewRoot.Visibility = Visibility.Visible;
+            BrowseViewRoot.Opacity = 1.0;
+            DetailViewRoot.Visibility = Visibility.Collapsed;
+            DetailViewRoot.Opacity = 0.0;
         }
     }
 
@@ -93,6 +163,11 @@ public sealed partial class ExplorePage : Page
         DetailViewRoot.Visibility = Visibility.Visible;
         BrowseViewRoot.Visibility = Visibility.Visible;
 
+        DetailTranslateTransform.Y = 0.0;
+        BrowseTranslateTransform.Y = 0.0;
+
+        DetailHeroGrid.Opacity = 1.0;
+
         var sb = new Storyboard();
 
         // 1. Detail Fade In (0 -> 1)
@@ -100,48 +175,24 @@ public sealed partial class ExplorePage : Page
         {
             From = DetailViewRoot.Opacity,
             To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(240),
+            Duration = TimeSpan.FromMilliseconds(200),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         Storyboard.SetTarget(detailFade, DetailViewRoot);
         Storyboard.SetTargetProperty(detailFade, "Opacity");
         sb.Children.Add(detailFade);
 
-        // 2. Detail Slide Up (from current Y or 28 -> 0)
-        var detailSlide = new DoubleAnimation
-        {
-            From = DetailTranslateTransform.Y != 0 ? DetailTranslateTransform.Y : 28.0,
-            To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(260),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(detailSlide, DetailTranslateTransform);
-        Storyboard.SetTargetProperty(detailSlide, "Y");
-        sb.Children.Add(detailSlide);
-
-        // 3. Browse Fade Out (1 -> 0)
+        // 2. Browse Fade Out (1 -> 0)
         var browseFade = new DoubleAnimation
         {
             From = BrowseViewRoot.Opacity,
             To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(160),
+            Duration = TimeSpan.FromMilliseconds(150),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
         };
         Storyboard.SetTarget(browseFade, BrowseViewRoot);
         Storyboard.SetTargetProperty(browseFade, "Opacity");
         sb.Children.Add(browseFade);
-
-        // 4. Browse Slide slightly Up (0 -> -16)
-        var browseSlide = new DoubleAnimation
-        {
-            From = BrowseTranslateTransform.Y,
-            To = -16.0,
-            Duration = TimeSpan.FromMilliseconds(160),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        Storyboard.SetTarget(browseSlide, BrowseTranslateTransform);
-        Storyboard.SetTargetProperty(browseSlide, "Y");
-        sb.Children.Add(browseSlide);
 
         sb.Completed += (s, e) =>
         {
@@ -154,36 +205,26 @@ public sealed partial class ExplorePage : Page
         sb.Begin();
     }
 
-    public void AnimateDetailContentCrossfade()
+    public void AnimateHeaderFadeIn()
     {
         _currentTransition?.Stop();
+        DetailHeroGrid.Opacity = 0.2;
 
         var sb = new Storyboard();
-
-        var fade = new DoubleAnimation
+        var heroFade = new DoubleAnimation
         {
-            From = 0.35,
+            From = 0.2,
             To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(220),
+            Duration = TimeSpan.FromMilliseconds(200),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
-        Storyboard.SetTarget(fade, DetailViewRoot);
-        Storyboard.SetTargetProperty(fade, "Opacity");
-        sb.Children.Add(fade);
-
-        var slide = new DoubleAnimation
-        {
-            From = 18.0,
-            To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(240),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(slide, DetailTranslateTransform);
-        Storyboard.SetTargetProperty(slide, "Y");
-        sb.Children.Add(slide);
+        Storyboard.SetTarget(heroFade, DetailHeroGrid);
+        Storyboard.SetTargetProperty(heroFade, "Opacity");
+        sb.Children.Add(heroFade);
 
         sb.Completed += (s, e) =>
         {
+            DetailHeroGrid.Opacity = 1.0;
             _currentTransition = null;
         };
 
@@ -199,6 +240,9 @@ public sealed partial class ExplorePage : Page
         BrowseViewRoot.Visibility = Visibility.Visible;
         DetailViewRoot.Visibility = Visibility.Visible;
 
+        BrowseTranslateTransform.Y = 0.0;
+        DetailTranslateTransform.Y = 0.0;
+
         var sb = new Storyboard();
 
         // 1. Detail Fade Out (1 -> 0)
@@ -206,48 +250,24 @@ public sealed partial class ExplorePage : Page
         {
             From = DetailViewRoot.Opacity,
             To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(170),
+            Duration = TimeSpan.FromMilliseconds(150),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
         };
         Storyboard.SetTarget(detailFade, DetailViewRoot);
         Storyboard.SetTargetProperty(detailFade, "Opacity");
         sb.Children.Add(detailFade);
 
-        // 2. Detail Slide Down (0 -> 24)
-        var detailSlide = new DoubleAnimation
-        {
-            From = DetailTranslateTransform.Y,
-            To = 24.0,
-            Duration = TimeSpan.FromMilliseconds(170),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        Storyboard.SetTarget(detailSlide, DetailTranslateTransform);
-        Storyboard.SetTargetProperty(detailSlide, "Y");
-        sb.Children.Add(detailSlide);
-
-        // 3. Browse Fade In (0 -> 1)
+        // 2. Browse Fade In (0 -> 1)
         var browseFade = new DoubleAnimation
         {
             From = BrowseViewRoot.Opacity,
             To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(220),
+            Duration = TimeSpan.FromMilliseconds(200),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         Storyboard.SetTarget(browseFade, BrowseViewRoot);
         Storyboard.SetTargetProperty(browseFade, "Opacity");
         sb.Children.Add(browseFade);
-
-        // 4. Browse Slide Down from -16 to 0
-        var browseSlide = new DoubleAnimation
-        {
-            From = BrowseTranslateTransform.Y != 0 ? BrowseTranslateTransform.Y : -16.0,
-            To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(240),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(browseSlide, BrowseTranslateTransform);
-        Storyboard.SetTargetProperty(browseSlide, "Y");
-        sb.Children.Add(browseSlide);
 
         sb.Completed += (s, e) =>
         {

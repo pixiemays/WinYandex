@@ -522,7 +522,7 @@
               Visibility="Collapsed"
               Opacity="0">
             <Grid.RenderTransform>
-                <TranslateTransform x:Name="DetailTranslateTransform" Y="28" />
+                <TranslateTransform x:Name="DetailTranslateTransform" Y="0" />
             </Grid.RenderTransform>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -563,8 +563,8 @@
                                              SelectionMode="None">
                     <controls:ObservableListView.Header>
                         <StackPanel Spacing="10">
-                            <!-- Hero Card -->
-                            <Grid Margin="0,4,0,8" Background="Transparent">
+                            <!-- Hero Card Grid -->
+                            <Grid x:Name="DetailHeroGrid" Margin="0,4,0,8" Background="Transparent">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
@@ -742,7 +742,14 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <ItemsStackPanel />
+                            <ItemsStackPanel>
+                                <ItemsStackPanel.ChildrenTransitions>
+                                    <TransitionCollection>
+                                        <EntranceThemeTransition IsStaggeringEnabled="True" FromVerticalOffset="8" />
+                                        <AddDeleteThemeTransition />
+                                    </TransitionCollection>
+                                </ItemsStackPanel.ChildrenTransitions>
+                            </ItemsStackPanel>
                         </ItemsPanelTemplate>
                     </ListView.ItemsPanel>
 

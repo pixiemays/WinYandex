@@ -15,6 +15,23 @@ public sealed partial class PlaylistsPage : Page
     private Storyboard? _tabTransition;
     private bool _isAnimating;
     private int _currentTabIndex = 0;
+    private string? _currentDisplayedDetailKey;
+    private DateTime _lastDetailOpenTime = DateTime.MinValue;
+    private DateTime _lastPageNavigatedTime = DateTime.MinValue;
+
+    private string? GetCurrentDetailKey()
+    {
+        if (ViewModel.SelectedAlbum != null)
+        {
+            return $"album:{ViewModel.SelectedAlbum.Id}";
+        }
+        if (ViewModel.SelectedPlaylist != null)
+        {
+            long effectiveUid = ViewModel.SelectedPlaylist.Uid > 0 ? ViewModel.SelectedPlaylist.Uid : (ViewModel.SelectedPlaylist.Owner?.Uid ?? 0);
+            return $"playlist:{effectiveUid}:{ViewModel.SelectedPlaylist.Kind}:{ViewModel.SelectedPlaylist.Title}";
+        }
+        return null;
+    }
 
     public PlaylistsPage()
     {
@@ -32,6 +49,10 @@ public sealed partial class PlaylistsPage : Page
                 {
                     if (ViewModel.IsDetailOpen)
                     {
+                        ResetScrollAndHeader();
+                        _lastDetailOpenTime = DateTime.UtcNow;
+                        _currentDisplayedDetailKey = GetCurrentDetailKey();
+                        PlaylistHeroGrid.Opacity = 1.0;
                         if (DetailViewRoot.Visibility != Visibility.Visible || DetailViewRoot.Opacity < 0.9)
                         {
                             AnimateToDetail();
@@ -39,6 +60,7 @@ public sealed partial class PlaylistsPage : Page
                     }
                     else
                     {
+                        _currentDisplayedDetailKey = null;
                         if (!string.IsNullOrEmpty(ViewModel.PreviousPageTag))
                         {
                             _currentTransition?.Stop();
@@ -60,9 +82,37 @@ public sealed partial class PlaylistsPage : Page
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    if (ViewModel.IsDetailOpen && !_isAnimating)
+                    if (!ViewModel.IsDetailOpen) return;
+
+                    string? newKey = GetCurrentDetailKey();
+                    if (string.IsNullOrEmpty(newKey)) return;
+
+                    // If it's the exact same item (e.g. duplicate property change), do not re-animate
+                    if (string.Equals(_currentDisplayedDetailKey, newKey, StringComparison.OrdinalIgnoreCase))
                     {
-                        AnimateDetailContentCrossfade();
+                        return;
+                    }
+
+                    // If the page itself just entered via Frame transition (within 500ms),
+                    // or detail view was opened recently from browse (within 500ms), do not play double animation!
+                    if ((DateTime.UtcNow - _lastPageNavigatedTime) < TimeSpan.FromMilliseconds(500) ||
+                        (DateTime.UtcNow - _lastDetailOpenTime) < TimeSpan.FromMilliseconds(500))
+                    {
+                        _currentDisplayedDetailKey = newKey;
+                        PlaylistHeroGrid.Opacity = 1.0;
+                        return;
+                    }
+
+                    _currentDisplayedDetailKey = newKey;
+                    ResetScrollAndHeader();
+
+                    if (DetailViewRoot.Visibility == Visibility.Visible && DetailViewRoot.Opacity >= 0.95 && !_isAnimating)
+                    {
+                        AnimateHeaderFadeIn();
+                    }
+                    else
+                    {
+                        PlaylistHeroGrid.Opacity = 1.0;
                     }
                 });
             }
@@ -85,48 +135,69 @@ public sealed partial class PlaylistsPage : Page
 
     private void ApplyInitialViewState()
     {
+        BrowseTranslateTransform.Y = 0.0;
+        DetailTranslateTransform.Y = 0.0;
+        PlaylistsTabTranslateTransform.X = 0.0;
+        AlbumsTabTranslateTransform.X = 0.0;
+
         if (ViewModel.IsDetailOpen)
         {
+            _currentDisplayedDetailKey = GetCurrentDetailKey();
+            _lastDetailOpenTime = DateTime.UtcNow;
             BrowseViewRoot.Visibility = Visibility.Collapsed;
             BrowseViewRoot.Opacity = 0.0;
-            BrowseTranslateTransform.Y = -16.0;
 
             DetailViewRoot.Visibility = Visibility.Visible;
             DetailViewRoot.Opacity = 1.0;
-            DetailTranslateTransform.Y = 0.0;
         }
         else
         {
             BrowseViewRoot.Visibility = Visibility.Visible;
             BrowseViewRoot.Opacity = 1.0;
-            BrowseTranslateTransform.Y = 0.0;
 
             DetailViewRoot.Visibility = Visibility.Collapsed;
             DetailViewRoot.Opacity = 0.0;
-            DetailTranslateTransform.Y = 28.0;
         }
 
         if (ViewModel.SelectedCategoryIndex == 0)
         {
             PlaylistsTabContent.Visibility = Visibility.Visible;
             PlaylistsTabContent.Opacity = 1.0;
-            PlaylistsTabTranslateTransform.X = 0;
 
             AlbumsTabContent.Visibility = Visibility.Collapsed;
             AlbumsTabContent.Opacity = 0.0;
-            AlbumsTabTranslateTransform.X = 0;
             _currentTabIndex = 0;
         }
         else
         {
             PlaylistsTabContent.Visibility = Visibility.Collapsed;
             PlaylistsTabContent.Opacity = 0.0;
-            PlaylistsTabTranslateTransform.X = 0;
 
             AlbumsTabContent.Visibility = Visibility.Visible;
             AlbumsTabContent.Opacity = 1.0;
-            AlbumsTabTranslateTransform.X = 0;
             _currentTabIndex = 1;
+        }
+    }
+
+    protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        _lastPageNavigatedTime = DateTime.UtcNow;
+        PlaylistHeroGrid.Opacity = 1.0;
+
+        if (ViewModel.IsDetailOpen)
+        {
+            DetailViewRoot.Visibility = Visibility.Visible;
+            DetailViewRoot.Opacity = 1.0;
+            BrowseViewRoot.Visibility = Visibility.Collapsed;
+            BrowseViewRoot.Opacity = 0.0;
+        }
+        else
+        {
+            BrowseViewRoot.Visibility = Visibility.Visible;
+            BrowseViewRoot.Opacity = 1.0;
+            DetailViewRoot.Visibility = Visibility.Collapsed;
+            DetailViewRoot.Opacity = 0.0;
         }
     }
 
@@ -138,6 +209,11 @@ public sealed partial class PlaylistsPage : Page
         DetailViewRoot.Visibility = Visibility.Visible;
         BrowseViewRoot.Visibility = Visibility.Visible;
 
+        DetailTranslateTransform.Y = 0.0;
+        BrowseTranslateTransform.Y = 0.0;
+
+        PlaylistHeroGrid.Opacity = 1.0;
+
         var sb = new Storyboard();
 
         // 1. Detail Fade In (0 -> 1)
@@ -145,48 +221,24 @@ public sealed partial class PlaylistsPage : Page
         {
             From = DetailViewRoot.Opacity,
             To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(240),
+            Duration = TimeSpan.FromMilliseconds(200),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         Storyboard.SetTarget(detailFade, DetailViewRoot);
         Storyboard.SetTargetProperty(detailFade, "Opacity");
         sb.Children.Add(detailFade);
 
-        // 2. Detail Slide Up (from current Y or 28 -> 0)
-        var detailSlide = new DoubleAnimation
-        {
-            From = DetailTranslateTransform.Y != 0 ? DetailTranslateTransform.Y : 28.0,
-            To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(260),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(detailSlide, DetailTranslateTransform);
-        Storyboard.SetTargetProperty(detailSlide, "Y");
-        sb.Children.Add(detailSlide);
-
-        // 3. Browse Fade Out (1 -> 0)
+        // 2. Browse Fade Out (1 -> 0)
         var browseFade = new DoubleAnimation
         {
             From = BrowseViewRoot.Opacity,
             To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(160),
+            Duration = TimeSpan.FromMilliseconds(150),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
         };
         Storyboard.SetTarget(browseFade, BrowseViewRoot);
         Storyboard.SetTargetProperty(browseFade, "Opacity");
         sb.Children.Add(browseFade);
-
-        // 4. Browse Slide slightly Up (0 -> -16)
-        var browseSlide = new DoubleAnimation
-        {
-            From = BrowseTranslateTransform.Y,
-            To = -16.0,
-            Duration = TimeSpan.FromMilliseconds(160),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        Storyboard.SetTarget(browseSlide, BrowseTranslateTransform);
-        Storyboard.SetTargetProperty(browseSlide, "Y");
-        sb.Children.Add(browseSlide);
 
         sb.Completed += (s, e) =>
         {
@@ -199,36 +251,26 @@ public sealed partial class PlaylistsPage : Page
         sb.Begin();
     }
 
-    public void AnimateDetailContentCrossfade()
+    public void AnimateHeaderFadeIn()
     {
         _currentTransition?.Stop();
+        PlaylistHeroGrid.Opacity = 0.2;
 
         var sb = new Storyboard();
-
-        var fade = new DoubleAnimation
+        var heroFade = new DoubleAnimation
         {
-            From = 0.35,
+            From = 0.2,
             To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(220),
+            Duration = TimeSpan.FromMilliseconds(200),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
-        Storyboard.SetTarget(fade, DetailViewRoot);
-        Storyboard.SetTargetProperty(fade, "Opacity");
-        sb.Children.Add(fade);
-
-        var slide = new DoubleAnimation
-        {
-            From = 18.0,
-            To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(240),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(slide, DetailTranslateTransform);
-        Storyboard.SetTargetProperty(slide, "Y");
-        sb.Children.Add(slide);
+        Storyboard.SetTarget(heroFade, PlaylistHeroGrid);
+        Storyboard.SetTargetProperty(heroFade, "Opacity");
+        sb.Children.Add(heroFade);
 
         sb.Completed += (s, e) =>
         {
+            PlaylistHeroGrid.Opacity = 1.0;
             _currentTransition = null;
         };
 
@@ -244,6 +286,9 @@ public sealed partial class PlaylistsPage : Page
         BrowseViewRoot.Visibility = Visibility.Visible;
         DetailViewRoot.Visibility = Visibility.Visible;
 
+        BrowseTranslateTransform.Y = 0.0;
+        DetailTranslateTransform.Y = 0.0;
+
         var sb = new Storyboard();
 
         // 1. Detail Fade Out (1 -> 0)
@@ -251,48 +296,24 @@ public sealed partial class PlaylistsPage : Page
         {
             From = DetailViewRoot.Opacity,
             To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(170),
+            Duration = TimeSpan.FromMilliseconds(150),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
         };
         Storyboard.SetTarget(detailFade, DetailViewRoot);
         Storyboard.SetTargetProperty(detailFade, "Opacity");
         sb.Children.Add(detailFade);
 
-        // 2. Detail Slide Down (0 -> 24)
-        var detailSlide = new DoubleAnimation
-        {
-            From = DetailTranslateTransform.Y,
-            To = 24.0,
-            Duration = TimeSpan.FromMilliseconds(170),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        Storyboard.SetTarget(detailSlide, DetailTranslateTransform);
-        Storyboard.SetTargetProperty(detailSlide, "Y");
-        sb.Children.Add(detailSlide);
-
-        // 3. Browse Fade In (0 -> 1)
+        // 2. Browse Fade In (0 -> 1)
         var browseFade = new DoubleAnimation
         {
             From = BrowseViewRoot.Opacity,
             To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(220),
+            Duration = TimeSpan.FromMilliseconds(200),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         Storyboard.SetTarget(browseFade, BrowseViewRoot);
         Storyboard.SetTargetProperty(browseFade, "Opacity");
         sb.Children.Add(browseFade);
-
-        // 4. Browse Slide Down from -16 to 0
-        var browseSlide = new DoubleAnimation
-        {
-            From = BrowseTranslateTransform.Y != 0 ? BrowseTranslateTransform.Y : -16.0,
-            To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(240),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(browseSlide, BrowseTranslateTransform);
-        Storyboard.SetTargetProperty(browseSlide, "Y");
-        sb.Children.Add(browseSlide);
 
         sb.Completed += (s, e) =>
         {
@@ -345,64 +366,40 @@ public sealed partial class PlaylistsPage : Page
         incoming.Visibility = Visibility.Visible;
         incoming.Opacity = 0.0;
 
-        double slideOffset = targetIndex > fromIndex ? 18.0 : -18.0;
-        incomingTransform.X = slideOffset;
+        outgoingTransform.X = 0;
+        incomingTransform.X = 0;
 
         var sb = new Storyboard();
 
-        // 1. Outgoing Fade Out & Slide
+        // 1. Outgoing Fade Out
         var outFade = new DoubleAnimation
         {
             From = outgoing.Opacity,
             To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(160),
+            Duration = TimeSpan.FromMilliseconds(140),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
         };
         Storyboard.SetTarget(outFade, outgoing);
         Storyboard.SetTargetProperty(outFade, "Opacity");
         sb.Children.Add(outFade);
 
-        var outSlide = new DoubleAnimation
-        {
-            From = outgoingTransform.X,
-            To = -slideOffset * 0.7,
-            Duration = TimeSpan.FromMilliseconds(160),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        Storyboard.SetTarget(outSlide, outgoingTransform);
-        Storyboard.SetTargetProperty(outSlide, "X");
-        sb.Children.Add(outSlide);
-
-        // 2. Incoming Fade In & Slide into place
+        // 2. Incoming Fade In
         var inFade = new DoubleAnimation
         {
             From = 0.0,
             To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(220),
-            BeginTime = TimeSpan.FromMilliseconds(40),
+            Duration = TimeSpan.FromMilliseconds(190),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         Storyboard.SetTarget(inFade, incoming);
         Storyboard.SetTargetProperty(inFade, "Opacity");
         sb.Children.Add(inFade);
 
-        var inSlide = new DoubleAnimation
-        {
-            From = slideOffset,
-            To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(240),
-            BeginTime = TimeSpan.FromMilliseconds(40),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(inSlide, incomingTransform);
-        Storyboard.SetTargetProperty(inSlide, "X");
-        sb.Children.Add(inSlide);
-
         sb.Completed += (s, e) =>
         {
             outgoing.Visibility = Visibility.Collapsed;
-            outgoingTransform.X = 0;
-            incomingTransform.X = 0;
+            outgoing.Opacity = 0.0;
+            incoming.Opacity = 1.0;
             _tabTransition = null;
         };
 

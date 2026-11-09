@@ -296,6 +296,17 @@ public sealed partial class ExploreViewModel : BaseViewModel
         IsDetailOpen = true;
         IsLoadingDetail = true;
 
+        _allDetailTracks.Clear();
+        DetailTracks.Clear();
+        DetailSearchFilter = string.Empty;
+
+        var existingTracks = playlist.ResolvedTracks ?? playlist.Tracks?.Select(ti => ti.Track).OfType<Track>().ToList();
+        if (existingTracks != null && existingTracks.Count > 0)
+        {
+            _allDetailTracks.AddRange(existingTracks);
+            ApplyDetailFilter();
+        }
+
         try
         {
             await _musicService.EnsureLikedTracksLoadedAsync().ConfigureAwait(false);
@@ -320,6 +331,8 @@ public sealed partial class ExploreViewModel : BaseViewModel
 
             RunOnUi(() =>
             {
+                if (ActivePlaylist?.Uid != playlist.Uid || ActivePlaylist?.Kind != playlist.Kind) return;
+
                 if (fullPlaylist != null)
                 {
                     ActivePlaylist = fullPlaylist;
@@ -373,6 +386,16 @@ public sealed partial class ExploreViewModel : BaseViewModel
         IsDetailOpen = true;
         IsLoadingDetail = true;
 
+        _allDetailTracks.Clear();
+        DetailTracks.Clear();
+        DetailSearchFilter = string.Empty;
+
+        if (album.AllTracks != null && album.AllTracks.Count > 0)
+        {
+            _allDetailTracks.AddRange(album.AllTracks);
+            ApplyDetailFilter();
+        }
+
         try
         {
             await _musicService.EnsureLikedTracksLoadedAsync().ConfigureAwait(false);
@@ -387,6 +410,8 @@ public sealed partial class ExploreViewModel : BaseViewModel
 
             RunOnUi(() =>
             {
+                if (ActiveAlbum?.Id != album.Id) return;
+
                 if (fullAlbum != null)
                 {
                     ActiveAlbum = fullAlbum;

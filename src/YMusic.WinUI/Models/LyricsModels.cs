@@ -81,6 +81,15 @@ public sealed partial class LyricLine : ObservableObject
     public string Text { get; set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FormattedTimestamp))]
+    [NotifyPropertyChangedFor(nameof(EffectiveTimestamp))]
+    private double _offsetSeconds;
+
+    public TimeSpan EffectiveTimestamp => HasTimestamp
+        ? (Timestamp + TimeSpan.FromSeconds(OffsetSeconds) < TimeSpan.Zero ? TimeSpan.Zero : Timestamp + TimeSpan.FromSeconds(OffsetSeconds))
+        : Timestamp;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LineOpacity))]
     [NotifyPropertyChangedFor(nameof(LineFontSize))]
     [NotifyPropertyChangedFor(nameof(LineFontWeight))]
@@ -93,7 +102,7 @@ public sealed partial class LyricLine : ObservableObject
     public bool HasTimestamp => Timestamp >= TimeSpan.Zero;
 
     public string FormattedTimestamp => HasTimestamp
-        ? (Timestamp.Hours > 0 ? Timestamp.ToString(@"h\:mm\:ss") : Timestamp.ToString(@"m\:ss"))
+        ? (EffectiveTimestamp.Hours > 0 ? EffectiveTimestamp.ToString(@"h\:mm\:ss") : EffectiveTimestamp.ToString(@"m\:ss"))
         : string.Empty;
 
     public double LineOpacity => !HasTimestamp ? 0.88 : (IsActive ? 1.0 : (IsPast ? 0.35 : 0.65));

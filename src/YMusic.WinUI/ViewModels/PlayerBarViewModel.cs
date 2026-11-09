@@ -346,6 +346,84 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
 
     private readonly ISettingsService _settingsService;
     private readonly IFckCensorService _fckCensorService;
+    private readonly ILyricsOffsetService _lyricsOffsetService;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LyricsOffsetFormattedText))]
+    [NotifyPropertyChangedFor(nameof(LyricsOffsetBadgeText))]
+    private double _lyricsOffsetSeconds;
+
+    public string LyricsOffsetFormattedText
+    {
+        get
+        {
+            if (Math.Abs(LyricsOffsetSeconds) < 0.05)
+            {
+                return IsRussian ? "0.0 сек (нет)" : "0.0 s (none)";
+            }
+            string sign = LyricsOffsetSeconds > 0 ? "+" : "";
+            return $"{sign}{LyricsOffsetSeconds:F1} {(IsRussian ? "сек" : "s")}";
+        }
+    }
+
+    public string LyricsOffsetBadgeText
+    {
+        get
+        {
+            if (Math.Abs(LyricsOffsetSeconds) < 0.05)
+            {
+                return IsRussian ? "Тайминг" : "Timing";
+            }
+            string sign = LyricsOffsetSeconds > 0 ? "+" : "";
+            return $"{sign}{LyricsOffsetSeconds:F1}с";
+        }
+    }
+
+    public string LyricsSyncTitle => IsRussian ? "Синхронизация текста" : "Lyrics Timing & Sync";
+    public string LyricsSyncDescription => IsRussian
+        ? "Скорректируйте тайминг, если текст спешит (вступление/скит) или отстает. Смещение сохранится для этого трека:"
+        : "Adjust timing if lyrics run ahead (intro skit) or lag behind. Offset is saved for this track:";
+    public string LyricsSyncCurrentOffsetLabel => IsRussian ? "Текущее смещение:" : "Current offset:";
+    public string LyricsSyncResetText => IsRussian ? "Сбросить смещение" : "Reset offset";
+    public string LyricsSyncTooltip => IsRussian ? "Настройка синхронизации текста (тайминг)" : "Adjust lyrics sync timing";
+
+    partial void OnLyricsOffsetSecondsChanged(double value)
+    {
+        if (CurrentTrack != null)
+        {
+            _lyricsOffsetService.SetOffset(CurrentTrack.Id, CurrentTrack.FullTitle, CurrentTrack.ArtistNames, value);
+        }
+        foreach (var line in Lyrics)
+        {
+            line.OffsetSeconds = value;
+        }
+        UpdateActiveLyric(Position);
+    }
+
+    [RelayCommand]
+    public void AdjustLyricsOffset(object? parameter)
+    {
+        if (parameter != null && double.TryParse(parameter.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double delta))
+        {
+            double newOffset = Math.Clamp(Math.Round(LyricsOffsetSeconds + delta, 1), -60.0, 60.0);
+            LyricsOffsetSeconds = newOffset;
+        }
+    }
+
+    [RelayCommand]
+    public void ResetLyricsOffset()
+    {
+        if (CurrentTrack != null)
+        {
+            _lyricsOffsetService.ResetOffset(CurrentTrack.Id, CurrentTrack.FullTitle, CurrentTrack.ArtistNames);
+            LyricsOffsetSeconds = _lyricsOffsetService.GetOffset(CurrentTrack.Id, CurrentTrack.FullTitle, CurrentTrack.ArtistNames);
+        }
+        else
+        {
+            LyricsOffsetSeconds = 0.0;
+        }
+        UpdateActiveLyric(Position);
+    }
 
     public PlayerBarViewModel(
         IAudioPlayerService audioPlayer,
@@ -353,7 +431,8 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         IEqualizerService equalizer,
         INavigationService navigationService,
         ISettingsService settingsService,
-        IFckCensorService fckCensorService)
+        IFckCensorService fckCensorService,
+        ILyricsOffsetService lyricsOffsetService)
     {
         _audioPlayer = audioPlayer;
         _musicService = musicService;
@@ -361,6 +440,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         _navigationService = navigationService;
         _settingsService = settingsService;
         _fckCensorService = fckCensorService;
+        _lyricsOffsetService = lyricsOffsetService;
 
         _volume = _audioPlayer.Volume;
         _isMuted = _audioPlayer.IsMuted;
@@ -620,14 +700,19 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
             var lines = await _musicService.GetTrackLyricsAsync(track.Id, track.FullTitle, track.ArtistNames, durationSec, track.HasLyricsOnYandex, token).ConfigureAwait(false);
             if (token.IsCancellationRequested) return;
 
+            double offset = _lyricsOffsetService.GetOffset(track.Id, track.FullTitle, track.ArtistNames);
+
             RunOnUi(() =>
             {
                 if (token.IsCancellationRequested) return;
+                LyricsOffsetSeconds = offset;
+
                 Lyrics.Clear();
                 if (lines.Count > 0)
                 {
                     foreach (var line in lines)
                     {
+                        line.OffsetSeconds = offset;
                         Lyrics.Add(line);
                     }
                     HasLyrics = true;
@@ -701,9 +786,9 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         for (int i = 0; i < Lyrics.Count; i++)
         {
             var line = Lyrics[i];
-            var nextTimestamp = (i + 1 < Lyrics.Count) ? Lyrics[i + 1].Timestamp : TimeSpan.MaxValue;
+            var nextTimestamp = (i + 1 < Lyrics.Count) ? Lyrics[i + 1].EffectiveTimestamp : TimeSpan.MaxValue;
 
-            if (position >= line.Timestamp && position < nextTimestamp)
+            if (position >= line.EffectiveTimestamp && position < nextTimestamp)
             {
                 currentActive = line;
                 activeIndex = i;
@@ -755,10 +840,11 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
         if (line != null && line.HasTimestamp && line.Timestamp >= TimeSpan.Zero)
         {
             IsUserScrolledAway = false;
-            _audioPlayer.Seek(line.Timestamp);
-            Position = line.Timestamp;
-            PositionSeconds = line.Timestamp.TotalSeconds;
-            UpdateActiveLyric(line.Timestamp);
+            var targetPos = line.EffectiveTimestamp;
+            _audioPlayer.Seek(targetPos);
+            Position = targetPos;
+            PositionSeconds = targetPos.TotalSeconds;
+            UpdateActiveLyric(targetPos);
         }
     }
 

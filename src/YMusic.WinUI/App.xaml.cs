@@ -56,6 +56,7 @@ public partial class App : Application
         services.AddSingleton<ICredentialStorageService, CredentialStorageService>();
         services.AddSingleton<IPlaybackStateStorageService, PlaybackStateStorageService>();
         services.AddSingleton<IYandexMusicService, YandexMusicService>();
+        services.AddSingleton<ILyricsOffsetService, LyricsOffsetService>();
         services.AddSingleton<IFckCensorService, FckCensorService>();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<ISloplessService, SloplessService>();

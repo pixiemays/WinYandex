@@ -689,44 +689,53 @@ public sealed class TrayNotificationService : ITrayNotificationService
     {
         if (_disposed) return;
 
-        try
-        {
-            var template = ToastNotificationManager.GetTemplateContent(ToastTemplateType.ToastText02);
-            var textNodes = template.GetElementsByTagName("text");
-            if (textNodes.Length > 0)
-            {
-                textNodes[0].AppendChild(template.CreateTextNode(title));
-            }
-            if (textNodes.Length > 1)
-            {
-                textNodes[1].AppendChild(template.CreateTextNode(message));
-            }
-
-            var toast = new ToastNotification(template);
-            ToastNotificationManager.CreateToastNotifier().Show(toast);
-            return;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[TrayService] WinRT Toast fallback: {ex.Message}");
-        }
-
+        // Native Win32 tray notification is instantaneous, safe, and never blocks the UI thread
         if (_isIconAdded && _hWnd != IntPtr.Zero)
         {
-            var nid = new NOTIFYICONDATAW
+            try
             {
-                cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATAW>(),
-                hWnd = _hWnd,
-                uID = TrayIconId,
-                uFlags = NIF_INFO,
-                szInfoTitle = Truncate(title, 63),
-                szInfo = Truncate(message, 255),
-                dwInfoFlags = NIIF_INFO | NIIF_RESPECT_QUIET_TIME,
-                uTimeoutOrVersion = 3000
-            };
+                var nid = new NOTIFYICONDATAW
+                {
+                    cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATAW>(),
+                    hWnd = _hWnd,
+                    uID = TrayIconId,
+                    uFlags = NIF_INFO,
+                    szInfoTitle = Truncate(title, 63),
+                    szInfo = Truncate(message, 255),
+                    dwInfoFlags = NIIF_INFO | NIIF_RESPECT_QUIET_TIME,
+                    uTimeoutOrVersion = 3000
+                };
 
-            Shell_NotifyIconW(NIM_MODIFY, ref nid);
+                Shell_NotifyIconW(NIM_MODIFY, ref nid);
+                return;
+            }
+            catch { }
         }
+
+        // Background fallback for WinRT ToastNotification in unpackaged mode
+        _ = System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                var template = ToastNotificationManager.GetTemplateContent(ToastTemplateType.ToastText02);
+                var textNodes = template.GetElementsByTagName("text");
+                if (textNodes.Length > 0)
+                {
+                    textNodes[0].AppendChild(template.CreateTextNode(title));
+                }
+                if (textNodes.Length > 1)
+                {
+                    textNodes[1].AppendChild(template.CreateTextNode(message));
+                }
+
+                var toast = new ToastNotification(template);
+                ToastNotificationManager.CreateToastNotifier().Show(toast);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[TrayService] WinRT Toast fallback: {ex.Message}");
+            }
+        });
     }
 
     public void RestoreWindow()

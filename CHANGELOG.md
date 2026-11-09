@@ -4,6 +4,33 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.8] — 2026-11-09
+
+### Manual Karaoke Lyrics Timing & Sync
+* **Individual Lyrics Timing Adjustment**: added a dedicated "Timing" button in the Now Playing drawer for precision alignment between synced lyrics and audio.
+* **Offset Range from -60s to +60s**: quick slider controls and step buttons (±0.5s, ±5s, Reset) easily correct timing for songs with non-standard spoken intros or audio desync.
+* **Per-Track Persistent Storage**: configured offsets automatically save to local storage per track and apply immediately on future playback.
+* **Dynamic Status Badge**: active timing offsets are reflected right on the badge (e.g. "Timing (+2.5 s)").
+
+### Pinned Items Reordering (Drag & Drop)
+* **Drag-and-Drop Sidebar Reordering**: pinned albums and playlists in the left navigation sidebar can now be freely rearranged via intuitive mouse drag-and-drop.
+* **Persistent Custom Ordering**: user-defined order of pinned playlists and albums persists reliably across app restarts.
+
+### Fluid Animations & Transitions
+* **Choreographed Cascade Animations**: artwork, metadata, and track listings now open together with smooth, unified entrance animations.
+* **Instant Responsive Navigation**: enhanced navigation responsiveness between sidebar sections, albums, and playlists.
+
+### Now Playing Drawer Refinements
+* **Fluid Badge Row Layout**: tags and quality badges (bitrate, synced lyrics, timing offset, mods) now flow naturally without artificial boundary constraints while preserving control alignment.
+* **Refined Glass Title Bar**: now playing header visual background gracefully extends beneath Windows caption controls without blocking interaction.
+
+### Game Overlay & System Polish
+* **Hardware-Accelerated Overlay Animations**: game overlay card transitions migrated to native WinUI Storyboards, cutting idle GPU and CPU usage.
+* **Resource & Memory Optimization**: album art decoding constrained to exact display dimensions and background visualization timers tuned.
+* **Non-Blocking Tray Notifications**: system tray notifications prioritize fast native shell balloons, preventing UI thread pauses during track changes.
+
+---
+
 ## [0.9.72.1] — 2026-11-03
 
 ### Process Lifecycle & Taskbar Launch

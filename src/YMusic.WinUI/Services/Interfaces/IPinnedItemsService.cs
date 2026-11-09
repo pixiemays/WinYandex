@@ -46,6 +46,10 @@ public interface IPinnedItemsService
     void UnpinAlbum(long albumId);
     bool ToggleAlbumPin(long albumId, string? title = null, string? coverUrl = null);
 
+    void MovePinnedItem(string key, int targetIndex);
+    void MovePinnedItemUp(string key);
+    void MovePinnedItemDown(string key);
+
     IReadOnlyList<PinnedItemRecord> GetPinnedItems();
     IReadOnlyList<string> GetPinnedKeys();
     int GetPinOrder(string pinKey);

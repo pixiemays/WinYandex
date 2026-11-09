@@ -59,16 +59,21 @@ public static class CursorHelper
         }
     }
 
-    private static void SetCursor(UIElement element, bool useHand)
+    public static void SetCursor(UIElement element, InputCursor? cursor)
     {
         try
         {
-            ProtectedCursorPropertyInfo?.SetValue(element, useHand ? HandCursor : null);
+            ProtectedCursorPropertyInfo?.SetValue(element, cursor);
         }
         catch
         {
             // Fallback if platform cursor API not supported
         }
+    }
+
+    private static void SetCursor(UIElement element, bool useHand)
+    {
+        SetCursor(element, useHand ? HandCursor : null);
     }
 
     private static void ApplyCursorDeep(DependencyObject parent)

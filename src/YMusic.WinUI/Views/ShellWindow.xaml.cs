@@ -1,10 +1,16 @@
+using System.Reflection;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Windows.ApplicationModel.DataTransfer;
+using YMusic.WinUI.Helpers;
 using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.ViewModels;
+using YMusic.WinUI.Views.Navigation;
 using YMusic.WinUI.Views.Pages;
 
 namespace YMusic.WinUI.Views;
@@ -13,14 +19,20 @@ public sealed partial class ShellWindow : Window
 {
     public ShellViewModel ViewModel { get; }
     public Grid WindowRootGrid => RootGrid;
-    private readonly IPinnedItemsService _pinnedItemsService;
-    private readonly List<object> _pinnedNavItems = new();
+    private readonly PinnedNavManager _pinnedNavManager;
 
     public ShellWindow()
     {
         InitializeComponent();
 
         ViewModel = App.GetService<ShellViewModel>();
+
+        _pinnedNavManager = new PinnedNavManager(
+            NavView,
+            App.GetService<IPinnedItemsService>(),
+            () => ViewModel.IsAuthenticated,
+            NavigateToTag,
+            DispatcherQueue);
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -42,6 +54,12 @@ public sealed partial class ShellWindow : Window
             {
                 if (e.Key == Windows.System.VirtualKey.Escape)
                 {
+                    if (_pinnedNavManager.IsDragging)
+                    {
+                        _pinnedNavManager.CancelDrag();
+                        e.Handled = true;
+                        return;
+                    }
                     if (ViewModel.PlayerBar.IsNowPlayingDrawerOpen)
                     {
                         ViewModel.PlayerBar.IsNowPlayingDrawerOpen = false;
@@ -154,6 +172,7 @@ public sealed partial class ShellWindow : Window
                         UpdatePlayerBarVisibility();
                         AppTitleBar.Opacity = 0.0;
                         AppTitleBar.IsHitTestVisible = false;
+                        NowPlayingDrawer.UpdateTitleBarInsets();
                         NowPlayingDrawer.AnimateOpen();
                         SetTitleBar(NowPlayingDrawer.TitleBarDragRegion);
                         UpdateTitleBarButtonColors(true);
@@ -179,7 +198,7 @@ public sealed partial class ShellWindow : Window
                 ViewModel.IsAuthenticated = true;
                 ViewModel.CurrentUser = loginVm.CurrentUser;
                 UpdatePlayerBarVisibility();
-                RefreshPinnedMenuItems();
+                _pinnedNavManager.RefreshPinnedMenuItems();
                 NavView.SelectedItem = NavItemExplore;
                 NavigateToTag("Explore");
             });
@@ -191,7 +210,7 @@ public sealed partial class ShellWindow : Window
                 ViewModel.IsAuthenticated = false;
                 ViewModel.CurrentUser = null;
                 UpdatePlayerBarVisibility();
-                RefreshPinnedMenuItems();
+                _pinnedNavManager.RefreshPinnedMenuItems();
                 NavView.SelectedItem = NavItemAccount;
                 NavigateToTag("Account");
             });
@@ -212,40 +231,68 @@ public sealed partial class ShellWindow : Window
                 return;
             }
 
-            App.GetService<IAudioPlayerService>()?.SaveCurrentState();
+            try
+            {
+                SetTitleBar(null);
+            }
+            catch { }
+
+            try
+            {
+                App.GetService<IAudioPlayerService>()?.SaveCurrentState();
+            }
+            catch { }
         };
 
         Closed += (_, _) =>
         {
             try
             {
-                App.GetService<IAudioPlayerService>()?.SaveCurrentState();
-                trayService.Dispose();
-                App.GetService<IDiscordRpcService>()?.Dispose();
-                App.GetService<IObsOverlayService>()?.Dispose();
-                App.GetService<IGameOverlayService>()?.Dispose();
-                App.GetService<IAudioPlayerService>()?.Dispose();
+                SetTitleBar(null);
             }
             catch { }
-            finally
+
+            try
             {
-                try
-                {
-                    Application.Current.Exit();
-                }
-                catch { }
-                Environment.Exit(0);
+                App.GetService<IAudioPlayerService>()?.SaveCurrentState();
             }
+            catch { }
+
+            try
+            {
+                trayService.Dispose();
+            }
+            catch { }
+
+            // Dispose audio graph, OBS server, Discord RPC and game overlay asynchronously
+            // so that teardown never deadlocks or blocks the UI thread on exit
+            _ = System.Threading.Tasks.Task.Run(() =>
+            {
+                try { App.GetService<IDiscordRpcService>()?.Dispose(); } catch { }
+                try { App.GetService<IObsOverlayService>()?.Dispose(); } catch { }
+                try { App.GetService<IGameOverlayService>()?.Dispose(); } catch { }
+                try { App.GetService<IAudioPlayerService>()?.Dispose(); } catch { }
+            });
+
+            try
+            {
+                _pinnedNavManager.Dispose();
+            }
+            catch { }
+
+            try
+            {
+                Application.Current.Exit();
+            }
+            catch { }
+
+            Environment.Exit(0);
         };
 
         App.GetService<INavigationService>().Initialize(this);
 
-        _pinnedItemsService = App.GetService<IPinnedItemsService>();
-        _pinnedItemsService.PinStateChanged += (_, _) => DispatcherQueue.TryEnqueue(RefreshPinnedMenuItems);
-        App.Loc.LanguageChanged += (_, _) => DispatcherQueue.TryEnqueue(RefreshPinnedMenuItems);
-        NavView.PaneOpened += (_, _) => RefreshPinnedMenuItems();
-        NavView.PaneClosed += (_, _) => RefreshPinnedMenuItems();
-        RefreshPinnedMenuItems();
+        _pinnedNavManager.Initialize();
+        _pinnedNavManager.RefreshPinnedMenuItems();
 
         InitializeNavigation();
     }
@@ -272,6 +319,11 @@ public sealed partial class ShellWindow : Window
 
     private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
+        if (_pinnedNavManager.IsRebuilding || _pinnedNavManager.IsDragging || (DateTime.UtcNow - _pinnedNavManager.LastDragEndTime) < TimeSpan.FromMilliseconds(700))
+        {
+            return;
+        }
+
         string? tag = (args.InvokedItemContainer as NavigationViewItem)?.Tag?.ToString();
         if (string.IsNullOrEmpty(tag) && args.InvokedItem != null)
         {
@@ -387,9 +439,15 @@ public sealed partial class ShellWindow : Window
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
+        if (_pinnedNavManager.IsRebuilding || _pinnedNavManager.IsDragging || (DateTime.UtcNow - _pinnedNavManager.LastDragEndTime) < TimeSpan.FromMilliseconds(250))
+        {
+            return;
+        }
+
         if (args.SelectedItem is NavigationViewItem item)
         {
-            NavigateToTag(item.Tag?.ToString());
+            string? tag = item.Tag?.ToString();
+            NavigateToTag(tag);
         }
     }
 
@@ -405,7 +463,7 @@ public sealed partial class ShellWindow : Window
             var parts = tag.Split(':');
             if (parts.Length == 3 && long.TryParse(parts[1], out long uid) && int.TryParse(parts[2], out int kind))
             {
-                var pinned = _pinnedItemsService.GetPinnedItems().FirstOrDefault(p => p.Key == tag);
+                var pinned = App.GetService<IPinnedItemsService>()?.GetPinnedItems().FirstOrDefault(p => p.Key == tag);
                 var playlist = new Playlist
                 {
                     Uid = uid,
@@ -423,7 +481,7 @@ public sealed partial class ShellWindow : Window
             var parts = tag.Split(':');
             if (parts.Length == 2 && long.TryParse(parts[1], out long albumId))
             {
-                var pinned = _pinnedItemsService.GetPinnedItems().FirstOrDefault(p => p.Key == tag);
+                var pinned = App.GetService<IPinnedItemsService>()?.GetPinnedItems().FirstOrDefault(p => p.Key == tag);
                 var album = new Album
                 {
                     Id = albumId,
@@ -478,11 +536,46 @@ public sealed partial class ShellWindow : Window
 
                 if (ContentFrame.CurrentSourcePageType != targetPage)
                 {
+                    if (tag == "Playlists")
+                    {
+                        var playlistsVm = App.GetService<PlaylistsViewModel>();
+                        if (playlistsVm != null && playlistsVm.IsDetailOpen)
+                        {
+                            playlistsVm.CloseDetail();
+                        }
+                    }
+                    else if (tag == "Explore")
+                    {
+                        var exploreVm = App.GetService<ExploreViewModel>();
+                        if (exploreVm != null && exploreVm.IsDetailOpen)
+                        {
+                            exploreVm.CloseDetail();
+                        }
+                    }
+
                     ContentFrame.Navigate(targetPage, isUpdatesTarget ? "Updates" : null, new EntranceNavigationTransitionInfo());
                 }
                 else if (isUpdatesTarget && ContentFrame.Content is ProfilePage profilePage)
                 {
                     profilePage.ScrollToUpdates();
+                }
+                else if (tag == "Playlists" && ContentFrame.Content is PlaylistsPage playlistsPage)
+                {
+                    var playlistsVm = App.GetService<PlaylistsViewModel>();
+                    if (playlistsVm != null && playlistsVm.IsDetailOpen)
+                    {
+                        playlistsVm.CloseDetail();
+                        playlistsPage.AnimateToBrowse();
+                    }
+                }
+                else if (tag == "Explore" && ContentFrame.Content is ExplorePage explorePage)
+                {
+                    var exploreVm = App.GetService<ExploreViewModel>();
+                    if (exploreVm != null && exploreVm.IsDetailOpen)
+                    {
+                        exploreVm.CloseDetail();
+                        explorePage.AnimateToBrowse();
+                    }
                 }
             }
             catch (Exception ex)
@@ -610,6 +703,19 @@ public sealed partial class ShellWindow : Window
         NavView.SelectedItem = null;
     }
 
+    public void SelectPinnedItem(string tag)
+    {
+        var item = NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(i => i.Tag?.ToString() == tag);
+        if (item != null)
+        {
+            NavView.SelectedItem = item;
+        }
+        else
+        {
+            NavView.SelectedItem = null;
+        }
+    }
+
     public bool IsPlaylistsPageActive => ContentFrame.CurrentSourcePageType == typeof(PlaylistsPage);
 
     public void EnsurePlaylistsPageVisible()
@@ -626,161 +732,6 @@ public sealed partial class ShellWindow : Window
     {
         bool show = ViewModel.IsAuthenticated;
         BottomPlayerBar.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    private void RefreshPinnedMenuItems()
-    {
-        foreach (var item in _pinnedNavItems)
-        {
-            NavView.MenuItems.Remove(item);
-        }
-        _pinnedNavItems.Clear();
-
-        if (!ViewModel.IsAuthenticated) return;
-
-        var pinned = _pinnedItemsService.GetPinnedItems();
-        if (pinned.Count == 0) return;
-
-        var separator = new NavigationViewItemSeparator();
-        var header = new NavigationViewItemHeader
-        {
-            Content = App.Loc?.CurrentLanguage == "en" ? "Pinned" : "Закреплено",
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            FontSize = 11,
-            Opacity = 0.7
-        };
-
-        NavView.MenuItems.Add(separator);
-        _pinnedNavItems.Add(separator);
-
-        NavView.MenuItems.Add(header);
-        _pinnedNavItems.Add(header);
-
-        bool isExpanded = NavView.IsPaneOpen;
-
-        foreach (var record in pinned)
-        {
-            var navItem = new NavigationViewItem
-            {
-                Tag = record.Key,
-                MinHeight = 44
-            };
-
-            UpdatePinnedNavItemVisual(navItem, record, isExpanded);
-
-            ToolTipService.SetToolTip(navItem, record.Title);
-
-            var flyout = new MenuFlyout();
-            var unpinItem = new MenuFlyoutItem
-            {
-                Text = App.Loc?.CurrentLanguage == "en" ? "Unpin" : "Открепить",
-                Icon = new FontIcon { Glyph = "\uE77A" },
-                Tag = record
-            };
-            unpinItem.Click += (s, e) =>
-            {
-                if (s is FrameworkElement fe && fe.Tag is PinnedItemRecord r)
-                {
-                    if (r.Type == "album")
-                        _pinnedItemsService.UnpinAlbum(r.AlbumId);
-                    else
-                        _pinnedItemsService.UnpinPlaylist(r.Uid, r.Kind);
-                }
-            };
-            flyout.Items.Add(unpinItem);
-            navItem.ContextFlyout = flyout;
-
-            NavView.MenuItems.Add(navItem);
-            _pinnedNavItems.Add(navItem);
-        }
-    }
-
-    private void UpdatePinnedNavItemVisual(NavigationViewItem navItem, PinnedItemRecord record, bool isExpanded)
-    {
-        if (isExpanded)
-        {
-            navItem.Icon = null;
-
-            var grid = new Grid
-            {
-                ColumnSpacing = 10,
-                VerticalAlignment = VerticalAlignment.Center,
-                Height = 36
-            };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            var coverBorder = new Border
-            {
-                Width = 32,
-                Height = 32,
-                CornerRadius = new CornerRadius(5),
-                Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"],
-                VerticalAlignment = VerticalAlignment.Center
-            };
-
-            if (!string.IsNullOrWhiteSpace(record.CoverUrl) && Uri.TryCreate(record.CoverUrl, UriKind.Absolute, out var uri))
-            {
-                coverBorder.Child = new Image
-                {
-                    Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri)
-                    {
-                        DecodePixelWidth = 64,
-                        DecodePixelHeight = 64
-                    },
-                    Stretch = Microsoft.UI.Xaml.Media.Stretch.UniformToFill
-                };
-            }
-            else
-            {
-                coverBorder.Child = new FontIcon
-                {
-                    Glyph = record.Type == "album" ? "\uE93C" : "\uE142",
-                    FontSize = 14,
-                    Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-            }
-
-            var textBlock = new TextBlock
-            {
-                Text = record.Title,
-                VerticalAlignment = VerticalAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                FontSize = 13
-            };
-
-            Grid.SetColumn(coverBorder, 0);
-            Grid.SetColumn(textBlock, 1);
-            grid.Children.Add(coverBorder);
-            grid.Children.Add(textBlock);
-
-            navItem.Content = grid;
-        }
-        else
-        {
-            navItem.Content = null;
-            if (!string.IsNullOrWhiteSpace(record.CoverUrl) && Uri.TryCreate(record.CoverUrl, UriKind.Absolute, out var uri))
-            {
-                navItem.Icon = new ImageIcon
-                {
-                    Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri)
-                    {
-                        DecodePixelWidth = 64,
-                        DecodePixelHeight = 64
-                    }
-                };
-            }
-            else
-            {
-                navItem.Icon = new FontIcon
-                {
-                    Glyph = record.Type == "album" ? "\uE93C" : "\uE142",
-                    FontSize = 14
-                };
-            }
-        }
     }
 
     public bool IsFullScreen => AppWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen;

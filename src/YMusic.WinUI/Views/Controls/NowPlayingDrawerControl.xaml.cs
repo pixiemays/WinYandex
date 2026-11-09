@@ -170,6 +170,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         }
 
         UpdateFullscreenIcon();
+        UpdateTitleBarInsets();
     }
 
     private void UserControl_Unloaded(object sender, RoutedEventArgs e)
@@ -178,6 +179,37 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         LyricsListView.VerticalOffsetChanged -= LyricsListView_VerticalOffsetChanged;
         _programmaticScrollResetTimer?.Stop();
         _smoothCenterTimer?.Stop();
+    }
+
+    public void UpdateTitleBarInsets()
+    {
+        try
+        {
+            if (App.MainWindow?.AppWindow != null)
+            {
+                if (App.MainWindow.IsFullScreen)
+                {
+                    HeaderBarGrid.Margin = new Thickness(0, 0, 0, 0);
+                    return;
+                }
+
+                if (Microsoft.UI.Windowing.AppWindowTitleBar.IsCustomizationSupported() &&
+                    App.MainWindow.AppWindow.TitleBar != null)
+                {
+                    var titleBar = App.MainWindow.AppWindow.TitleBar;
+                    double scale = XamlRoot?.RasterizationScale ?? 1.0;
+                    if (scale > 0 && titleBar.RightInset > 0)
+                    {
+                        double rightMargin = titleBar.RightInset / scale;
+                        HeaderBarGrid.Margin = new Thickness(0, 0, rightMargin, 0);
+                        return;
+                    }
+                }
+            }
+        }
+        catch { }
+
+        HeaderBarGrid.Margin = new Thickness(0, 0, 140, 0);
     }
 
     private void ViewModel_ActiveLyricChanged(object? sender, LyricLine? line)
@@ -268,6 +300,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
     {
         App.MainWindow?.ToggleFullScreen();
         UpdateFullscreenIcon();
+        UpdateTitleBarInsets();
     }
 
     private void UpdateFullscreenIcon()
@@ -281,6 +314,8 @@ public sealed partial class NowPlayingDrawerControl : UserControl
     {
         _currentTransition?.Stop();
         _currentTransition = null;
+
+        UpdateTitleBarInsets();
 
         Visibility = Visibility.Visible;
         IsHitTestVisible = true;
@@ -608,7 +643,13 @@ public sealed partial class NowPlayingDrawerControl : UserControl
             }
         }
 
-        var point = e.GetCurrentPoint(this);
+        var point = e.GetCurrentPoint(HeaderBarGrid);
+        if (point.Position.X < 0 || point.Position.X > HeaderBarGrid.ActualWidth ||
+            point.Position.Y < 0 || point.Position.Y > HeaderBarGrid.ActualHeight)
+        {
+            return;
+        }
+
         if (point.Properties.IsLeftButtonPressed)
         {
             IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
@@ -634,6 +675,13 @@ public sealed partial class NowPlayingDrawerControl : UserControl
                 }
                 parent = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(parent);
             }
+        }
+
+        var point = e.GetPosition(HeaderBarGrid);
+        if (point.X < 0 || point.X > HeaderBarGrid.ActualWidth ||
+            point.Y < 0 || point.Y > HeaderBarGrid.ActualHeight)
+        {
+            return;
         }
 
         if (App.MainWindow?.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)

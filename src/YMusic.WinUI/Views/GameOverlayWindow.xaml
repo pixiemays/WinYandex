@@ -14,7 +14,7 @@
           BorderBrush="#18FFFFFF"
           BorderThickness="1"
           Padding="12,10"
-          Opacity="1">
+          Opacity="0">
         <Grid.RenderTransform>
             <CompositeTransform x:Name="CardTransform" />
         </Grid.RenderTransform>

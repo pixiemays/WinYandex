@@ -69,13 +69,19 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Floating Glass Header Bar & Custom TitleBar Drag Region -->
+            <!-- Floating Glass Header Bar Visual Background (spans 100% width under caption buttons, non-interactive) -->
+            <Border Grid.Row="0"
+                    BorderBrush="#18FFFFFF"
+                    BorderThickness="0,0,0,1"
+                    Background="#25000000"
+                    IsHitTestVisible="False" />
+
+            <!-- Floating Glass Header Bar & Custom TitleBar Drag Region (stops before window caption buttons) -->
             <Grid Grid.Row="0"
                   x:Name="HeaderBarGrid"
-                  Padding="20,0,140,0"
-                  BorderBrush="#18FFFFFF"
-                  BorderThickness="0,0,0,1"
-                  Background="#25000000"
+                  Margin="0,0,140,0"
+                  Padding="20,0,8,0"
+                  Background="Transparent"
                   PointerPressed="HeaderBarGrid_PointerPressed"
                   DoubleTapped="HeaderBarGrid_DoubleTapped">
                 <Grid.ColumnDefinitions>
@@ -185,20 +191,21 @@
             <Grid Grid.Row="1" Margin="32,16,32,24">
                 <Grid.ColumnDefinitions>
                     <!-- Left: HD Cover, Track Details & Controls -->
-                    <ColumnDefinition Width="Auto" MinWidth="380" MaxWidth="460" />
+                    <ColumnDefinition Width="Auto" MinWidth="380" MaxWidth="580" />
                     <!-- Right: Large Karaoke Lyrics Stream -->
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <!-- Left Column: HD Cover & Full Player Controls (Apple Music / Yandex Music aesthetic) -->
                 <Grid Grid.Column="0"
-                      Padding="8,8,24,12"
+                      Padding="8,8,16,12"
                       VerticalAlignment="Center">
-                    <StackPanel Spacing="12" HorizontalAlignment="Center" MaxWidth="360">
+                    <StackPanel Spacing="12" HorizontalAlignment="Left">
                         <!-- HD Album Art with Apple-style rounded rect and ambient glow border -->
                         <Border x:Name="CoverContainer"
                                 Width="340"
                                 Height="340"
+                                HorizontalAlignment="Left"
                                 CornerRadius="18"
                                 BorderThickness="1.5"
                                 BorderBrush="#35FFFFFF"
@@ -261,7 +268,7 @@
                         </StackPanel>
 
                         <!-- Like & Audio Quality Badges -->
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Left" MaxWidth="360">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Left">
                             <Button Command="{x:Bind ViewModel.ToggleLikeCommand}"
                                     Width="36"
                                     Height="36"
@@ -433,6 +440,118 @@
                                 </StackPanel>
                             </Border>
 
+                            <!-- Lyrics Sync Timing Button with Flyout -->
+                            <Button Height="28"
+                                    Padding="8,2"
+                                    CornerRadius="8"
+                                    Background="#20FFFFFF"
+                                    BorderBrush="#25FFFFFF"
+                                    BorderThickness="1"
+                                    VerticalAlignment="Center"
+                                    helpers:CursorHelper.UseHandCursor="True"
+                                    Visibility="{x:Bind ViewModel.HasSyncedLyrics, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.LyricsSyncTooltip, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE823;" FontSize="11" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                                    <TextBlock Text="{x:Bind ViewModel.LyricsOffsetBadgeText, Mode=OneWay}" FontSize="11" FontWeight="SemiBold" Foreground="#E0FFFFFF" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <Flyout Placement="Top">
+                                        <StackPanel Width="290" Spacing="12" Padding="4">
+                                            <StackPanel Spacing="3">
+                                                <TextBlock Text="{x:Bind ViewModel.LyricsSyncTitle, Mode=OneWay}"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="14" />
+                                                <TextBlock Text="{x:Bind ViewModel.LyricsSyncDescription, Mode=OneWay}"
+                                                           FontSize="11.5"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+
+                                            <!-- Current Offset Display Badge -->
+                                            <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                                    CornerRadius="8"
+                                                    Padding="12,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{x:Bind ViewModel.LyricsSyncCurrentOffsetLabel, Mode=OneWay}"
+                                                               FontSize="12"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{x:Bind ViewModel.LyricsOffsetFormattedText, Mode=OneWay}"
+                                                               FontSize="14"
+                                                               FontWeight="Bold"
+                                                               Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                                               VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Slider -->
+                                            <Slider Minimum="-60.0"
+                                                    Maximum="60.0"
+                                                    StepFrequency="0.5"
+                                                    SmallChange="0.5"
+                                                    LargeChange="5.0"
+                                                    Value="{x:Bind ViewModel.LyricsOffsetSeconds, Mode=TwoWay}"
+                                                    helpers:CursorHelper.UseHandCursor="True" />
+
+                                            <!-- Quick Step Buttons -->
+                                            <Grid ColumnSpacing="6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Button Grid.Column="0"
+                                                        Content="-5 с"
+                                                        Command="{x:Bind ViewModel.AdjustLyricsOffsetCommand}"
+                                                        CommandParameter="-5.0"
+                                                        HorizontalAlignment="Stretch"
+                                                        Height="30"
+                                                        Padding="0"
+                                                        helpers:CursorHelper.UseHandCursor="True" />
+                                                <Button Grid.Column="1"
+                                                        Content="-0.5 с"
+                                                        Command="{x:Bind ViewModel.AdjustLyricsOffsetCommand}"
+                                                        CommandParameter="-0.5"
+                                                        HorizontalAlignment="Stretch"
+                                                        Height="30"
+                                                        Padding="0"
+                                                        helpers:CursorHelper.UseHandCursor="True" />
+                                                <Button Grid.Column="2"
+                                                        Content="+0.5 с"
+                                                        Command="{x:Bind ViewModel.AdjustLyricsOffsetCommand}"
+                                                        CommandParameter="0.5"
+                                                        HorizontalAlignment="Stretch"
+                                                        Height="30"
+                                                        Padding="0"
+                                                        helpers:CursorHelper.UseHandCursor="True" />
+                                                <Button Grid.Column="3"
+                                                        Content="+5 с"
+                                                        Command="{x:Bind ViewModel.AdjustLyricsOffsetCommand}"
+                                                        CommandParameter="5.0"
+                                                        HorizontalAlignment="Stretch"
+                                                        Height="30"
+                                                        Padding="0"
+                                                        helpers:CursorHelper.UseHandCursor="True" />
+                                            </Grid>
+
+                                            <!-- Reset Button -->
+                                            <Button Content="{x:Bind ViewModel.LyricsSyncResetText, Mode=OneWay}"
+                                                    Command="{x:Bind ViewModel.ResetLyricsOffsetCommand}"
+                                                    HorizontalAlignment="Stretch"
+                                                    Height="32"
+                                                    helpers:CursorHelper.UseHandCursor="True" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+
                             <!-- FCK Replaced Pill in Drawer -->
                             <Border Height="28"
                                     Padding="8,2"
@@ -465,7 +584,7 @@
                         </StackPanel>
 
                         <!-- Seek Bar & Elapsed Time -->
-                        <StackPanel Spacing="1" Width="340">
+                        <StackPanel Spacing="1" Width="340" HorizontalAlignment="Left">
                             <Slider x:Name="SeekSlider"
                                     Margin="0"
                                     Minimum="0"
@@ -486,10 +605,10 @@
                         </StackPanel>
 
                         <!-- Playback Controls (Shuffle, Previous, Play/Pause, Next, Repeat) -->
-                        <StackPanel Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    Spacing="12"
-                                    Margin="0,2,0,0">
+                        <Grid Width="340" HorizontalAlignment="Left" Margin="0,2,0,0">
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Spacing="12">
                             <!-- Shuffle -->
                             <Button Command="{x:Bind ViewModel.ToggleShuffleCommand}"
                                     Width="36"
@@ -560,73 +679,75 @@
                                           Foreground="{x:Bind ViewModel.RepeatMode, Mode=OneWay, Converter={StaticResource RepeatToAccentBrushConverter}}" />
                             </Button>
                         </StackPanel>
+                    </Grid>
 
                         <!-- Volume Slider Row -->
-                        <StackPanel x:Name="DrawerVolumeContainer"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    Spacing="6"
-                                    Margin="0,2,0,0">
-                            <Button Command="{x:Bind ViewModel.ToggleMuteCommand}"
-                                    Width="32"
-                                    Height="32"
-                                    CornerRadius="16"
-                                    Padding="0"
-                                    HorizontalContentAlignment="Center"
-                                    VerticalContentAlignment="Center"
-                                    Background="Transparent"
-                                    BorderBrush="Transparent"
-                                    helpers:CursorHelper.UseHandCursor="True"
-                                    ToolTipService.ToolTip="{x:Bind ViewModel.MuteTooltip, Mode=OneWay}">
-                                <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" FontSize="14" Foreground="#B0FFFFFF" />
-                            </Button>
-
-                            <Slider x:Name="DrawerVolumeSlider"
-                                    Width="150"
-                                    Minimum="0"
-                                    Maximum="100"
-                                    StepFrequency="1"
-                                    SmallChange="2"
-                                    LargeChange="5"
-                                    IsThumbToolTipEnabled="False"
-                                    Value="{x:Bind ViewModel.Volume, Mode=TwoWay}"
-                                    VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="{x:Bind ViewModel.VolumeTooltip, Mode=OneWay}" />
-
-                            <!-- Interactive Volume Percentage (Clean TextBlock, turns into compact editor on click) -->
-                            <Grid Width="38" Height="24" VerticalAlignment="Center" Margin="2,0,0,0">
-                                <Border x:Name="DrawerVolumePercentageBadge"
-                                        CornerRadius="4"
+                        <Grid Width="340" HorizontalAlignment="Left" Margin="0,2,0,0">
+                            <StackPanel x:Name="DrawerVolumeContainer"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Spacing="6">
+                                <Button Command="{x:Bind ViewModel.ToggleMuteCommand}"
+                                        Width="32"
+                                        Height="32"
+                                        CornerRadius="16"
+                                        Padding="0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
                                         Background="Transparent"
-                                        Padding="2,2"
+                                        BorderBrush="Transparent"
                                         helpers:CursorHelper.UseHandCursor="True"
-                                        ToolTipService.ToolTip="{x:Bind ViewModel.VolumeInputTooltip, Mode=OneWay}"
-                                        PointerPressed="DrawerVolumePercentageBadge_PointerPressed">
-                                    <TextBlock x:Name="DrawerVolumePercentageLabel"
-                                               Text="{x:Bind ViewModel.VolumePercentageText, Mode=OneWay}"
-                                               FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Foreground="#C8FFFFFF"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center" />
-                                </Border>
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.MuteTooltip, Mode=OneWay}">
+                                    <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" FontSize="14" Foreground="#B0FFFFFF" />
+                                </Button>
 
-                                <TextBox x:Name="DrawerVolumePercentageBox"
-                                         Width="38"
-                                         Height="24"
-                                         MinHeight="0"
-                                         Padding="0"
-                                         FontSize="11"
-                                         FontWeight="SemiBold"
-                                         TextAlignment="Center"
-                                         CornerRadius="4"
-                                         VerticalAlignment="Center"
-                                         VerticalContentAlignment="Center"
-                                         Visibility="Collapsed"
-                                         LostFocus="DrawerVolumePercentageBox_LostFocus"
-                                         KeyDown="DrawerVolumePercentageBox_KeyDown" />
-                            </Grid>
-                        </StackPanel>
+                                <Slider x:Name="DrawerVolumeSlider"
+                                        Width="150"
+                                        Minimum="0"
+                                        Maximum="100"
+                                        StepFrequency="1"
+                                        SmallChange="2"
+                                        LargeChange="5"
+                                        IsThumbToolTipEnabled="False"
+                                        Value="{x:Bind ViewModel.Volume, Mode=TwoWay}"
+                                        VerticalAlignment="Center"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.VolumeTooltip, Mode=OneWay}" />
+
+                                <!-- Interactive Volume Percentage (Clean TextBlock, turns into compact editor on click) -->
+                                <Grid Width="38" Height="24" VerticalAlignment="Center" Margin="2,0,0,0">
+                                    <Border x:Name="DrawerVolumePercentageBadge"
+                                            CornerRadius="4"
+                                            Background="Transparent"
+                                            Padding="2,2"
+                                            helpers:CursorHelper.UseHandCursor="True"
+                                            ToolTipService.ToolTip="{x:Bind ViewModel.VolumeInputTooltip, Mode=OneWay}"
+                                            PointerPressed="DrawerVolumePercentageBadge_PointerPressed">
+                                        <TextBlock x:Name="DrawerVolumePercentageLabel"
+                                                   Text="{x:Bind ViewModel.VolumePercentageText, Mode=OneWay}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#C8FFFFFF"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </Border>
+
+                                    <TextBox x:Name="DrawerVolumePercentageBox"
+                                             Width="38"
+                                             Height="24"
+                                             MinHeight="0"
+                                             Padding="0"
+                                             FontSize="11"
+                                             FontWeight="SemiBold"
+                                             TextAlignment="Center"
+                                             CornerRadius="4"
+                                             VerticalAlignment="Center"
+                                             VerticalContentAlignment="Center"
+                                             Visibility="Collapsed"
+                                             LostFocus="DrawerVolumePercentageBox_LostFocus"
+                                             KeyDown="DrawerVolumePercentageBox_KeyDown" />
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Grid>
 

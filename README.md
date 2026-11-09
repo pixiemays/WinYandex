@@ -19,6 +19,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License" /></a>
 </p>
 
+<p align="center">
+  <img src="images/banner.png" alt="WinYandex Banner" width="900" />
+</p>
+
 ---
 
 **WinYandex** is a fast and lightweight desktop player for Yandex Music, built from scratch on the native Windows stack (WinUI 3 + Windows App SDK + C# .NET 8) as an alternative to the Electron web wrapper.
@@ -28,7 +32,7 @@
 </p>
 
 <p align="center">
-  <img src="images/now_playing.png" alt="Now Playing Mode with Synchronized Lyrics" width="850" />
+  <img src="images/now_playing.jpg" alt="Now Playing Mode with Synchronized Lyrics" width="850" />
 </p>
 
 ---
@@ -39,11 +43,14 @@
 * **Sharp Typography** — Inter Variable display font by default, with settings to select official Yandex Sans or system Segoe UI Variable.
 * **Disk Audio Cache (LRU)** — Caches played tracks locally (`%LocalAppData%/YMusic/Cache`) for instant subsequent playback (0 ms) without wasting network bandwidth.
 * **Gapless Playback** — Preloads the audio stream and lyrics for the upcoming track at 80% progress of the current song to eliminate pauses and buffering.
-* **Synchronized Lyrics** — Slide-up Now Playing panel with real-time, line-by-line synchronized lyrics scrolling.
+* **Synchronized Lyrics & Timing Adjustment** — Slide-up Now Playing panel with real-time synchronized lyrics scrolling and manual timing offset adjustment (±0.5s, remembered per track).
+* **In-Game Overlay** — Compact popup overlay displayed directly over full-screen games and apps without needing to Alt+Tab.
+* **OBS Widget** — Built-in local web server (`http://localhost:21337/widget`) to display an animated currently playing track widget on streams.
 * **10-Band Equalizer** — Audio frequency adjustment from 31 Hz to 16 kHz with built-in presets (Rock, Pop, Bass Boost, Acoustic, Vocal, and more).
 * **Vibe (My Wave)** — Personalized infinite music stream with mood filters (*Calm, Energetic, Joyful, Melancholic*) and activity filters (*Work, Relax, Commute, Workout*).
 * **FckCensor** — Automatically picks original uncensored tracks instead of copyright-holder silenced versions.
 * **Discord Rich Presence** — Displays track name, artist, album art, and playback status directly on your Discord profile.
+* **Spotify Playlist Import** — Migrate your favorite Spotify playlists into Yandex Music.
 * **Windows Integration**:
   * System Media Transport Controls (SMTC) — System overlay and full support for hardware multimedia keys and headsets.
   * Taskbar Thumbnail Toolbar — Control playback right from the Windows taskbar thumbnail preview.
@@ -60,9 +67,6 @@ Download the latest `Setup-x64.exe` installer from the [Releases](https://github
 
 ### 2. Portable Version (ZIP)
 Download the portable `win-x64-portable.zip` archive from [Releases](https://github.com/pixiemays/WinYandex/releases/latest), extract to any folder, and run `WinYandex.exe`. The application is fully standalone and requires no extra dependencies.
-
-### 3. MSIX Bundle Package
-To install as a native Windows package, run the `WinYandex_x64.msixbundle` file.
 
 ---
 

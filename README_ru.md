@@ -28,11 +28,19 @@
 **WinYandex** — быстрый и легковесный десктопный плеер для Яндекс Музыки, разработанный с нуля на нативном стеке Windows (WinUI 3 + Windows App SDK + C# .NET 8) взамен веб-оболочки Electron.
 
 <p align="center">
-  <img src="images/explore.png" alt="Главный экран WinYandex" width="850" />
+  <img src="images/now_playing.jpg" alt="Режим «Сейчас играет» с синхронизированными текстами" width="850" />
 </p>
 
 <p align="center">
-  <img src="images/now_playing.jpg" alt="Режим Now Playing с синхронизированными текстами" width="850" />
+  <img src="images/wave.jpg" alt="Моя волна и фильтры настроения" width="850" />
+</p>
+
+<p align="center">
+  <img src="images/playlist.jpg" alt="Просмотр плейлистов с отметками кэша и FCK" width="850" />
+</p>
+
+<p align="center">
+  <img src="images/album.jpg" alt="Просмотр альбомов и организация закреплений" width="850" />
 </p>
 
 ---

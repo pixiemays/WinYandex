@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="images/banner.png" alt="WinYandex Banner" width="900" />
+  <img src="images/banner_en.png" alt="WinYandex Banner" width="900" />
 </p>
 
 ---
@@ -28,11 +28,19 @@
 **WinYandex** is a fast and lightweight desktop player for Yandex Music, built from scratch on the native Windows stack (WinUI 3 + Windows App SDK + C# .NET 8) as an alternative to the Electron web wrapper.
 
 <p align="center">
-  <img src="images/explore.png" alt="WinYandex Explore Screen" width="850" />
+  <img src="images/now_playing.jpg" alt="Now Playing mode with synchronized lyrics" width="850" />
 </p>
 
 <p align="center">
-  <img src="images/now_playing.jpg" alt="Now Playing Mode with Synchronized Lyrics" width="850" />
+  <img src="images/wave.jpg" alt="My Wave infinite stream with mood and activity filters" width="850" />
+</p>
+
+<p align="center">
+  <img src="images/playlist.jpg" alt="Playlist view with cache and anti-censor badges" width="850" />
+</p>
+
+<p align="center">
+  <img src="images/album.jpg" alt="Album view with drag-and-drop pinned playlists" width="850" />
 </p>
 
 ---

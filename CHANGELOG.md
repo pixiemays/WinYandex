@@ -4,7 +4,7 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
-## [0.9.8] — 2026-11-09
+## [0.9.80] — 2026-11-09
 
 ### Manual Karaoke Lyrics Timing & Sync
 * **Individual Lyrics Timing Adjustment**: added a dedicated "Timing" button in the Now Playing drawer for precision alignment between synced lyrics and audio.

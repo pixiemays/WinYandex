@@ -369,11 +369,15 @@ public sealed class UpdateService : IUpdateService
 
         if (parts.Length > 2 && int.TryParse(parts[2], out int p))
         {
-            // If patch is 51, 52, or 60 (two digits where first is 5 or 6), decode the legacy subpatch
-            if (major == 0 && minor == 9 && p >= 50 && p <= 69)
+            // If patch is 50..99 (legacy 2-digit format: 51 -> 5.1, 60 -> 6.0, 72 -> 7.2, 80 -> 8.0), decode it
+            if (major == 0 && minor == 9 && p >= 50 && p <= 99)
             {
                 patch = p / 10;
                 sub = p % 10;
+                if (parts.Length > 3 && int.TryParse(parts[3], out int s))
+                {
+                    sub = sub * 10 + s;
+                }
             }
             else
             {

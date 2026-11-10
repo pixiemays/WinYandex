@@ -111,7 +111,10 @@ public sealed class AppSettings
 
     // Modular UI settings
     [JsonPropertyName("showWaveInNav")]
-    public bool ShowWaveInNav { get; set; } = true;
+    public bool ShowWaveInNav { get; set; } = false;
+
+    [JsonPropertyName("showWaveOnHome")]
+    public bool ShowWaveOnHome { get; set; } = true;
 
     [JsonPropertyName("showLikesInNav")]
     public bool ShowLikesInNav { get; set; } = true;

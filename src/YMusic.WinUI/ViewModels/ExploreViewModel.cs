@@ -87,6 +87,19 @@ public sealed partial class ExploreViewModel : BaseViewModel
     public string EditorialPlaylistsTitle => GetLoc("Explore_PopularPlaylists", Loc?.CurrentLanguage == "en" ? "Popular Playlists" : "Популярные плейлисты");
     public string ChartTitle => GetLoc("Explore_TopChart", Loc?.CurrentLanguage == "en" ? "Top Chart" : "Чарт");
     public string ErrorTitle => Loc?.CurrentLanguage == "en" ? "Explore Error" : "Ошибка";
+    public string WaveOnAirBadgeText => Loc?.CurrentLanguage == "en" ? "ON AIR" : "В ЭФИРЕ";
+
+    public string WaveSubtitleDisplay
+    {
+        get
+        {
+            if (Wave.IsWavePlaying && Wave.CurrentTrack != null)
+            {
+                return $"{Wave.CurrentTrack.Title} — {Wave.CurrentTrack.ArtistNames}";
+            }
+            return Wave.WaveSubtitleText;
+        }
+    }
 
     protected override void OnLanguageChanged()
     {
@@ -97,6 +110,8 @@ public sealed partial class ExploreViewModel : BaseViewModel
         OnPropertyChanged(nameof(EditorialPlaylistsTitle));
         OnPropertyChanged(nameof(ChartTitle));
         OnPropertyChanged(nameof(ErrorTitle));
+        OnPropertyChanged(nameof(WaveOnAirBadgeText));
+        OnPropertyChanged(nameof(WaveSubtitleDisplay));
         OnPropertyChanged(nameof(BackToExploreText));
         OnPropertyChanged(nameof(PlayAllText));
         OnPropertyChanged(nameof(ShuffleText));
@@ -154,12 +169,15 @@ public sealed partial class ExploreViewModel : BaseViewModel
 
     public bool HasLoaded { get; private set; }
 
+    public WaveViewModel Wave { get; }
+    public bool ShowWave => _settingsService.ShowWaveOnHome;
     public bool ShowPersonalPlaylists => _settingsService.ShowPersonalPlaylistsOnHome;
     public bool ShowNewReleases => _settingsService.ShowNewReleasesOnHome;
     public bool ShowEditorialPlaylists => _settingsService.ShowEditorialPlaylistsOnHome;
     public bool ShowChart => _settingsService.ShowChartOnHome;
 
     public ExploreViewModel(
+        WaveViewModel waveViewModel,
         IYandexMusicService musicService,
         IAudioPlayerService audioPlayer,
         ITrackPlaybackCoordinator playbackCoordinator,
@@ -167,12 +185,23 @@ public sealed partial class ExploreViewModel : BaseViewModel
         IPinnedItemsService pinnedItemsService,
         ISettingsService settingsService)
     {
+        Wave = waveViewModel;
         _musicService = musicService;
         _audioPlayer = audioPlayer;
         _playbackCoordinator = playbackCoordinator;
         _credentialStorage = credentialStorage;
         _pinnedItemsService = pinnedItemsService;
         _settingsService = settingsService;
+
+        Wave.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName is nameof(WaveViewModel.IsWavePlaying) or
+                                  nameof(WaveViewModel.CurrentTrack) or
+                                  nameof(WaveViewModel.WaveSubtitleText))
+            {
+                OnPropertyChanged(nameof(WaveSubtitleDisplay));
+            }
+        };
 
         _settingsService.SettingChanged += OnSettingChanged;
         _pinnedItemsService.PinStateChanged += OnPinStateChanged;
@@ -184,11 +213,13 @@ public sealed partial class ExploreViewModel : BaseViewModel
 
     private void OnSettingChanged(object? sender, string propName)
     {
-        if (propName is nameof(ISettingsService.ShowPersonalPlaylistsOnHome) or
+        if (propName is nameof(ISettingsService.ShowWaveOnHome) or
+                       nameof(ISettingsService.ShowPersonalPlaylistsOnHome) or
                        nameof(ISettingsService.ShowNewReleasesOnHome) or
                        nameof(ISettingsService.ShowEditorialPlaylistsOnHome) or
                        nameof(ISettingsService.ShowChartOnHome))
         {
+            OnPropertyChanged(nameof(ShowWave));
             OnPropertyChanged(nameof(ShowPersonalPlaylists));
             OnPropertyChanged(nameof(ShowNewReleases));
             OnPropertyChanged(nameof(ShowEditorialPlaylists));

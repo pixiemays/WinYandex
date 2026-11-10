@@ -91,14 +91,6 @@
                         <FontIcon Glyph="&#xE721;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="NavItemWave"
-                                    Visibility="{x:Bind ViewModel.WaveNavVisibility, Mode=OneWay}"
-                                    Content="{x:Bind ViewModel.NavWaveText, Mode=OneWay}"
-                                    Tag="Wave">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE93E;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
                 <NavigationViewItem x:Name="NavItemLikes"
                                     Visibility="{x:Bind ViewModel.LikesNavVisibility, Mode=OneWay}"
                                     Content="{x:Bind ViewModel.NavLikesText, Mode=OneWay}"

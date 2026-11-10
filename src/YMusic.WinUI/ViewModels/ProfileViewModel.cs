@@ -246,6 +246,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private bool _isShowWaveInNavEnabled = true;
 
     [ObservableProperty]
+    private bool _isShowWaveOnHomeEnabled = true;
+
+    [ObservableProperty]
     private bool _isShowLikesInNavEnabled = true;
 
     [ObservableProperty]
@@ -355,6 +358,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string CompactVolumeDesc => IsRussian ? "Уменьшить ширину слайдера громкости для экономии места" : "Narrower volume slider to save space";
 
     public string HomeModularTitle => IsRussian ? "Главная страница («Главное»)" : "Home Page («Explore»)";
+    public string ShowWaveOnHomeTitle => IsRussian ? "Блок «Моя волна»" : "«My Wave» Hero";
+    public string ShowWaveOnHomeDesc => IsRussian ? "Отображать интерактивный блок Моей волны вверху Главной" : "Show interactive My Wave hero block at the top of Home page";
     public string ShowPersonalPlaylistsTitle => IsRussian ? "Раздел «Собрано для вас»" : "«Made For You» Section";
     public string ShowPersonalPlaylistsDesc => IsRussian ? "Персональные плейлисты дня и умные миксы" : "Daily personal playlists and smart mixes";
     public string ShowNewReleasesTitle => IsRussian ? "Раздел «Новые релизы»" : "«New Releases» Section";
@@ -843,6 +848,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
             IsCompactPlayerVolumeEnabled = _settingsService.CompactPlayerVolume;
 
             IsShowPersonalPlaylistsOnHomeEnabled = _settingsService.ShowPersonalPlaylistsOnHome;
+            IsShowWaveOnHomeEnabled = _settingsService.ShowWaveOnHome;
             IsShowNewReleasesOnHomeEnabled = _settingsService.ShowNewReleasesOnHome;
             IsShowEditorialPlaylistsOnHomeEnabled = _settingsService.ShowEditorialPlaylistsOnHome;
             IsShowChartOnHomeEnabled = _settingsService.ShowChartOnHome;
@@ -1039,6 +1045,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
             else if (propName == nameof(ISettingsService.ShowPersonalPlaylistsOnHome))
             {
                 if (IsShowPersonalPlaylistsOnHomeEnabled != _settingsService.ShowPersonalPlaylistsOnHome) IsShowPersonalPlaylistsOnHomeEnabled = _settingsService.ShowPersonalPlaylistsOnHome;
+            }
+            else if (propName == nameof(ISettingsService.ShowWaveOnHome))
+            {
+                if (IsShowWaveOnHomeEnabled != _settingsService.ShowWaveOnHome) IsShowWaveOnHomeEnabled = _settingsService.ShowWaveOnHome;
             }
             else if (propName == nameof(ISettingsService.ShowNewReleasesOnHome))
             {
@@ -1368,6 +1378,12 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         if (_isInitializingSettings) return;
         _settingsService.ShowWaveInNav = value;
+    }
+
+    partial void OnIsShowWaveOnHomeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.ShowWaveOnHome = value;
     }
 
     partial void OnIsShowLikesInNavEnabledChanged(bool value)
@@ -2120,6 +2136,17 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(ShowQualityDesc));
         OnPropertyChanged(nameof(CompactVolumeTitle));
         OnPropertyChanged(nameof(CompactVolumeDesc));
+        OnPropertyChanged(nameof(HomeModularTitle));
+        OnPropertyChanged(nameof(ShowWaveOnHomeTitle));
+        OnPropertyChanged(nameof(ShowWaveOnHomeDesc));
+        OnPropertyChanged(nameof(ShowPersonalPlaylistsTitle));
+        OnPropertyChanged(nameof(ShowPersonalPlaylistsDesc));
+        OnPropertyChanged(nameof(ShowNewReleasesTitle));
+        OnPropertyChanged(nameof(ShowNewReleasesDesc));
+        OnPropertyChanged(nameof(ShowEditorialPlaylistsTitle));
+        OnPropertyChanged(nameof(ShowEditorialPlaylistsDesc));
+        OnPropertyChanged(nameof(ShowChartTitle));
+        OnPropertyChanged(nameof(ShowChartDesc));
         OnPropertyChanged(nameof(AboutDescText));
         OnPropertyChanged(nameof(GitHubRepoButtonText));
         OnPropertyChanged(nameof(SwitchOnText));

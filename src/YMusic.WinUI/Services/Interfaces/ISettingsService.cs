@@ -44,6 +44,7 @@ public interface ISettingsService
     int GameOverlayPosition { get; set; }
 
     bool ShowWaveInNav { get; set; }
+    bool ShowWaveOnHome { get; set; }
     bool ShowLikesInNav { get; set; }
     bool ShowPlaylistsInNav { get; set; }
     bool ShowSearchInNav { get; set; }

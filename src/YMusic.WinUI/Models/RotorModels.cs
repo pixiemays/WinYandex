@@ -72,4 +72,7 @@ public sealed partial class WavePreset : CommunityToolkit.Mvvm.ComponentModel.Ob
 
     public string GradientStart { get; set; } = "#FF1361";
     public string GradientEnd { get; set; } = "#FFF800";
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private bool _isSelected;
 }

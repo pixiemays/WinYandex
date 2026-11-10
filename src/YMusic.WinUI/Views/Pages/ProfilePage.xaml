@@ -1442,22 +1442,7 @@
                                                       VerticalAlignment="Center" />
                                     </Grid>
 
-                                    <!-- Show Wave in Nav -->
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Spacing="2" Margin="0,0,16,0">
-                                            <TextBlock Text="{x:Bind ViewModel.ShowWaveTitle, Mode=OneWay}" FontSize="12.5" />
-                                            <TextBlock Text="{x:Bind ViewModel.ShowWaveDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                        </StackPanel>
-                                        <ToggleSwitch Grid.Column="1"
-                                                      IsOn="{x:Bind ViewModel.IsShowWaveInNavEnabled, Mode=TwoWay}"
-                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
-                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
-                                                      VerticalAlignment="Center" />
-                                    </Grid>
+
 
                                     <!-- Show Likes in Nav -->
                                     <Grid>
@@ -1582,6 +1567,23 @@
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="{x:Bind ViewModel.HomeModularTitle, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
+
+                                    <!-- Show Wave on Home -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="2" Margin="0,0,16,0">
+                                            <TextBlock Text="{x:Bind ViewModel.ShowWaveOnHomeTitle, Mode=OneWay}" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind ViewModel.ShowWaveOnHomeDesc, Mode=OneWay}" FontSize="11.5" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsOn="{x:Bind ViewModel.IsShowWaveOnHomeEnabled, Mode=TwoWay}"
+                                                      OnContent="{x:Bind ViewModel.SwitchEnabledText, Mode=OneWay}"
+                                                      OffContent="{x:Bind ViewModel.SwitchDisabledText, Mode=OneWay}"
+                                                      VerticalAlignment="Center" />
+                                    </Grid>
 
                                     <!-- Show Personal Playlists -->
                                     <Grid>

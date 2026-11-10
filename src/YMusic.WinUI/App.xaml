@@ -60,6 +60,8 @@
             <converters:BoolToPreSaveBadgeBorderConverter x:Key="BoolToPreSaveBadgeBorderConverter" />
             <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
             <converters:BoolToSegmentBackgroundConverter x:Key="BoolToSegmentBackgroundConverter" />
+            <converters:BoolToPresetBorderBrushConverter x:Key="BoolToPresetBorderBrushConverter" />
+            <converters:BoolToPresetBackgroundBrushConverter x:Key="BoolToPresetBackgroundBrushConverter" />
 
             <Style x:Key="TabPillButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent" />

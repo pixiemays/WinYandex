@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -138,6 +139,7 @@ public sealed partial class ExplorePage : Page
         base.OnNavigatedTo(e);
         _lastPageNavigatedTime = DateTime.UtcNow;
         DetailHeroGrid.Opacity = 1.0;
+        ViewModel.Wave.SyncPlayerState();
 
         if (ViewModel.IsDetailOpen)
         {
@@ -296,9 +298,28 @@ public sealed partial class ExplorePage : Page
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
+        ViewModel.Wave.SyncPlayerState();
         if (!ViewModel.HasLoaded)
         {
             await ViewModel.LoadExploreDataCommand.ExecuteAsync(null);
+        }
+    }
+
+    private void PresetButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag)
+        {
+            var preset = ViewModel.Wave.Presets.FirstOrDefault(p => string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase));
+            if (preset != null)
+            {
+                _ = ViewModel.Wave.StartWaveCommand.ExecuteAsync(preset);
+                return;
+            }
+        }
+
+        if (sender is FrameworkElement fe && fe.DataContext is WavePreset pData)
+        {
+            _ = ViewModel.Wave.StartWaveCommand.ExecuteAsync(pData);
         }
     }
 

@@ -509,7 +509,7 @@ public sealed partial class ShellWindow : Window
         {
             "Explore" => typeof(ExplorePage),
             "Search" => typeof(SearchPage),
-            "Wave" => typeof(WavePage),
+            "Wave" => typeof(ExplorePage),
             "Likes" => typeof(LikedTracksPage),
             "Playlists" => typeof(PlaylistsPage),
             "Account" or "Account:Updates" => ViewModel.IsAuthenticated ? typeof(ProfilePage) : typeof(LoginPage),
@@ -527,7 +527,7 @@ public sealed partial class ShellWindow : Window
                 {
                     "Explore" => NavItemExplore,
                     "Search" => NavItemSearch,
-                    "Wave" => NavItemWave,
+                    "Wave" => NavItemExplore,
                     "Likes" => NavItemLikes,
                     "Playlists" => NavItemPlaylists,
                     "Account" or "Profile" or "Settings" or "Account:Updates" or "Settings:Updates" => NavItemAccount,

@@ -530,6 +530,20 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public bool ShowWaveOnHome
+    {
+        get => _settings.ShowWaveOnHome;
+        set
+        {
+            if (_settings.ShowWaveOnHome != value)
+            {
+                _settings.ShowWaveOnHome = value;
+                Save();
+                NotifyChanged(nameof(ShowWaveOnHome));
+            }
+        }
+    }
+
     public bool ShowLikesInNav
     {
         get => _settings.ShowLikesInNav;

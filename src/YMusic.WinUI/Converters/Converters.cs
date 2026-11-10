@@ -659,3 +659,43 @@ public sealed class HexToBrushConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
 }
+
+public sealed class BoolToPresetBorderBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool b && b)
+        {
+            if (Application.Current.Resources.TryGetValue("AccentFillColorDefaultBrush", out var accent) && accent is Brush ab)
+                return ab;
+            return new SolidColorBrush(Windows.UI.Color.FromArgb(255, 234, 179, 8));
+        }
+
+        if (Application.Current.Resources.TryGetValue("CardStrokeColorDefaultBrush", out var cardStroke) && cardStroke is Brush cb)
+            return cb;
+
+        return new SolidColorBrush(Windows.UI.Color.FromArgb(20, 255, 255, 255));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
+public sealed class BoolToPresetBackgroundBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool b && b)
+        {
+            if (Application.Current.Resources.TryGetValue("SubtleFillColorSecondaryBrush", out var subtle) && subtle is Brush sb)
+                return sb;
+            return new SolidColorBrush(Windows.UI.Color.FromArgb(32, 255, 255, 255));
+        }
+
+        if (Application.Current.Resources.TryGetValue("CardBackgroundFillColorSecondaryBrush", out var cardSec) && cardSec is Brush csb)
+            return csb;
+
+        return new SolidColorBrush(Windows.UI.Color.FromArgb(20, 255, 255, 255));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}

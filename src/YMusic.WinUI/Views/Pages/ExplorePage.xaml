@@ -47,6 +47,160 @@
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
 
+                <!-- SECTION 0: HERO МОЯ ВОЛНА -->
+                <Border Visibility="{x:Bind ViewModel.ShowWave, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                        CornerRadius="16"
+                        Padding="24"
+                        BorderThickness="1"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                    <Grid RowSpacing="18">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Row 0: Identity + Controls -->
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Left: Wave Identity & Status -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                                <Border Width="56" Height="56"
+                                        CornerRadius="28"
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        BorderThickness="1"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                                    <FontIcon Glyph="{x:Bind ViewModel.Wave.SelectedPreset.Glyph, Mode=OneWay}"
+                                              FontSize="26"
+                                              Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                                </Border>
+
+                                <StackPanel VerticalAlignment="Center" Spacing="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind ViewModel.Wave.WaveTitleText, Mode=OneWay}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold" />
+                                        <Border Visibility="{x:Bind ViewModel.Wave.IsWavePlaying, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                                CornerRadius="4"
+                                                Padding="6,2"
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <controls:MiniEqualizerControl IsPlaying="{x:Bind ViewModel.Wave.IsPlaying, Mode=OneWay}" Width="10" Height="10" />
+                                                <TextBlock Text="{x:Bind ViewModel.WaveOnAirBadgeText, Mode=OneWay}"
+                                                           FontSize="10"
+                                                           FontWeight="Bold"
+                                                           Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <TextBlock Text="{x:Bind ViewModel.WaveSubtitleDisplay, Mode=OneWay}"
+                                               FontSize="13"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxWidth="580" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Right: Playback controls -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <!-- Like button -->
+                                <Button Command="{x:Bind ViewModel.Wave.ToggleLikeCommand}"
+                                        Width="40" Height="40"
+                                        Padding="0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        CornerRadius="20"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.Wave.LikeTooltip, Mode=OneWay}">
+                                    <FontIcon Glyph="{x:Bind ViewModel.Wave.LikeGlyph, Mode=OneWay}"
+                                              FontSize="16"
+                                              Foreground="{x:Bind ViewModel.Wave.IsCurrentTrackLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+                                </Button>
+
+                                <!-- Dislike button -->
+                                <Button Command="{x:Bind ViewModel.Wave.SendDislikeAndSkipCommand}"
+                                        Width="40" Height="40"
+                                        Padding="0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        CornerRadius="20"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.Wave.DislikeTooltip, Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE1E0;" FontSize="15" />
+                                </Button>
+
+                                <!-- Next Track button -->
+                                <Button Command="{x:Bind ViewModel.Wave.NextWaveTrackCommand}"
+                                        Width="40" Height="40"
+                                        Padding="0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        CornerRadius="20"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.Wave.NextTrackTooltip, Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE893;" FontSize="16" />
+                                </Button>
+
+                                <!-- Large Play/Pause button -->
+                                <Button Command="{x:Bind ViewModel.Wave.TogglePlayPauseCommand}"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        Width="52" Height="52"
+                                        Padding="0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        CornerRadius="26"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.Wave.PlayPauseTooltip, Mode=OneWay}">
+                                    <FontIcon Glyph="{x:Bind ViewModel.Wave.PlayPauseGlyph, Mode=OneWay}"
+                                              FontSize="22" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Row 1: Mood & Genre Preset Pills -->
+                        <ScrollViewer Grid.Row="1"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      HorizontalScrollMode="Enabled"
+                                      VerticalScrollMode="Disabled">
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.Wave.Presets, Mode=OneWay}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="8" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:WavePreset">
+                                        <Button Click="PresetButton_Click"
+                                                Tag="{x:Bind StationTag}"
+                                                Height="38"
+                                                Padding="14,0"
+                                                CornerRadius="19"
+                                                Background="{x:Bind IsSelected, Mode=OneWay, Converter={StaticResource BoolToPresetBackgroundBrushConverter}}"
+                                                BorderBrush="{x:Bind IsSelected, Mode=OneWay, Converter={StaticResource BoolToPresetBorderBrushConverter}}"
+                                                BorderThickness="1.5"
+                                                helpers:CursorHelper.UseHandCursor="True"
+                                                ToolTipService.ToolTip="{x:Bind Description, Mode=OneWay}">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <FontIcon Glyph="{x:Bind Glyph}" FontSize="13" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                                                <TextBlock Text="{x:Bind Title, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+
                 <!-- SECTION 1: Personal Playlists ("Собираем для вас" / Плейлист дня, etc.) -->
                 <StackPanel Spacing="14" Visibility="{x:Bind ViewModel.ShowPersonalPlaylists, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal" Spacing="8">

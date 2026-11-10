@@ -24,6 +24,17 @@ public sealed partial class WaveViewModel : BaseViewModel
     [ObservableProperty]
     private WavePreset _selectedPreset;
 
+    partial void OnSelectedPresetChanged(WavePreset value)
+    {
+        if (value != null)
+        {
+            foreach (var p in Presets)
+            {
+                p.IsSelected = (p == value || string.Equals(p.StationTag, value.StationTag, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LikeGlyph))]
     [NotifyPropertyChangedFor(nameof(LikeTooltip))]
@@ -80,6 +91,7 @@ public sealed partial class WaveViewModel : BaseViewModel
 
         InitializePresets();
         _selectedPreset = Presets[0];
+        Presets[0].IsSelected = true;
 
         _currentTrack = _audioPlayer.CurrentTrack;
         _isCurrentTrackLiked = _currentTrack != null && _musicService.IsTrackLiked(_currentTrack.Id);

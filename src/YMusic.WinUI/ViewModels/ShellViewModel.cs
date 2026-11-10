@@ -37,6 +37,53 @@ public sealed partial class ShellViewModel : BaseViewModel
     [ObservableProperty]
     private string _updateBannerVersion = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThemePreviewVisibility))]
+    private bool _isThemePreviewModalOpen;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThemePreviewImageSource))]
+    private string _themePreviewImageUrl = string.Empty;
+
+    [ObservableProperty]
+    private string _themePreviewTitle = string.Empty;
+
+    [ObservableProperty]
+    private string _themePreviewAuthor = string.Empty;
+
+    public Microsoft.UI.Xaml.Visibility ThemePreviewVisibility => IsThemePreviewModalOpen
+        ? Microsoft.UI.Xaml.Visibility.Visible
+        : Microsoft.UI.Xaml.Visibility.Collapsed;
+
+    public Microsoft.UI.Xaml.Media.ImageSource? ThemePreviewImageSource
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(ThemePreviewImageUrl) && Uri.TryCreate(ThemePreviewImageUrl, UriKind.Absolute, out var uri))
+            {
+                return new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri);
+            }
+            return null;
+        }
+    }
+
+    [RelayCommand]
+    public void OpenThemePreview(CommunityThemeItem? item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.PreviewUrl)) return;
+        ThemePreviewImageUrl = item.PreviewUrl;
+        ThemePreviewTitle = item.Name;
+        ThemePreviewAuthor = !string.IsNullOrWhiteSpace(item.Author) ? item.Author : "Сообщество";
+        IsThemePreviewModalOpen = true;
+    }
+
+    [RelayCommand]
+    public void CloseThemePreview()
+    {
+        IsThemePreviewModalOpen = false;
+        ThemePreviewImageUrl = string.Empty;
+    }
+
     private bool IsRussian => Loc?.CurrentLanguage != "en";
 
     public string UpdateBannerTitle => IsRussian ? "Доступно обновление" : "Update Available";

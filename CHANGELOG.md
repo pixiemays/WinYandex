@@ -13,6 +13,8 @@ All notable changes to the WinYandex project are documented in this file.
 * **Window Drag-and-Drop Installation**: dragging `.wytheme`, `.zip`, or `.json` files directly onto the WinYandex window automatically extracts and applies the theme with a confirmation toast.
 * **One-Click URL Protocol & File Associations**: registered `winyandex://theme/install?url=...` protocol and `.wytheme` file extension in Windows for friction-free one-click installation from browsers or chat links.
 * **Community Themes Showcase Gallery**: added an in-app community themes showcase in Settings backed by the dedicated [winyandex-themes](https://github.com/pixiemays/winyandex-themes) repository with a collapsible accordion and one-click install.
+* **Full-Window Theme Lightbox Viewer**: clicking theme previews opens an immersive full-window modal viewer with darkened backdrop (closable via click or Esc).
+* **Community Themes Card Polish**: prevented theme description truncation and added direct links to the community themes repository.
 * **One-Click Import & Export**: quick actions in Settings allow exporting active themes into shareable `.wytheme` packages or opening the local themes folder.
 
 ### Privacy & Visual Refinements

@@ -604,6 +604,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string CommunityThemesChevronGlyph => IsCommunityThemesExpanded ? "\uE70E" : "\uE70D";
     public string CommunityThemesToggleText => IsCommunityThemesExpanded ? (IsRussian ? "Свернуть" : "Collapse") : (IsRussian ? "Развернуть" : "Expand");
     public string CommunityThemesToggleTooltip => IsCommunityThemesExpanded ? (IsRussian ? "Скрыть витрину тем" : "Hide themes showcase") : (IsRussian ? "Показать витрину тем" : "Show themes showcase");
+    public string CommunityThemesCatalogButtonText => IsRussian ? "Каталог тем" : "Themes Catalog";
+    public string CommunityThemesCatalogTooltip => IsRussian ? "Открыть каталог winyandex-themes на GitHub" : "Open winyandex-themes repository on GitHub";
     public bool ShowNoCommunityThemesMessage => IsCommunityThemesExpanded && CommunityThemes.Count == 0 && !IsLoadingCommunityThemes;
     public string NoCommunityThemesText => IsRussian
         ? "Каталог тем сообщества пуст или обновляется. Нажмите «Обновить» или добавьте тему через «Импорт...»."
@@ -2043,6 +2045,14 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(MinimizeToTrayDesc));
         OnPropertyChanged(nameof(TrackNotificationsTitle));
         OnPropertyChanged(nameof(TrackNotificationsDesc));
+        OnPropertyChanged(nameof(CustomThemesSectionTitle));
+        OnPropertyChanged(nameof(CustomThemesSectionDesc));
+        OnPropertyChanged(nameof(CommunityThemesTitle));
+        OnPropertyChanged(nameof(CommunityThemesDesc));
+        OnPropertyChanged(nameof(CommunityThemesCatalogButtonText));
+        OnPropertyChanged(nameof(CommunityThemesCatalogTooltip));
+        OnPropertyChanged(nameof(CommunityThemesToggleText));
+        OnPropertyChanged(nameof(CommunityThemesToggleTooltip));
         OnPropertyChanged(nameof(AppearanceSectionTitle));
         OnPropertyChanged(nameof(AppearanceSectionDesc));
         OnPropertyChanged(nameof(ThemeTitle));

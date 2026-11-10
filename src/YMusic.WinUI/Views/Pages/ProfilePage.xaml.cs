@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -192,5 +193,59 @@ public sealed partial class ProfilePage : Page
                 ViewModel.InstallCommunityThemeCommand.Execute(item);
             }
         }
+    }
+
+    private async void OpenCommunityThemeLink_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem)
+        {
+            var item = (elem.Tag as YMusic.WinUI.Models.CommunityThemeItem) ?? (elem.DataContext as YMusic.WinUI.Models.CommunityThemeItem);
+            if (item != null)
+            {
+                string url = !string.IsNullOrWhiteSpace(item.ThemePageUrl)
+                    ? item.ThemePageUrl
+                    : (!string.IsNullOrWhiteSpace(item.PreviewUrl) ? item.PreviewUrl : "https://github.com/pixiemays/winyandex-themes");
+                try
+                {
+                    await Windows.System.Launcher.LaunchUriAsync(new Uri(url));
+                }
+                catch { }
+            }
+        }
+    }
+
+    private void PreviewImage_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem)
+        {
+            var item = (elem.Tag as YMusic.WinUI.Models.CommunityThemeItem) ?? (elem.DataContext as YMusic.WinUI.Models.CommunityThemeItem);
+            if (item != null && !string.IsNullOrWhiteSpace(item.PreviewUrl))
+            {
+                var shellVm = App.GetService<ShellViewModel>();
+                shellVm.OpenThemePreview(item);
+            }
+        }
+    }
+
+    private void OpenPreviewModal_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem)
+        {
+            var item = (elem.Tag as YMusic.WinUI.Models.CommunityThemeItem) ?? (elem.DataContext as YMusic.WinUI.Models.CommunityThemeItem);
+            if (item != null && !string.IsNullOrWhiteSpace(item.PreviewUrl))
+            {
+                var shellVm = App.GetService<ShellViewModel>();
+                shellVm.OpenThemePreview(item);
+            }
+        }
+    }
+
+    private async void OpenCommunityCatalog_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        try
+        {
+            await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/pixiemays/winyandex-themes"));
+        }
+        catch { }
     }
 }

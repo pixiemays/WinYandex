@@ -55,6 +55,12 @@ public sealed partial class ShellWindow : Window
             {
                 if (e.Key == Windows.System.VirtualKey.Escape)
                 {
+                    if (ViewModel.IsThemePreviewModalOpen)
+                    {
+                        ViewModel.CloseThemePreview();
+                        e.Handled = true;
+                        return;
+                    }
                     if (_pinnedNavManager.IsDragging)
                     {
                         _pinnedNavManager.CancelDrag();
@@ -877,5 +883,15 @@ public sealed partial class ShellWindow : Window
                 System.Diagnostics.Debug.WriteLine($"[ShellWindow] SetCustomBackground error: {ex.Message}");
             }
         });
+    }
+
+    private void ThemePreviewBackdrop_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        ViewModel.CloseThemePreview();
+    }
+
+    private void CloseThemePreview_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.CloseThemePreview();
     }
 }

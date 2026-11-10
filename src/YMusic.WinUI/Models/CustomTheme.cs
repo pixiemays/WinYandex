@@ -154,4 +154,16 @@ public sealed partial class CommunityThemeItem : ObservableObject
 
     [JsonIgnore]
     public bool CanAction => !IsActive && !IsInstalling;
+
+    [JsonIgnore]
+    public bool HasPreview => !string.IsNullOrWhiteSpace(PreviewUrl);
+
+    [JsonIgnore]
+    public string ThemePageUrl => $"https://github.com/pixiemays/winyandex-themes/tree/main/themes/{Id}";
+
+    [JsonIgnore]
+    public string PreviewTooltip => "Нажмите для полноэкранного просмотра темы";
+
+    [JsonIgnore]
+    public string OpenLinkTooltip => "Открыть страницу темы на GitHub";
 }

@@ -169,6 +169,66 @@
                                           Grid.RowSpan="3"
                                           x:Name="NowPlayingDrawer" />
 
+        <!-- Full-Window Theme Preview Lightbox Viewer -->
+        <Grid Grid.Row="0"
+              Grid.RowSpan="3"
+              x:Name="ThemePreviewLightbox"
+              Visibility="{x:Bind ViewModel.ThemePreviewVisibility, Mode=OneWay}"
+              Canvas.ZIndex="99998">
+            
+            <!-- Dark Dimmer Backdrop with click to dismiss -->
+            <Border Background="#E608080A"
+                    Tapped="ThemePreviewBackdrop_Tapped" />
+
+            <!-- Viewer Container with margins around window borders -->
+            <Grid Margin="56,36,56,44"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Header: Theme Info & Close Button -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xEC05;" FontSize="14" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                        <TextBlock Text="{x:Bind ViewModel.ThemePreviewTitle, Mode=OneWay}"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   Foreground="White" />
+                        <TextBlock Text="•" FontSize="13" Foreground="#80FFFFFF" VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Bind ViewModel.ThemePreviewAuthor, Mode=OneWay}"
+                                   FontSize="13"
+                                   Foreground="#B0FFFFFF"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Button HorizontalAlignment="Right"
+                            Padding="8"
+                            CornerRadius="20"
+                            Background="#30FFFFFF"
+                            BorderThickness="0"
+                            Click="CloseThemePreview_Click"
+                            ToolTipService.ToolTip="Закрыть (Esc)">
+                        <FontIcon Glyph="&#xE711;" FontSize="12" Foreground="White" />
+                    </Button>
+                </Grid>
+
+                <!-- Screenshot Box with Rounded Corners and Subtle Frame -->
+                <Border Grid.Row="1"
+                        CornerRadius="10"
+                        BorderBrush="#40FFFFFF"
+                        BorderThickness="1"
+                        Background="#10FFFFFF">
+                    <Image Source="{x:Bind ViewModel.ThemePreviewImageSource, Mode=OneWay}"
+                           Stretch="Uniform"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+        </Grid>
+
         <!-- Global Toast Notification Pill -->
         <Border Grid.Row="0"
                 Grid.RowSpan="3"

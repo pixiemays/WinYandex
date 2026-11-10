@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.ApplicationModel.DataTransfer;
 using YMusic.WinUI.Helpers;
 using YMusic.WinUI.Models;
@@ -294,6 +295,7 @@ public sealed partial class ShellWindow : Window
         _pinnedNavManager.Initialize();
         _pinnedNavManager.RefreshPinnedMenuItems();
 
+        SetupThemeDragAndDrop();
         InitializeNavigation();
     }
 
@@ -787,5 +789,93 @@ public sealed partial class ShellWindow : Window
         AppTitleBar.Opacity = 1.0;
         AppTitleBar.IsHitTestVisible = true;
         UpdateTitleBarButtonColors(false);
+    }
+
+    private void SetupThemeDragAndDrop()
+    {
+        RootGrid.DragOver += (s, e) =>
+        {
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                e.AcceptedOperation = DataPackageOperation.Copy;
+                e.DragUIOverride.Caption = "Установить тему в WinYandex";
+                e.DragUIOverride.IsCaptionVisible = true;
+                e.DragUIOverride.IsContentVisible = true;
+            }
+        };
+
+        RootGrid.Drop += async (s, e) =>
+        {
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                var def = e.GetDeferral();
+                try
+                {
+                    var items = await e.DataView.GetStorageItemsAsync();
+                    foreach (var item in items)
+                    {
+                        if (item is Windows.Storage.StorageFile file)
+                        {
+                            string ext = System.IO.Path.GetExtension(file.Path).ToLowerInvariant();
+                            if (ext is ".wytheme" or ".zip" or ".json")
+                            {
+                                var customThemeService = App.GetService<ICustomThemeService>();
+                                if (customThemeService != null)
+                                {
+                                    var imported = await customThemeService.ImportThemeFileAsync(file.Path);
+                                    if (imported != null)
+                                    {
+                                        var themeService = App.GetService<IThemeService>();
+                                        themeService?.ApplyTheme($"custom:{imported.Id}");
+                                        ViewModel.PlayerBar.ShowToast($"Тема «{imported.Name}» установлена и применена!");
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ShellWindow] DragAndDrop error: {ex.Message}");
+                }
+                finally
+                {
+                    def.Complete();
+                }
+            }
+        };
+    }
+
+    public void SetCustomBackground(string? imagePath, double backgroundOpacity, Windows.UI.Color? baseColor)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(imagePath) && System.IO.File.Exists(imagePath))
+                {
+                    CustomBackgroundImage.Source = new BitmapImage(new Uri(imagePath));
+
+                    double opacity = Math.Clamp(backgroundOpacity, 0.05, 1.0);
+                    CustomBackgroundImage.Opacity = opacity;
+
+                    var tint = baseColor ?? Windows.UI.Color.FromArgb(255, 18, 18, 21);
+                    byte dimmerAlpha = (byte)Math.Clamp((int)(220 - (1.0 - opacity) * 80), 90, 245);
+                    CustomBackgroundDimmer.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(dimmerAlpha, tint.R, tint.G, tint.B));
+
+                    CustomBackgroundLayer.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    CustomBackgroundLayer.Visibility = Visibility.Collapsed;
+                    CustomBackgroundImage.Source = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ShellWindow] SetCustomBackground error: {ex.Message}");
+            }
+        });
     }
 }

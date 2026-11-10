@@ -136,6 +136,7 @@ public static class Program
                 {
                     var trayService = App.GetService<ITrayNotificationService>();
                     trayService?.RestoreWindow();
+                    App.HandleAppActivation(args);
                 }
                 catch (Exception ex)
                 {

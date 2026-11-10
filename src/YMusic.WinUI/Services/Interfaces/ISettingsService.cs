@@ -19,6 +19,7 @@ public interface ISettingsService
     bool SloplessShowTrackLabels { get; set; }
     bool SloplessShowArtistLabels { get; set; }
     string AppTheme { get; set; }
+    bool IsCommunityThemesExpanded { get; set; }
     string AccentColorHex { get; set; }
     string BackdropKind { get; set; }
     string AppFont { get; set; }

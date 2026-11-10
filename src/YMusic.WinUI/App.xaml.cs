@@ -73,6 +73,7 @@ public partial class App : Application
         services.AddSingleton<IUpdateService, UpdateService>();
         services.AddSingleton<ISpotifyImportService, SpotifyImportService>();
         services.AddSingleton<IGameOverlayService, GameOverlayService>();
+        services.AddSingleton<ICustomThemeService, CustomThemeService>();
         services.AddSingleton<IThemeService, ThemeService>();
 
         // ViewModels
@@ -136,6 +137,9 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        var customThemeService = GetService<ICustomThemeService>();
+        customThemeService?.Initialize();
+
         var themeService = GetService<IThemeService>();
         themeService?.PreInitializeResources();
 
@@ -149,5 +153,101 @@ public partial class App : Application
         GetService<IObsOverlayService>()?.Initialize();
         GetService<IGameOverlayService>()?.Initialize();
         UpdateService.CleanOldUpdates();
+
+        try
+        {
+            var appArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
+            HandleAppActivation(appArgs);
+        }
+        catch { }
+    }
+
+    public static void HandleAppActivation(Microsoft.Windows.AppLifecycle.AppActivationArguments args)
+    {
+        try
+        {
+            var customThemeService = GetService<ICustomThemeService>();
+
+            if (args.Kind == Microsoft.Windows.AppLifecycle.ExtendedActivationKind.Protocol)
+            {
+                if (args.Data is Windows.ApplicationModel.Activation.IProtocolActivatedEventArgs proto)
+                {
+                    customThemeService?.HandleActivation(proto.Uri.AbsoluteUri);
+                    return;
+                }
+            }
+            else if (args.Kind == Microsoft.Windows.AppLifecycle.ExtendedActivationKind.File)
+            {
+                if (args.Data is Windows.ApplicationModel.Activation.IFileActivatedEventArgs fileArgs && fileArgs.Files.Count > 0)
+                {
+                    customThemeService?.HandleActivation(fileArgs.Files[0].Path);
+                    return;
+                }
+            }
+            else if (args.Kind.ToString() == "CommandLineLaunch")
+            {
+                if (args.Data != null)
+                {
+                    var opProp = args.Data.GetType().GetProperty("Operation");
+                    var op = opProp?.GetValue(args.Data);
+                    var argsProp = op?.GetType().GetProperty("Arguments");
+                    string? rawArgs = argsProp?.GetValue(op) as string;
+                    if (!string.IsNullOrWhiteSpace(rawArgs))
+                    {
+                        string[] parts = ParseCommandLine(rawArgs);
+                        foreach (var part in parts)
+                        {
+                            if (part.StartsWith("winyandex://", StringComparison.OrdinalIgnoreCase) ||
+                                part.EndsWith(".wytheme", StringComparison.OrdinalIgnoreCase) ||
+                                part.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                            {
+                                customThemeService?.HandleActivation(part);
+                                return;
+                            }
+                        }
+                        customThemeService?.HandleActivation(rawArgs);
+                        return;
+                    }
+                }
+            }
+            else if (args.Kind == Microsoft.Windows.AppLifecycle.ExtendedActivationKind.Launch)
+            {
+                if (args.Data is Windows.ApplicationModel.Activation.ILaunchActivatedEventArgs launchArgs && !string.IsNullOrWhiteSpace(launchArgs.Arguments))
+                {
+                    customThemeService?.HandleActivation(launchArgs.Arguments);
+                    return;
+                }
+            }
+
+            // Fallback: check Environment.GetCommandLineArgs
+            var envArgs = Environment.GetCommandLineArgs();
+            for (int i = 1; i < envArgs.Length; i++)
+            {
+                string arg = envArgs[i];
+                if (arg.StartsWith("winyandex://", StringComparison.OrdinalIgnoreCase) ||
+                    arg.EndsWith(".wytheme", StringComparison.OrdinalIgnoreCase) ||
+                    arg.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                {
+                    customThemeService?.HandleActivation(arg);
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[App] HandleAppActivation error: {ex.Message}");
+        }
+    }
+
+    private static string[] ParseCommandLine(string cmdLine)
+    {
+        if (string.IsNullOrWhiteSpace(cmdLine)) return Array.Empty<string>();
+        var matches = System.Text.RegularExpressions.Regex.Matches(cmdLine, @"[\""].+?[\""]|[^ ]+");
+        var list = new List<string>();
+        foreach (System.Text.RegularExpressions.Match m in matches)
+        {
+            list.Add(m.Value.Trim('"'));
+        }
+        return list.ToArray();
     }
 }

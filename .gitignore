@@ -38,3 +38,11 @@ BundleArtifacts/
 scratch/
 profile_cache.json
 settings.json
+
+# Mobile local config and untracked docs
+local.properties
+mobile/**/*.md
+mobile/*.md
+mobile/**/.gradle/
+mobile/**/build/
+

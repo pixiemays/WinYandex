@@ -1,10 +1,14 @@
 #nullable enable
 
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Controls;
@@ -38,6 +42,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private readonly IUpdateService _updateService;
     private readonly IGameOverlayService _gameOverlayService;
     private readonly IThemeService _themeService;
+    private readonly ICustomThemeService _customThemeService;
 
     private readonly string _appDataDir;
     private readonly string _profileCachePath;
@@ -282,6 +287,20 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public ObservableCollection<string> QualityOptions { get; } = new();
     public ObservableCollection<string> GameOverlayPositionOptions { get; } = new();
     public ObservableCollection<string> ThemeOptions { get; } = new();
+    private readonly List<string> _themeKeys = new();
+    public ObservableCollection<CommunityThemeItem> CommunityThemes { get; } = new();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowNoCommunityThemesMessage))]
+    private bool _isLoadingCommunityThemes;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CommunityThemesChevronGlyph))]
+    [NotifyPropertyChangedFor(nameof(CommunityThemesToggleText))]
+    [NotifyPropertyChangedFor(nameof(CommunityThemesToggleTooltip))]
+    [NotifyPropertyChangedFor(nameof(ShowNoCommunityThemesMessage))]
+    private bool _isCommunityThemesExpanded;
+
     public ObservableCollection<string> BackdropOptions { get; } = new();
     public ObservableCollection<string> FontOptions { get; } = new();
     public ObservableCollection<string> CacheLimitOptions { get; } = new();
@@ -573,6 +592,22 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string CustomHexPlaceholder => "#FFEAB308";
     public string ApplyHexButtonText => IsRussian ? "Применить" : "Apply";
     public string CustomColorTitle => IsRussian ? "Свой HEX-код цвета" : "Custom HEX Color Code";
+    public string CustomThemesSectionTitle => IsRussian ? "Кастомные темы оформления" : "Custom Themes";
+    public string CustomThemesSectionDesc => IsRussian ? "Поддержка пакетов .wytheme и .json со своими цветами и фоновыми обоями (Hot-Reload)" : "Support for .wytheme & .json theme packs with custom surface colors and background wallpapers";
+    public string OpenThemesFolderButtonText => IsRussian ? "Папка тем" : "Themes Folder";
+    public string ImportThemeButtonText => IsRussian ? "Импорт..." : "Import...";
+    public string ExportThemeButtonText => IsRussian ? "Экспорт..." : "Export...";
+    public string CommunityThemesTitle => IsRussian ? "Темы сообщества" : "Community Themes";
+    public string CommunityThemesDesc => IsRussian ? "Коллекция готовых тем оформления. Установка в один клик." : "Curated themes created by the community. One-click install.";
+    public string InstallThemeButtonText => IsRussian ? "Установить" : "Install";
+    public string InstalledThemeButtonText => IsRussian ? "Установлено" : "Installed";
+    public string CommunityThemesChevronGlyph => IsCommunityThemesExpanded ? "\uE70E" : "\uE70D";
+    public string CommunityThemesToggleText => IsCommunityThemesExpanded ? (IsRussian ? "Свернуть" : "Collapse") : (IsRussian ? "Развернуть" : "Expand");
+    public string CommunityThemesToggleTooltip => IsCommunityThemesExpanded ? (IsRussian ? "Скрыть витрину тем" : "Hide themes showcase") : (IsRussian ? "Показать витрину тем" : "Show themes showcase");
+    public bool ShowNoCommunityThemesMessage => IsCommunityThemesExpanded && CommunityThemes.Count == 0 && !IsLoadingCommunityThemes;
+    public string NoCommunityThemesText => IsRussian
+        ? "Каталог тем сообщества пуст или обновляется. Нажмите «Обновить» или добавьте тему через «Импорт...»."
+        : "Community themes catalog is empty. Click \"Refresh\" or use \"Import...\" to add custom themes.";
 
     public string FontTitle => IsRussian ? "Шрифт интерфейса" : "UI Typography Font";
     public string FontDesc => IsRussian ? "Рекомендуемый Inter, системный Segoe UI или Yandex Sans" : "Recommended Inter, system Segoe UI, or signature Yandex Sans";
@@ -636,7 +671,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
         IAudioCacheService audioCacheService,
         IUpdateService updateService,
         IGameOverlayService gameOverlayService,
-        IThemeService themeService)
+        IThemeService themeService,
+        ICustomThemeService customThemeService)
     {
         _musicService = musicService;
         _credentialStorage = credentialStorage;
@@ -651,6 +687,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _updateService = updateService;
         _gameOverlayService = gameOverlayService;
         _themeService = themeService;
+        _customThemeService = customThemeService;
+        _customThemeService.ThemesChanged += (s, e) => RefreshThemeOptions();
+        _themeService.ThemeChanged += (_, _) => RunOnUi(UpdateCommunityThemesState);
 
         _appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic");
         AppDataPath = _appDataDir;
@@ -671,6 +710,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
         _settingsService.SettingChanged += OnSettingChanged;
         _equalizerService.EqualizerChanged += OnEqualizerServiceChanged;
         _audioCacheService.CacheUpdated += (_, _) => RunOnUi(CalculateCacheSize);
+        _ = LoadCommunityThemesAsync();
     }
 
     public async Task InitializeAsync()
@@ -685,6 +725,15 @@ public sealed partial class ProfileViewModel : BaseViewModel
         {
             await RefreshProfileAsync();
             CalculateCacheSize();
+
+            if (CommunityThemes.Count == 0)
+            {
+                _ = LoadCommunityThemesAsync();
+            }
+            else
+            {
+                UpdateCommunityThemesState();
+            }
         }
         finally
         {
@@ -755,15 +804,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 _ => 1
             };
 
-            SelectedThemeIndex = _settingsService.AppTheme switch
-            {
-                "OLED" => 1,
-                "Midnight" => 2,
-                "Sepia" => 3,
-                "Light" => 4,
-                "Default" => 5,
-                _ => 0 // Dark default
-            };
+            RefreshThemeOptionsInternal();
 
             SelectedBackdropIndex = _settingsService.BackdropKind switch
             {
@@ -812,6 +853,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 AvailablePresets.Add(preset.Name);
             }
             SelectedEqualizerPreset = _equalizerService.CurrentPresetName;
+            IsCommunityThemesExpanded = _settingsService.IsCommunityThemesExpanded;
         }
         finally
         {
@@ -1007,6 +1049,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
             else if (propName == nameof(ISettingsService.ShowChartOnHome))
             {
                 if (IsShowChartOnHomeEnabled != _settingsService.ShowChartOnHome) IsShowChartOnHomeEnabled = _settingsService.ShowChartOnHome;
+            }
+            else if (propName == nameof(ISettingsService.IsCommunityThemesExpanded))
+            {
+                if (IsCommunityThemesExpanded != _settingsService.IsCommunityThemesExpanded) IsCommunityThemesExpanded = _settingsService.IsCommunityThemesExpanded;
             }
         });
     }
@@ -1231,16 +1277,13 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         if (_isInitializingSettings) return;
 
-        string theme = value switch
+        if (value >= 0 && value < _themeKeys.Count)
         {
-            1 => "OLED",
-            2 => "Midnight",
-            3 => "Sepia",
-            4 => "Light",
-            5 => "Default",
-            _ => "Dark"
-        };
-        _themeService.ApplyTheme(theme);
+            string theme = _themeKeys[value];
+            _themeService.ApplyTheme(theme);
+            CurrentAccentHex = _settingsService.AccentColorHex;
+            CustomHexInput = _settingsService.AccentColorHex;
+        }
     }
 
     partial void OnSelectedBackdropIndexChanged(int value)
@@ -1365,6 +1408,12 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         if (_isInitializingSettings) return;
         _settingsService.CompactPlayerVolume = value;
+    }
+
+    partial void OnIsCommunityThemesExpandedChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.IsCommunityThemesExpanded = value;
     }
 
     partial void OnIsShowPersonalPlaylistsOnHomeEnabledChanged(bool value)
@@ -2108,27 +2157,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
             }
             SelectedQualityIndex = qIdx;
 
-            int tIdx = SelectedThemeIndex;
-            ThemeOptions.Clear();
-            if (IsRussian)
-            {
-                ThemeOptions.Add("Тёмная классическая (Dark)");
-                ThemeOptions.Add("OLED (Абсолютно чёрный)");
-                ThemeOptions.Add("Глубокая полночь (Midnight)");
-                ThemeOptions.Add("Тёплый графит (Sepia)");
-                ThemeOptions.Add("Светлая тема (Light)");
-                ThemeOptions.Add("Как в системе (Default)");
-            }
-            else
-            {
-                ThemeOptions.Add("Classic Dark");
-                ThemeOptions.Add("OLED Pure Black");
-                ThemeOptions.Add("Deep Midnight");
-                ThemeOptions.Add("Warm Sepia");
-                ThemeOptions.Add("Light Mode");
-                ThemeOptions.Add("System Default");
-            }
-            SelectedThemeIndex = tIdx;
+            RefreshThemeOptionsInternal();
 
             int bIdx = SelectedBackdropIndex;
             BackdropOptions.Clear();
@@ -2320,5 +2349,220 @@ public sealed partial class ProfileViewModel : BaseViewModel
     {
         HasNotification = false;
         NotificationMessage = null;
+    }
+
+    public void RefreshThemeOptions()
+    {
+        RunOnUi(RefreshThemeOptionsInternal);
+    }
+
+    private void RefreshThemeOptionsInternal()
+    {
+        _isInitializingSettings = true;
+        try
+        {
+            _themeKeys.Clear();
+            ThemeOptions.Clear();
+
+            if (IsRussian)
+            {
+                ThemeOptions.Add("Тёмная классическая (Dark)");
+                ThemeOptions.Add("OLED (Абсолютно чёрный)");
+                ThemeOptions.Add("Глубокая полночь (Midnight)");
+                ThemeOptions.Add("Тёплый графит (Sepia)");
+                ThemeOptions.Add("Светлая тема (Light)");
+                ThemeOptions.Add("Как в системе (Default)");
+            }
+            else
+            {
+                ThemeOptions.Add("Classic Dark");
+                ThemeOptions.Add("OLED Pure Black");
+                ThemeOptions.Add("Deep Midnight");
+                ThemeOptions.Add("Warm Sepia");
+                ThemeOptions.Add("Light Mode");
+                ThemeOptions.Add("System Default");
+            }
+            _themeKeys.AddRange(new[] { "Dark", "OLED", "Midnight", "Sepia", "Light", "Default" });
+
+            var customThemes = _customThemeService.Themes;
+            foreach (var ct in customThemes)
+            {
+                string authorPart = string.IsNullOrWhiteSpace(ct.Author)
+                    ? string.Empty
+                    : (IsRussian ? $" (от {ct.Author})" : $" (by {ct.Author})");
+                string label = $"✦ {ct.Name}{authorPart}";
+                ThemeOptions.Add(label);
+                _themeKeys.Add($"custom:{ct.Id}");
+            }
+
+            string current = _settingsService.AppTheme;
+            int match = _themeKeys.FindIndex(k => k.Equals(current, StringComparison.OrdinalIgnoreCase) ||
+                (current.StartsWith("custom:") && k.Equals(current, StringComparison.OrdinalIgnoreCase)) ||
+                (!current.StartsWith("custom:") && k.Equals($"custom:{current}", StringComparison.OrdinalIgnoreCase)));
+
+            if (match >= 0)
+            {
+                SelectedThemeIndex = match;
+            }
+
+            UpdateCommunityThemesState();
+        }
+        finally
+        {
+            _isInitializingSettings = false;
+        }
+    }
+
+    public void UpdateCommunityThemesState()
+    {
+        string currentTheme = _settingsService.AppTheme;
+        string activeCustomId = currentTheme.StartsWith("custom:", StringComparison.OrdinalIgnoreCase)
+            ? currentTheme.Substring("custom:".Length).Trim()
+            : currentTheme.Trim();
+
+        foreach (var item in CommunityThemes)
+        {
+            item.IsInstalled = _customThemeService.Themes.Any(t => t.Id.Equals(item.Id, StringComparison.OrdinalIgnoreCase));
+            item.IsActive = item.IsInstalled && activeCustomId.Equals(item.Id, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [RelayCommand]
+    private void OpenThemesFolder()
+    {
+        _customThemeService.OpenThemesFolder();
+    }
+
+    [RelayCommand]
+    private async Task ImportThemeAsync()
+    {
+        try
+        {
+            var picker = new Windows.Storage.Pickers.FileOpenPicker();
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads;
+            picker.FileTypeFilter.Add(".wytheme");
+            picker.FileTypeFilter.Add(".zip");
+            picker.FileTypeFilter.Add(".json");
+
+            if (App.MainWindow is ShellWindow shell)
+            {
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(shell));
+            }
+
+            var file = await picker.PickSingleFileAsync();
+            if (file != null)
+            {
+                var imported = await _customThemeService.ImportThemeFileAsync(file.Path);
+                if (imported != null)
+                {
+                    _themeService.ApplyTheme($"custom:{imported.Id}");
+                    RefreshThemeOptions();
+                    ShowNotification(IsRussian ? $"Тема «{imported.Name}» успешно импортирована!" : $"Theme \"{imported.Name}\" imported successfully!");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ImportTheme] Error: {ex.Message}");
+            ShowNotification(IsRussian ? "Не удалось импортировать тему" : "Failed to import theme");
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExportCurrentThemeAsync()
+    {
+        try
+        {
+            var active = _customThemeService.ActiveCustomTheme;
+            if (active == null)
+            {
+                active = new CustomTheme
+                {
+                    Id = "custom-theme",
+                    Name = "Custom Theme",
+                    Author = User?.DisplayName ?? Environment.UserName,
+                    AccentColor = _settingsService.AccentColorHex,
+                    BaseTheme = _settingsService.AppTheme,
+                    Backdrop = _settingsService.BackdropKind
+                };
+            }
+
+            var picker = new Windows.Storage.Pickers.FileSavePicker();
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Desktop;
+            picker.FileTypeChoices.Add("WinYandex Theme Package", new List<string> { ".wytheme" });
+            picker.SuggestedFileName = string.IsNullOrWhiteSpace(active.Id) ? "MyTheme.wytheme" : $"{active.Id}.wytheme";
+
+            if (App.MainWindow is ShellWindow shell)
+            {
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(shell));
+            }
+
+            var file = await picker.PickSaveFileAsync();
+            if (file != null)
+            {
+                await _customThemeService.ExportThemeAsync(active, file.Path);
+                ShowNotification(IsRussian ? $"Тема экспортирована: {file.Name}" : $"Theme exported: {file.Name}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ExportCurrentTheme] Error: {ex.Message}");
+            ShowNotification(IsRussian ? "Ошибка при экспорте темы" : "Error exporting theme");
+        }
+    }
+
+    [RelayCommand]
+    public async Task LoadCommunityThemesAsync()
+    {
+        if (IsLoadingCommunityThemes) return;
+        RunOnUi(() => IsLoadingCommunityThemes = true);
+        try
+        {
+            var items = await _customThemeService.FetchCommunityThemesAsync();
+            RunOnUi(() =>
+            {
+                CommunityThemes.Clear();
+                foreach (var item in items)
+                {
+                    CommunityThemes.Add(item);
+                }
+                UpdateCommunityThemesState();
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[LoadCommunityThemes] Error: {ex.Message}");
+        }
+        finally
+        {
+            RunOnUi(() => IsLoadingCommunityThemes = false);
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallCommunityThemeAsync(CommunityThemeItem? item)
+    {
+        if (item == null || item.IsInstalling) return;
+
+        if (item.IsActive)
+        {
+            return;
+        }
+
+        if (item.IsInstalled)
+        {
+            _themeService.ApplyTheme($"custom:{item.Id}");
+            RefreshThemeOptions();
+            return;
+        }
+
+        await _customThemeService.InstallCommunityThemeAsync(item);
+        RefreshThemeOptions();
+    }
+
+    [RelayCommand]
+    private void ToggleCommunityThemesExpanded()
+    {
+        IsCommunityThemesExpanded = !IsCommunityThemesExpanded;
     }
 }

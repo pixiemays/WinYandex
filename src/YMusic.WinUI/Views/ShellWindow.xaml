@@ -14,7 +14,8 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid">
+    <Grid x:Name="RootGrid"
+          AllowDrop="True">
         <Grid.RowDefinitions>
             <!-- Title Bar -->
             <RowDefinition Height="Auto" />
@@ -23,6 +24,20 @@
             <!-- Fixed Bottom Player Bar -->
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+
+        <!-- Custom Theme Background Layer (Spans all rows behind content) -->
+        <Grid x:Name="CustomBackgroundLayer"
+              Grid.Row="0"
+              Grid.RowSpan="3"
+              Visibility="Collapsed"
+              IsHitTestVisible="False">
+            <Image x:Name="CustomBackgroundImage"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+            <Border x:Name="CustomBackgroundDimmer"
+                    Background="#C8121215" />
+        </Grid>
 
         <!-- TitleBar -->
         <TitleBar x:Name="AppTitleBar"

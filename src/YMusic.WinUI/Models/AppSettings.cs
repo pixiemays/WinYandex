@@ -55,6 +55,9 @@ public sealed class AppSettings
     [JsonPropertyName("appFont")]
     public string AppFont { get; set; } = "Inter"; // "Inter", "System", "YandexSans"
 
+    [JsonPropertyName("isCommunityThemesExpanded")]
+    public bool IsCommunityThemesExpanded { get; set; } = false;
+
     [JsonPropertyName("language")]
     public string Language { get; set; } = "ru"; // "ru" or "en"
 

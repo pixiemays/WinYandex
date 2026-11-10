@@ -181,4 +181,16 @@ public sealed partial class ProfilePage : Page
             }
         }
     }
+
+    private void InstallCommunityTheme_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        if (sender is Button b)
+        {
+            var item = (b.Tag as YMusic.WinUI.Models.CommunityThemeItem) ?? (b.DataContext as YMusic.WinUI.Models.CommunityThemeItem);
+            if (item != null)
+            {
+                ViewModel.InstallCommunityThemeCommand.Execute(item);
+            }
+        }
+    }
 }

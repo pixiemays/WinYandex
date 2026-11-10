@@ -218,6 +218,20 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public bool IsCommunityThemesExpanded
+    {
+        get => _settings.IsCommunityThemesExpanded;
+        set
+        {
+            if (_settings.IsCommunityThemesExpanded != value)
+            {
+                _settings.IsCommunityThemesExpanded = value;
+                Save();
+                NotifyChanged(nameof(IsCommunityThemesExpanded));
+            }
+        }
+    }
+
     public string AccentColorHex
     {
         get => string.IsNullOrWhiteSpace(_settings.AccentColorHex) ? "#FFEAB308" : _settings.AccentColorHex;

@@ -10,6 +10,7 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
+using YMusic.WinUI.Models;
 using YMusic.WinUI.Services.Interfaces;
 using YMusic.WinUI.Views;
 
@@ -18,6 +19,7 @@ namespace YMusic.WinUI.Services.Implementations;
 public sealed class ThemeService : IThemeService
 {
     private readonly ISettingsService _settingsService;
+    private readonly ICustomThemeService _customThemeService;
 
     public event EventHandler? ThemeChanged;
 
@@ -63,9 +65,10 @@ public sealed class ThemeService : IThemeService
         new("Как в системе", "System Default", "Default", "#FF121215", "#FF1C1C21", "#FF26262D")
     };
 
-    public ThemeService(ISettingsService settingsService)
+    public ThemeService(ISettingsService settingsService, ICustomThemeService customThemeService)
     {
         _settingsService = settingsService;
+        _customThemeService = customThemeService;
     }
 
     /// <summary>
@@ -103,6 +106,16 @@ public sealed class ThemeService : IThemeService
         try
         {
             PreInitializeResources();
+
+            _customThemeService.ActiveThemeReloaded += (s, theme) =>
+            {
+                if (CurrentTheme.Equals($"custom:{theme.Id}", StringComparison.OrdinalIgnoreCase) ||
+                    CurrentTheme.Equals(theme.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    ApplyThemeInternal(CurrentTheme, saveSetting: false);
+                    ThemeChanged?.Invoke(this, EventArgs.Empty);
+                }
+            };
 
             if (App.MainWindow is ShellWindow shell)
             {
@@ -217,51 +230,127 @@ public sealed class ThemeService : IThemeService
                 _settingsService.AppTheme = themeKey;
             }
 
+            var custom = _customThemeService.GetThemeById(themeKey);
+            if (custom != null)
+            {
+                ElementTheme elemTheme = custom.BaseTheme switch
+                {
+                    "Light" => ElementTheme.Light,
+                    "Default" => ElementTheme.Default,
+                    _ => ElementTheme.Dark
+                };
+
+                Color bgCol = ParseHex(custom.BackgroundColor);
+                Color cardCol = ParseHex(custom.CardColor);
+                Color secCardCol = ParseHex(custom.SecondaryCardColor);
+
+                _cardBackgroundFillColorDefaultBrush.Color = cardCol;
+                _cardBackgroundFillColorSecondaryBrush.Color = secCardCol;
+                _solidBackgroundFillColorBaseBrush.Color = bgCol;
+                _applicationPageBackgroundThemeBrush.Color = bgCol;
+                _layerFillColorDefaultBrush.Color = cardCol;
+
+                if (!string.IsNullOrWhiteSpace(custom.AccentColor))
+                {
+                    ApplyAccentColorInternal(custom.AccentColor, saveSetting: false);
+                }
+
+                var res = Application.Current.Resources;
+                RegisterBrushesInDictionary(res);
+                if (custom.Overrides != null) ApplyBrushOverrides(res, custom.Overrides);
+
+                foreach (string themeName in new[] { "Dark", "Light", "Default" })
+                {
+                    if (res.ThemeDictionaries.TryGetValue(themeName, out var dObj) && dObj is ResourceDictionary td)
+                    {
+                        RegisterBrushesInDictionary(td);
+                        if (custom.Overrides != null) ApplyBrushOverrides(td, custom.Overrides);
+                    }
+                }
+
+                if (App.MainWindow is ShellWindow shell)
+                {
+                    shell.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        shell.WindowRootGrid.RequestedTheme = elemTheme;
+                        RegisterBrushesInDictionary(shell.WindowRootGrid.Resources);
+                        if (custom.Overrides != null) ApplyBrushOverrides(shell.WindowRootGrid.Resources, custom.Overrides);
+
+                        if (!string.IsNullOrEmpty(custom.ResolvedBackgroundImagePath))
+                        {
+                            shell.SystemBackdrop = null;
+                            shell.WindowRootGrid.Background = null;
+                            shell.SetCustomBackground(custom.ResolvedBackgroundImagePath, custom.BackgroundOpacity, bgCol);
+                        }
+                        else
+                        {
+                            shell.SetCustomBackground(null, 0, null);
+                            var preset = new ThemePreset(custom.Name, custom.Name, custom.Id, custom.BackgroundColor, custom.CardColor, custom.SecondaryCardColor);
+                            UpdateBackdropAndWindowBackground(shell, preset, custom.Backdrop);
+                        }
+                    });
+                }
+                return;
+            }
+
             var themePreset = AvailableThemes.FirstOrDefault(t => t.Key.Equals(themeKey, StringComparison.OrdinalIgnoreCase))
                 ?? AvailableThemes[0];
 
-            ElementTheme elemTheme = themeKey switch
+            ElementTheme standardElemTheme = themeKey switch
             {
                 "Light" => ElementTheme.Light,
                 "Default" => ElementTheme.Default,
                 _ => ElementTheme.Dark
             };
 
-            Color bgCol = ParseHex(themePreset.BackgroundHex);
-            Color cardCol = ParseHex(themePreset.CardHex);
-            Color secCardCol = ParseHex(themePreset.SecondaryCardHex);
+            Color standardBgCol = ParseHex(themePreset.BackgroundHex);
+            Color standardCardCol = ParseHex(themePreset.CardHex);
+            Color standardSecCardCol = ParseHex(themePreset.SecondaryCardHex);
 
             // Mutate surface brushes in place so cards and backgrounds update live
-            _cardBackgroundFillColorDefaultBrush.Color = cardCol;
-            _cardBackgroundFillColorSecondaryBrush.Color = secCardCol;
-            _solidBackgroundFillColorBaseBrush.Color = bgCol;
-            _applicationPageBackgroundThemeBrush.Color = bgCol;
-            _layerFillColorDefaultBrush.Color = cardCol;
+            _cardBackgroundFillColorDefaultBrush.Color = standardCardCol;
+            _cardBackgroundFillColorSecondaryBrush.Color = standardSecCardCol;
+            _solidBackgroundFillColorBaseBrush.Color = standardBgCol;
+            _applicationPageBackgroundThemeBrush.Color = standardBgCol;
+            _layerFillColorDefaultBrush.Color = standardCardCol;
 
-            var res = Application.Current.Resources;
-            RegisterBrushesInDictionary(res);
+            var standardRes = Application.Current.Resources;
+            RegisterBrushesInDictionary(standardRes);
 
             foreach (string themeName in new[] { "Dark", "Light", "Default" })
             {
-                if (res.ThemeDictionaries.TryGetValue(themeName, out var dObj) && dObj is ResourceDictionary td)
+                if (standardRes.ThemeDictionaries.TryGetValue(themeName, out var dObj) && dObj is ResourceDictionary td)
                 {
                     RegisterBrushesInDictionary(td);
                 }
             }
 
-            if (App.MainWindow is ShellWindow shell)
+            if (App.MainWindow is ShellWindow standardShell)
             {
-                shell.DispatcherQueue.TryEnqueue(() =>
+                standardShell.DispatcherQueue.TryEnqueue(() =>
                 {
-                    shell.WindowRootGrid.RequestedTheme = elemTheme;
-                    RegisterBrushesInDictionary(shell.WindowRootGrid.Resources);
-                    UpdateBackdropAndWindowBackground(shell, themePreset);
+                    standardShell.SetCustomBackground(null, 0, null);
+                    standardShell.WindowRootGrid.RequestedTheme = standardElemTheme;
+                    RegisterBrushesInDictionary(standardShell.WindowRootGrid.Resources);
+                    UpdateBackdropAndWindowBackground(standardShell, themePreset);
                 });
             }
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[ThemeService] ApplyTheme error: {ex.Message}");
+        }
+    }
+
+    private static void ApplyBrushOverrides(ResourceDictionary dict, Dictionary<string, string> overrides)
+    {
+        foreach (var (key, hex) in overrides)
+        {
+            try
+            {
+                dict[key] = new SolidColorBrush(ParseHex(hex));
+            }
+            catch { }
         }
     }
 
@@ -290,11 +379,12 @@ public sealed class ThemeService : IThemeService
         }
     }
 
-    private void UpdateBackdropAndWindowBackground(ShellWindow shell, ThemePreset themePreset)
+    private void UpdateBackdropAndWindowBackground(ShellWindow shell, ThemePreset themePreset, string? backdropKind = null)
     {
+        string backdrop = !string.IsNullOrWhiteSpace(backdropKind) ? backdropKind : CurrentBackdrop;
         Color bgCol = ParseHex(themePreset.BackgroundHex);
 
-        switch (CurrentBackdrop)
+        switch (backdrop)
         {
             case "Solid":
                 shell.SystemBackdrop = null;
@@ -315,9 +405,13 @@ public sealed class ThemeService : IThemeService
                 {
                     shell.WindowRootGrid.Background = new SolidColorBrush(Color.FromArgb(200, 20, 18, 16));
                 }
-                else
+                else if (themePreset.Key is "Dark" or "Light" or "Default")
                 {
                     shell.WindowRootGrid.Background = null;
+                }
+                else
+                {
+                    shell.WindowRootGrid.Background = new SolidColorBrush(Color.FromArgb(215, bgCol.R, bgCol.G, bgCol.B));
                 }
                 break;
 
@@ -335,9 +429,13 @@ public sealed class ThemeService : IThemeService
                 {
                     shell.WindowRootGrid.Background = new SolidColorBrush(Color.FromArgb(180, 20, 18, 16));
                 }
-                else
+                else if (themePreset.Key is "Dark" or "Light" or "Default")
                 {
                     shell.WindowRootGrid.Background = null;
+                }
+                else
+                {
+                    shell.WindowRootGrid.Background = new SolidColorBrush(Color.FromArgb(180, bgCol.R, bgCol.G, bgCol.B));
                 }
                 break;
 
@@ -356,9 +454,13 @@ public sealed class ThemeService : IThemeService
                 {
                     shell.WindowRootGrid.Background = new SolidColorBrush(Color.FromArgb(200, 20, 18, 16));
                 }
-                else
+                else if (themePreset.Key is "Dark" or "Light" or "Default")
                 {
                     shell.WindowRootGrid.Background = null;
+                }
+                else
+                {
+                    shell.WindowRootGrid.Background = new SolidColorBrush(Color.FromArgb(215, bgCol.R, bgCol.G, bgCol.B));
                 }
                 break;
         }

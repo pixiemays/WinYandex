@@ -4,6 +4,19 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.90] — 2026-11-10
+
+### Custom Themes System & Hot-Reload
+* **Custom Theme Packages (.wytheme & .json)**: introduced full support for community and user-made themes stored in `%AppData%\WinYandex\Themes\`. Themes can customize all surface, card, accent, and backdrop material colors.
+* **Custom Background Wallpapers with Dynamic Dimming**: themes can bundle a background image (`backgroundImage`) with configurable tint overlay (`backgroundOpacity`) ensuring optimal contrast and readability.
+* **Instant Live Hot-Reload**: saving edits to a theme file (Ctrl+S in Notepad or VS Code) updates the application UI instantaneously on the GPU without restarting.
+* **Window Drag-and-Drop Installation**: dragging `.wytheme`, `.zip`, or `.json` files directly onto the WinYandex window automatically extracts and applies the theme with a confirmation toast.
+* **One-Click URL Protocol & File Associations**: registered `winyandex://theme/install?url=...` protocol and `.wytheme` file extension in Windows for friction-free one-click installation from browsers or chat links.
+* **Community Themes Showcase Gallery**: added an in-app community themes gallery in Settings with one-click installation for featured presets (Catppuccin Mocha, Tokyo Night, Nordic Aurora, Sunset Synthwave).
+* **One-Click Import & Export**: quick actions in Settings allow exporting active themes into shareable `.wytheme` packages or opening the local themes folder.
+
+---
+
 ## [0.9.80] — 2026-11-09
 
 ### Manual Karaoke Lyrics Timing & Sync

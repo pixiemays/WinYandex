@@ -167,11 +167,12 @@
 
                         <!-- Row 1: Mood & Genre Preset Pills -->
                         <ScrollViewer Grid.Row="1"
-                                      HorizontalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Hidden"
                                       VerticalScrollBarVisibility="Disabled"
                                       HorizontalScrollMode="Enabled"
                                       VerticalScrollMode="Disabled">
-                            <ItemsControl ItemsSource="{x:Bind ViewModel.Wave.Presets, Mode=OneWay}">
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.Wave.Presets, Mode=OneWay}"
+                                          Padding="0,2,0,4">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal" Spacing="8" />

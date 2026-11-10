@@ -2163,10 +2163,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
             BackdropOptions.Clear();
             if (IsRussian)
             {
-                BackdropOptions.Add("Mica (Слюдяной стандарт)");
-                BackdropOptions.Add("Mica Alt (Глубокий эффект)");
-                BackdropOptions.Add("Desktop Acrylic (Размытое стекло)");
-                BackdropOptions.Add("Сплошной цвет темы (Без размытия)");
+                BackdropOptions.Add("Mica (Стандартный)");
+                BackdropOptions.Add("Mica Alt (Глубокий)");
+                BackdropOptions.Add("Acrylic (Акрил / Размытие)");
+                BackdropOptions.Add("Сплошной (Без прозрачности)");
             }
             else
             {

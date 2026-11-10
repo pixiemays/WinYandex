@@ -513,6 +513,7 @@ public sealed class ThemeService : IThemeService
         dict["SolidBackgroundFillColorBaseBrush"] = _solidBackgroundFillColorBaseBrush;
         dict["ApplicationPageBackgroundThemeBrush"] = _applicationPageBackgroundThemeBrush;
         dict["LayerFillColorDefaultBrush"] = _layerFillColorDefaultBrush;
+        dict["NavigationViewContentBackground"] = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
     }
 
     private static void UpdateColorsInDict(ResourceDictionary dict, Color baseColor, Color light1, Color light2, Color light3, Color dark1, Color dark2, Color dark3)

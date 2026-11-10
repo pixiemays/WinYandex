@@ -43,7 +43,7 @@ public sealed partial class ShellViewModel : BaseViewModel
     public string UpdateBannerButtonText => IsRussian ? "Обновить" : "Update";
 
     public string AccountNavItemTitle => IsAuthenticated
-        ? (!string.IsNullOrWhiteSpace(CurrentUser?.DisplayName) ? CurrentUser.DisplayName : (IsRussian ? "Профиль и настройки" : "Profile & Settings"))
+        ? (IsRussian ? "Профиль" : "Profile")
         : (IsRussian ? "Войти в аккаунт" : "Sign In");
 
     public string NavExploreText => IsRussian ? "Главное" : "Home";

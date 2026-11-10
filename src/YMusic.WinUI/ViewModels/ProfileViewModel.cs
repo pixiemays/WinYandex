@@ -2480,7 +2480,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 {
                     Id = "custom-theme",
                     Name = "Custom Theme",
-                    Author = User?.DisplayName ?? Environment.UserName,
+                    Author = !string.IsNullOrWhiteSpace(User?.Login) ? User.Login : "WinYandex User",
                     AccentColor = _settingsService.AccentColorHex,
                     BaseTheme = _settingsService.AppTheme,
                     Backdrop = _settingsService.BackdropKind

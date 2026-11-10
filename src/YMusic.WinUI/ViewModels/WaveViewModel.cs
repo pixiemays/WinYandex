@@ -30,7 +30,7 @@ public sealed partial class WaveViewModel : BaseViewModel
         {
             foreach (var p in Presets)
             {
-                p.IsSelected = (p == value || string.Equals(p.StationTag, value.StationTag, StringComparison.OrdinalIgnoreCase));
+                p.IsSelected = (p == value || (!string.IsNullOrEmpty(p.Id) && string.Equals(p.Id, value.Id, StringComparison.OrdinalIgnoreCase)));
             }
         }
     }
@@ -192,88 +192,168 @@ public sealed partial class WaveViewModel : BaseViewModel
     {
         Presets.Add(new WavePreset
         {
+            Id = "onyourwave",
             Title = "My Wave",
             Description = "Personal stream tailored to your music taste",
             StationType = "user",
             StationTag = "onyourwave",
             Glyph = "\uE93E",
+            Category = "diversity",
+            Seeds = new List<string> { "settingDiversity:default" },
             GradientStart = "#FF0844",
             GradientEnd = "#FFB199"
         });
 
         Presets.Add(new WavePreset
         {
+            Id = "favorite",
+            Title = "Favorites",
+            Description = "Familiar tracks you already love and listen to",
+            StationType = "user",
+            StationTag = "onyourwave",
+            Glyph = "\uEB52",
+            Category = "diversity",
+            Seeds = new List<string> { "settingDiversity:favorite" },
+            GradientStart = "#FF416C",
+            GradientEnd = "#FF4B2B"
+        });
+
+        Presets.Add(new WavePreset
+        {
+            Id = "discover",
+            Title = "Discover",
+            Description = "Fresh tracks and unexpected musical discoveries",
+            StationType = "user",
+            StationTag = "onyourwave",
+            Glyph = "\uE774",
+            Category = "diversity",
+            Seeds = new List<string> { "settingDiversity:discover" },
+            GradientStart = "#8A2387",
+            GradientEnd = "#E94057"
+        });
+
+        Presets.Add(new WavePreset
+        {
+            Id = "popular",
+            Title = "Popular",
+            Description = "Mainstream trending hits and chart toppers",
+            StationType = "user",
+            StationTag = "onyourwave",
+            Glyph = "\uE735",
+            Category = "diversity",
+            Seeds = new List<string> { "settingDiversity:popular" },
+            GradientStart = "#F7971E",
+            GradientEnd = "#FFD200"
+        });
+
+        Presets.Add(new WavePreset
+        {
+            Id = "energetic",
             Title = "Energetic",
             Description = "Upbeat drive and high energy rhythms",
-            StationType = "mood",
-            StationTag = "energetic",
-            Glyph = "\uE735",
+            StationType = "user",
+            StationTag = "onyourwave",
+            Glyph = "\uE8EC",
+            Category = "mood",
+            Seeds = new List<string> { "settingMoodEnergy:active" },
             GradientStart = "#F857A6",
             GradientEnd = "#FF5858"
         });
 
         Presets.Add(new WavePreset
         {
+            Id = "calm",
             Title = "Calm",
             Description = "Relaxing chill, soft ambient and melodic vibes",
-            StationType = "mood",
-            StationTag = "calm",
+            StationType = "user",
+            StationTag = "onyourwave",
             Glyph = "\uE945",
+            Category = "mood",
+            Seeds = new List<string> { "settingMoodEnergy:calm" },
             GradientStart = "#00C9FF",
             GradientEnd = "#92FE9D"
         });
 
         Presets.Add(new WavePreset
         {
+            Id = "fun",
+            Title = "Cheerful",
+            Description = "Feel-good joyful melodies and positive vibes",
+            StationType = "user",
+            StationTag = "onyourwave",
+            Glyph = "\uE170",
+            Category = "mood",
+            Seeds = new List<string> { "settingMoodEnergy:fun" },
+            GradientStart = "#FFB75E",
+            GradientEnd = "#ED8F03"
+        });
+
+        Presets.Add(new WavePreset
+        {
+            Id = "sad",
+            Title = "Melancholic",
+            Description = "Deep emotional and melancholic compositions",
+            StationType = "user",
+            StationTag = "onyourwave",
+            Glyph = "\uE1B8",
+            Category = "mood",
+            Seeds = new List<string> { "settingMoodEnergy:sad" },
+            GradientStart = "#3A6073",
+            GradientEnd = "#3A7BD5"
+        });
+
+        Presets.Add(new WavePreset
+        {
+            Id = "workbackground",
             Title = "Focus",
             Description = "Deep focus, concentration and flow without lyrics",
             StationType = "activity",
-            StationTag = "work",
+            StationTag = "workbackground",
             Glyph = "\uE82D",
+            Category = "activity",
+            Seeds = new List<string>(),
             GradientStart = "#654EA3",
             GradientEnd = "#EAAFC8"
         });
 
         Presets.Add(new WavePreset
         {
-            Title = "Rock",
-            Description = "Driving guitar riffs, alt and rock classics",
-            StationType = "genre",
-            StationTag = "rock",
+            Id = "without-words",
+            Title = "Instrumental",
+            Description = "Atmospheric tracks without vocals or lyrics",
+            StationType = "user",
+            StationTag = "onyourwave",
             Glyph = "\uE8D6",
-            GradientStart = "#232526",
-            GradientEnd = "#414345"
+            Category = "language",
+            Seeds = new List<string> { "settingLanguage:without-words" },
+            GradientStart = "#11998E",
+            GradientEnd = "#38EF7D"
         });
 
         Presets.Add(new WavePreset
         {
-            Title = "Electronic",
-            Description = "Synthesizers, punchy bass and electronic vibes",
-            StationType = "genre",
-            StationTag = "electronic",
-            Glyph = "\uE8EC",
-            GradientStart = "#00B4DB",
-            GradientEnd = "#0083B0"
+            Id = "russian",
+            Title = "Russian",
+            Description = "Only Russian language music and artists",
+            StationType = "user",
+            StationTag = "onyourwave",
+            Glyph = "\uE774",
+            Category = "language",
+            Seeds = new List<string> { "settingLanguage:russian" },
+            GradientStart = "#0052D4",
+            GradientEnd = "#4364F7"
         });
 
         Presets.Add(new WavePreset
         {
-            Title = "Hip-Hop",
-            Description = "Groovy beats, punchy flow and top hip-hop",
-            StationType = "genre",
-            StationTag = "hiphop",
-            Glyph = "\uE720",
-            GradientStart = "#F12711",
-            GradientEnd = "#F5AF19"
-        });
-
-        Presets.Add(new WavePreset
-        {
-            Title = "Indie",
-            Description = "Atmospheric indie-pop, indie-rock and fresh releases",
-            StationType = "genre",
-            StationTag = "indie",
-            Glyph = "\uE790",
+            Id = "not-russian",
+            Title = "International",
+            Description = "Worldwide global hits and foreign languages",
+            StationType = "user",
+            StationTag = "onyourwave",
+            Glyph = "\uE774",
+            Category = "language",
+            Seeds = new List<string> { "settingLanguage:not-russian" },
             GradientStart = "#7F00FF",
             GradientEnd = "#E100FF"
         });
@@ -286,11 +366,24 @@ public sealed partial class WaveViewModel : BaseViewModel
         bool isEn = Loc?.CurrentLanguage == "en";
         foreach (var p in Presets)
         {
-            switch (p.StationTag)
+            var key = !string.IsNullOrEmpty(p.Id) ? p.Id : p.StationTag;
+            switch (key)
             {
                 case "onyourwave":
                     p.Title = isEn ? "My Wave" : "Моя волна";
-                    p.Description = isEn ? "Personal stream tailored to your music taste" : "Персональный поток по вашему музыкальному вкусу";
+                    p.Description = isEn ? "Personal stream tailored to your music taste" : "Персональный поток по вашему вкусу";
+                    break;
+                case "favorite":
+                    p.Title = isEn ? "Favorites" : "Любимое";
+                    p.Description = isEn ? "Familiar tracks you already love and listen to" : "Знакомые треки из вашей коллекции и лайков";
+                    break;
+                case "discover":
+                    p.Title = isEn ? "Discover" : "Незнакомое";
+                    p.Description = isEn ? "Fresh tracks and unexpected musical discoveries" : "Новая музыка и неожиданные открытия";
+                    break;
+                case "popular":
+                    p.Title = isEn ? "Popular" : "Популярное";
+                    p.Description = isEn ? "Mainstream trending hits and chart toppers" : "Главные тренды и громкие хиты";
                     break;
                 case "energetic":
                     p.Title = isEn ? "Energetic" : "Бодрое";
@@ -300,25 +393,30 @@ public sealed partial class WaveViewModel : BaseViewModel
                     p.Title = isEn ? "Calm" : "Спокойное";
                     p.Description = isEn ? "Relaxing chill, soft ambient and melodic vibes" : "Расслабляющий чилл, мягкий эмбиент и уют";
                     break;
+                case "fun":
+                    p.Title = isEn ? "Cheerful" : "Весёлое";
+                    p.Description = isEn ? "Feel-good joyful melodies and positive vibes" : "Позитивное настроение и праздничный вайб";
+                    break;
+                case "sad":
+                    p.Title = isEn ? "Melancholic" : "Грустное";
+                    p.Description = isEn ? "Deep emotional and melancholic compositions" : "Светлая меланхолия и глубокие треки";
+                    break;
+                case "workbackground":
                 case "work":
                     p.Title = isEn ? "Focus" : "Работа";
                     p.Description = isEn ? "Deep focus, concentration and flow without lyrics" : "Концентрация, фокус и продуктивность";
                     break;
-                case "rock":
-                    p.Title = isEn ? "Rock" : "Рок";
-                    p.Description = isEn ? "Driving guitar riffs, alt and rock classics" : "Драйвовые риффы, альт-рок и классика";
+                case "without-words":
+                    p.Title = isEn ? "Instrumental" : "Без слов";
+                    p.Description = isEn ? "Atmospheric tracks without vocals or lyrics" : "Инструментальные треки без вокала";
                     break;
-                case "electronic":
-                    p.Title = isEn ? "Electronic" : "Электроника";
-                    p.Description = isEn ? "Synthesizers, punchy bass and electronic vibes" : "Синтезаторы, плотный бас и электронный вайб";
+                case "russian":
+                    p.Title = isEn ? "Russian" : "На русском";
+                    p.Description = isEn ? "Only Russian language music and artists" : "Только русскоязычные исполнители";
                     break;
-                case "hiphop":
-                    p.Title = isEn ? "Hip-Hop" : "Хип-хоп";
-                    p.Description = isEn ? "Groovy beats, punchy flow and top hip-hop" : "Качающий бит, флоу и топ рэп";
-                    break;
-                case "indie":
-                    p.Title = isEn ? "Indie" : "Инди";
-                    p.Description = isEn ? "Atmospheric indie-pop, indie-rock and fresh releases" : "Атмосферный инди-поп, инди-рок и открытия";
+                case "not-russian":
+                    p.Title = isEn ? "International" : "Иностранное";
+                    p.Description = isEn ? "Worldwide global hits and foreign languages" : "Музыка на иностранных языках";
                     break;
             }
         }
@@ -366,7 +464,8 @@ public sealed partial class WaveViewModel : BaseViewModel
         {
             var stationResult = await _musicService.GetRotorStationTracksAsync(
                 targetPreset.StationType,
-                targetPreset.StationTag).ConfigureAwait(false);
+                targetPreset.StationTag,
+                seeds: targetPreset.Seeds).ConfigureAwait(false);
 
             if (stationResult?.Sequence == null || stationResult.Sequence.Count == 0)
             {
@@ -799,7 +898,8 @@ public sealed partial class WaveViewModel : BaseViewModel
                     var result = await _musicService.GetRotorStationTracksAsync(
                         SelectedPreset.StationType,
                         SelectedPreset.StationTag,
-                        currentTrackId).ConfigureAwait(false);
+                        currentTrackId,
+                        seeds: SelectedPreset.Seeds).ConfigureAwait(false);
 
                     if (result?.Sequence != null && result.Sequence.Count > 0)
                     {

@@ -1111,6 +1111,16 @@
                                         <TextBlock Text="{x:Bind ViewModel.ExportThemeButtonText, Mode=OneWay}" FontSize="12" />
                                     </StackPanel>
                                 </Button>
+                                <Button Command="{x:Bind ViewModel.SubmitThemeCommand}"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        Padding="12,6"
+                                        CornerRadius="6"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.SubmitThemeTooltip, Mode=OneWay}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE898;" FontSize="13" />
+                                        <TextBlock Text="{x:Bind ViewModel.SubmitThemeButtonText, Mode=OneWay}" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -1205,7 +1215,7 @@
 
                                                         <!-- Preview Thumbnail (Image) -->
                                                         <Border Grid.Row="0"
-                                                                Height="115"
+                                                                Height="120"
                                                                 HorizontalAlignment="Stretch"
                                                                 CornerRadius="6"
                                                                 helpers:CursorHelper.UseHandCursor="True"
@@ -1217,17 +1227,6 @@
                                                                 <ImageBrush ImageSource="{x:Bind PreviewUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
                                                                             Stretch="UniformToFill" />
                                                             </Border.Background>
-                                                            <Border HorizontalAlignment="Right"
-                                                                    VerticalAlignment="Bottom"
-                                                                    Margin="6"
-                                                                    Padding="7,3"
-                                                                    CornerRadius="10"
-                                                                    Background="#C0121215">
-                                                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                                    <FontIcon Glyph="&#xE71E;" FontSize="9" Foreground="White" />
-                                                                    <TextBlock Text="Просмотр" FontSize="10" FontWeight="SemiBold" Foreground="White" />
-                                                                </StackPanel>
-                                                            </Border>
                                                         </Border>
 
                                                         <!-- Accent Strip -->
@@ -1248,8 +1247,9 @@
                                                                    FontSize="11.5"
                                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                    TextWrapping="Wrap"
-                                                                   MaxLines="3"
-                                                                   MinHeight="44" />
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   MaxLines="4"
+                                                                   ToolTipService.ToolTip="{x:Bind Description}" />
 
                                                         <!-- Action Buttons: Main (Apply/Download) + Link -->
                                                         <Grid Grid.Row="4" ColumnSpacing="6">

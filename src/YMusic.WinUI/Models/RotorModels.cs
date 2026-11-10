@@ -60,6 +60,8 @@ public sealed class RotorFeedbackRequest
 
 public sealed partial class WavePreset : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
 {
+    public string Id { get; set; } = string.Empty;
+
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
     private string _title = string.Empty;
 
@@ -72,6 +74,9 @@ public sealed partial class WavePreset : CommunityToolkit.Mvvm.ComponentModel.Ob
 
     public string GradientStart { get; set; } = "#FF1361";
     public string GradientEnd { get; set; } = "#FFF800";
+
+    public string Category { get; set; } = "diversity";
+    public List<string> Seeds { get; set; } = new();
 
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
     private bool _isSelected;

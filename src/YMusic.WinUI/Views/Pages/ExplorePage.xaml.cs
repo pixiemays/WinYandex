@@ -307,19 +307,36 @@ public sealed partial class ExplorePage : Page
 
     private void PresetButton_Click(object sender, RoutedEventArgs e)
     {
+        if (sender is FrameworkElement fe && fe.DataContext is WavePreset pData)
+        {
+            _ = ViewModel.Wave.StartWaveCommand.ExecuteAsync(pData);
+            return;
+        }
+
         if (sender is Button btn && btn.Tag is string tag)
         {
-            var preset = ViewModel.Wave.Presets.FirstOrDefault(p => string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase));
+            var preset = ViewModel.Wave.Presets.FirstOrDefault(p =>
+                string.Equals(p.Id, tag, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase));
             if (preset != null)
             {
                 _ = ViewModel.Wave.StartWaveCommand.ExecuteAsync(preset);
                 return;
             }
         }
+    }
 
-        if (sender is FrameworkElement fe && fe.DataContext is WavePreset pData)
+    private void WaveFilterOption_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem item && item.Tag is string tag)
         {
-            _ = ViewModel.Wave.StartWaveCommand.ExecuteAsync(pData);
+            var preset = ViewModel.Wave.Presets.FirstOrDefault(p =>
+                string.Equals(p.Id, tag, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase));
+            if (preset != null)
+            {
+                _ = ViewModel.Wave.StartWaveCommand.ExecuteAsync(preset);
+            }
         }
     }
 

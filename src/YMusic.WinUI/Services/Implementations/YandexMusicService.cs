@@ -1930,12 +1930,28 @@ public sealed partial class YandexMusicService : IYandexMusicService
         string stationType = "user",
         string stationTag = "onyourwave",
         string? queueTrackId = null,
+        IEnumerable<string>? seeds = null,
         CancellationToken cancellationToken = default)
     {
         var endpoint = $"rotor/station/{Uri.EscapeDataString(stationType)}:{Uri.EscapeDataString(stationTag)}/tracks";
+        var queryParams = new List<string>();
         if (!string.IsNullOrWhiteSpace(queueTrackId))
         {
-            endpoint += $"?queue={Uri.EscapeDataString(queueTrackId)}";
+            queryParams.Add($"queue={Uri.EscapeDataString(queueTrackId)}");
+        }
+        if (seeds != null)
+        {
+            foreach (var s in seeds)
+            {
+                if (!string.IsNullOrWhiteSpace(s))
+                {
+                    queryParams.Add($"seeds={Uri.EscapeDataString(s)}");
+                }
+            }
+        }
+        if (queryParams.Count > 0)
+        {
+            endpoint += "?" + string.Join("&", queryParams);
         }
 
         using var response = await SendRequestAsync(HttpMethod.Get, endpoint, null, cancellationToken).ConfigureAwait(false);

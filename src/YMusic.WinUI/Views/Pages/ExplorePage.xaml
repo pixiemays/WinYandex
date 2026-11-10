@@ -137,6 +137,41 @@
                                     <FontIcon Glyph="&#xE1E0;" FontSize="15" />
                                 </Button>
 
+                                <!-- Wave Tuning / Filters flyout button -->
+                                <Button Width="40" Height="40"
+                                        Padding="0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        CornerRadius="20"
+                                        helpers:CursorHelper.UseHandCursor="True"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.WaveFilterTooltip, Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE71C;" FontSize="15" />
+                                    <Button.Flyout>
+                                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                            <MenuFlyoutSubItem Text="{x:Bind ViewModel.WaveFilterCharacterTitle, Mode=OneWay}">
+                                                <MenuFlyoutItem Text="Любое (Моя волна)" Click="WaveFilterOption_Click" Tag="onyourwave" />
+                                                <MenuFlyoutItem Text="Любимое (знакомое)" Click="WaveFilterOption_Click" Tag="favorite" />
+                                                <MenuFlyoutItem Text="Незнакомое (открытия)" Click="WaveFilterOption_Click" Tag="discover" />
+                                                <MenuFlyoutItem Text="Популярное (хиты)" Click="WaveFilterOption_Click" Tag="popular" />
+                                            </MenuFlyoutSubItem>
+                                            <MenuFlyoutSubItem Text="{x:Bind ViewModel.WaveFilterMoodTitle, Mode=OneWay}">
+                                                <MenuFlyoutItem Text="Бодрое" Click="WaveFilterOption_Click" Tag="energetic" />
+                                                <MenuFlyoutItem Text="Спокойное" Click="WaveFilterOption_Click" Tag="calm" />
+                                                <MenuFlyoutItem Text="Весёлое" Click="WaveFilterOption_Click" Tag="fun" />
+                                                <MenuFlyoutItem Text="Грустное" Click="WaveFilterOption_Click" Tag="sad" />
+                                            </MenuFlyoutSubItem>
+                                            <MenuFlyoutSubItem Text="{x:Bind ViewModel.WaveFilterLanguageTitle, Mode=OneWay}">
+                                                <MenuFlyoutItem Text="Без слов (инструментал)" Click="WaveFilterOption_Click" Tag="without-words" />
+                                                <MenuFlyoutItem Text="На русском" Click="WaveFilterOption_Click" Tag="russian" />
+                                                <MenuFlyoutItem Text="Иностранное" Click="WaveFilterOption_Click" Tag="not-russian" />
+                                            </MenuFlyoutSubItem>
+                                            <MenuFlyoutSubItem Text="{x:Bind ViewModel.WaveFilterActivityTitle, Mode=OneWay}">
+                                                <MenuFlyoutItem Text="Работа и фокус" Click="WaveFilterOption_Click" Tag="workbackground" />
+                                            </MenuFlyoutSubItem>
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+
                                 <!-- Next Track button -->
                                 <Button Command="{x:Bind ViewModel.Wave.NextWaveTrackCommand}"
                                         Width="40" Height="40"
@@ -165,12 +200,20 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Row 1: Mood & Genre Preset Pills -->
+                        <!-- Row 1: Authentic Yandex Wave Presets -->
                         <ScrollViewer Grid.Row="1"
                                       HorizontalScrollBarVisibility="Hidden"
                                       VerticalScrollBarVisibility="Disabled"
                                       HorizontalScrollMode="Enabled"
                                       VerticalScrollMode="Disabled">
+                            <ScrollViewer.Resources>
+                                <Style TargetType="ScrollBar">
+                                    <Setter Property="Opacity" Value="0" />
+                                    <Setter Property="Height" Value="0" />
+                                    <Setter Property="Width" Value="0" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Style>
+                            </ScrollViewer.Resources>
                             <ItemsControl ItemsSource="{x:Bind ViewModel.Wave.Presets, Mode=OneWay}"
                                           Padding="0,2,0,4">
                                 <ItemsControl.ItemsPanel>
@@ -181,7 +224,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models:WavePreset">
                                         <Button Click="PresetButton_Click"
-                                                Tag="{x:Bind StationTag}"
+                                                Tag="{x:Bind Id}"
                                                 Height="38"
                                                 Padding="14,0"
                                                 CornerRadius="19"

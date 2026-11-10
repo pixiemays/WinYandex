@@ -88,6 +88,11 @@ public sealed partial class ExploreViewModel : BaseViewModel
     public string ChartTitle => GetLoc("Explore_TopChart", Loc?.CurrentLanguage == "en" ? "Top Chart" : "Чарт");
     public string ErrorTitle => Loc?.CurrentLanguage == "en" ? "Explore Error" : "Ошибка";
     public string WaveOnAirBadgeText => Loc?.CurrentLanguage == "en" ? "ON AIR" : "В ЭФИРЕ";
+    public string WaveFilterTooltip => Loc?.CurrentLanguage == "en" ? "Tune My Wave (authentic filters)" : "Настроить Мою волну (фильтры)";
+    public string WaveFilterCharacterTitle => Loc?.CurrentLanguage == "en" ? "Character" : "Характер";
+    public string WaveFilterMoodTitle => Loc?.CurrentLanguage == "en" ? "Mood" : "Настроение";
+    public string WaveFilterLanguageTitle => Loc?.CurrentLanguage == "en" ? "Language" : "Язык";
+    public string WaveFilterActivityTitle => Loc?.CurrentLanguage == "en" ? "Activity" : "Занятие";
 
     public string WaveSubtitleDisplay
     {
@@ -111,6 +116,11 @@ public sealed partial class ExploreViewModel : BaseViewModel
         OnPropertyChanged(nameof(ChartTitle));
         OnPropertyChanged(nameof(ErrorTitle));
         OnPropertyChanged(nameof(WaveOnAirBadgeText));
+        OnPropertyChanged(nameof(WaveFilterTooltip));
+        OnPropertyChanged(nameof(WaveFilterCharacterTitle));
+        OnPropertyChanged(nameof(WaveFilterMoodTitle));
+        OnPropertyChanged(nameof(WaveFilterLanguageTitle));
+        OnPropertyChanged(nameof(WaveFilterActivityTitle));
         OnPropertyChanged(nameof(WaveSubtitleDisplay));
         OnPropertyChanged(nameof(BackToExploreText));
         OnPropertyChanged(nameof(PlayAllText));

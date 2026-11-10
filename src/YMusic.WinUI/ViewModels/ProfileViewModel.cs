@@ -602,6 +602,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string OpenThemesFolderButtonText => IsRussian ? "Папка тем" : "Themes Folder";
     public string ImportThemeButtonText => IsRussian ? "Импорт..." : "Import...";
     public string ExportThemeButtonText => IsRussian ? "Экспорт..." : "Export...";
+    public string SubmitThemeButtonText => IsRussian ? "Предложить тему..." : "Submit Theme...";
+    public string SubmitThemeTooltip => IsRussian ? "Отправить текущую тему на модерацию в каталог сообщества" : "Submit current theme for review in community catalog";
     public string CommunityThemesTitle => IsRussian ? "Темы сообщества" : "Community Themes";
     public string CommunityThemesDesc => IsRussian ? "Коллекция готовых тем оформления. Установка в один клик." : "Curated themes created by the community. One-click install.";
     public string InstallThemeButtonText => IsRussian ? "Установить" : "Install";
@@ -2063,6 +2065,11 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(TrackNotificationsDesc));
         OnPropertyChanged(nameof(CustomThemesSectionTitle));
         OnPropertyChanged(nameof(CustomThemesSectionDesc));
+        OnPropertyChanged(nameof(OpenThemesFolderButtonText));
+        OnPropertyChanged(nameof(ImportThemeButtonText));
+        OnPropertyChanged(nameof(ExportThemeButtonText));
+        OnPropertyChanged(nameof(SubmitThemeButtonText));
+        OnPropertyChanged(nameof(SubmitThemeTooltip));
         OnPropertyChanged(nameof(CommunityThemesTitle));
         OnPropertyChanged(nameof(CommunityThemesDesc));
         OnPropertyChanged(nameof(CommunityThemesCatalogButtonText));
@@ -2545,6 +2552,61 @@ public sealed partial class ProfileViewModel : BaseViewModel
         {
             Debug.WriteLine($"[ExportCurrentTheme] Error: {ex.Message}");
             ShowNotification(IsRussian ? "Ошибка при экспорте темы" : "Error exporting theme");
+        }
+    }
+
+    [RelayCommand]
+    private async Task SubmitThemeAsync()
+    {
+        try
+        {
+            var active = _customThemeService.ActiveCustomTheme;
+            if (active == null)
+            {
+                active = new CustomTheme
+                {
+                    Id = "custom-theme",
+                    Name = "Моя кастомная тема",
+                    Author = !string.IsNullOrWhiteSpace(User?.Login) ? User.Login : "WinYandex Creator",
+                    Description = "Кастомная тема оформления для WinYandex",
+                    AccentColor = _settingsService.AccentColorHex,
+                    BaseTheme = _settingsService.AppTheme,
+                    Backdrop = _settingsService.BackdropKind
+                };
+            }
+
+            // Export to temporary wytheme package in Temp directory
+            string tempDir = Path.Combine(Path.GetTempPath(), "WinYandex", "ThemeSubmissions");
+            Directory.CreateDirectory(tempDir);
+            string themeFileName = $"{(string.IsNullOrWhiteSpace(active.Id) ? "custom-theme" : active.Id)}.wytheme";
+            string exportPath = Path.Combine(tempDir, themeFileName);
+            await _customThemeService.ExportThemeAsync(active, exportPath);
+
+            // Copy file to Windows Clipboard so user can simply press Ctrl+V in Telegram or GitHub comment
+            try
+            {
+                var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
+                dataPackage.RequestedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
+                var storageFile = await Windows.Storage.StorageFile.GetFileFromPathAsync(exportPath);
+                dataPackage.SetStorageItems(new[] { storageFile });
+                Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+            }
+            catch { }
+
+            // Prepare prefilled markdown body for GitHub Issue
+            string jsonContent = System.Text.Json.JsonSerializer.Serialize(active, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            string issueTitle = Uri.EscapeDataString($"[Тема сообщества]: {active.Name}");
+            string githubUrl = $"https://github.com/pixiemays/winyandex-themes/issues/new?template=theme_submission.yml&title={issueTitle}&theme_name={Uri.EscapeDataString(active.Name)}&theme_author={Uri.EscapeDataString(active.Author)}&theme_description={Uri.EscapeDataString(active.Description)}&theme_json={Uri.EscapeDataString(jsonContent)}";
+            await Windows.System.Launcher.LaunchUriAsync(new Uri(githubUrl));
+
+            ShowNotification(IsRussian
+                ? "Форма отправки темы открыта в браузере! Пакет темы скопирован в буфер обмена."
+                : "Theme submission opened in browser! Package copied to clipboard.");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SubmitTheme] Error: {ex.Message}");
+            ShowNotification(IsRussian ? "Ошибка при подготовке темы к отправке" : "Error preparing theme submission");
         }
     }
 

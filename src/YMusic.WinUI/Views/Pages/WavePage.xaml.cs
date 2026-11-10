@@ -51,7 +51,9 @@ public sealed partial class WavePage : Page
     {
         if (sender is Button btn && btn.Tag is string tag)
         {
-            var preset = ViewModel.Presets.FirstOrDefault(p => string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase));
+            var preset = ViewModel.Presets.FirstOrDefault(p =>
+                string.Equals(p.Id, tag, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase));
             if (preset != null)
             {
                 _ = ViewModel.StartWaveCommand.ExecuteAsync(preset);

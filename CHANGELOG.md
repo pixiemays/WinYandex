@@ -12,7 +12,7 @@ All notable changes to the WinYandex project are documented in this file.
 * **Instant Live Hot-Reload**: saving edits to a theme file (Ctrl+S in Notepad or VS Code) updates the application UI instantaneously on the GPU without restarting.
 * **Window Drag-and-Drop Installation**: dragging `.wytheme`, `.zip`, or `.json` files directly onto the WinYandex window automatically extracts and applies the theme with a confirmation toast.
 * **One-Click URL Protocol & File Associations**: registered `winyandex://theme/install?url=...` protocol and `.wytheme` file extension in Windows for friction-free one-click installation from browsers or chat links.
-* **Community Themes Showcase Gallery**: added an in-app community themes gallery in Settings with one-click installation for featured presets (Catppuccin Mocha, Tokyo Night, Nordic Aurora, Sunset Synthwave).
+* **Community Themes Showcase Gallery**: added an in-app community themes showcase in Settings backed by the dedicated [winyandex-themes](https://github.com/pixiemays/winyandex-themes) repository with a collapsible accordion and one-click install.
 * **One-Click Import & Export**: quick actions in Settings allow exporting active themes into shareable `.wytheme` packages or opening the local themes folder.
 
 ---

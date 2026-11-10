@@ -4,7 +4,13 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
-## [0.9.90] — 2026-11-10
+## [0.9.9] — 2026-11-10
+
+### Explore Page & My Wave Integration
+* **Hero My Wave Section on Home**: integrated My Wave directly into the top of the "Explore" (Home) page with one-click play/pause, live "ON AIR" equalizer status badge, dynamic current track info, and feedback controls.
+* **Mood & Genre Stations Carousel**: added a horizontal quick-switch preset carousel («My Wave», «Energetic», «Calm», «Focus», «Rock», «Electronic», «Hip-Hop», «Indie») with active station highlighting.
+* **Streamlined Sidebar Navigation**: removed the standalone "My Wave" tab from the left sidebar for a cleaner navigation experience; added a dedicated modular toggle in Settings to control Home page display.
+* **Polished Fluent Appearance**: hidden native horizontal scrollbar artifacts beneath the preset pills while keeping smooth touchpad and wheel panning.
 
 ### Custom Themes System & Hot-Reload
 * **Custom Theme Packages (.wytheme & .json)**: introduced full support for community and user-made themes stored in `%AppData%\WinYandex\Themes\`. Themes can customize all surface, card, accent, and backdrop material colors.

@@ -15,6 +15,11 @@ All notable changes to the WinYandex project are documented in this file.
 * **Community Themes Showcase Gallery**: added an in-app community themes showcase in Settings backed by the dedicated [winyandex-themes](https://github.com/pixiemays/winyandex-themes) repository with a collapsible accordion and one-click install.
 * **One-Click Import & Export**: quick actions in Settings allow exporting active themes into shareable `.wytheme` packages or opening the local themes folder.
 
+### Privacy & Visual Refinements
+* **Sidebar Profile Privacy**: replaced the user's personal display name in the navigation footer with a neutral "Profile" category title, ensuring personal identity isn't exposed during live streams or screenshots.
+* **Seamless Custom Theme Backdrops**: eliminated the default darker content border and corner seams in `NavigationView`, delivering a cohesive background appearance across the entire window.
+* **Backdrop Localization Polish**: refined system backdrop material labels in Russian localization (Mica, Mica Alt, Acrylic).
+
 ---
 
 ## [0.9.80] — 2026-11-09

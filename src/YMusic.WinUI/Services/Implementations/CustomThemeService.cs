@@ -20,7 +20,7 @@ namespace YMusic.WinUI.Services.Implementations;
 public sealed class CustomThemeService : ICustomThemeService, IDisposable
 {
     private static readonly HttpClient s_httpClient = new() { Timeout = TimeSpan.FromSeconds(20) };
-    private const string CommunityThemesCatalogUrl = "https://raw.githubusercontent.com/themaymeow/WinYandex/main/assets/community_themes.json";
+    private const string CommunityThemesCatalogUrl = "https://raw.githubusercontent.com/themaymeow/winyandex-themes/main/community_themes.json";
 
     private readonly ISettingsService _settingsService;
     private readonly List<CustomTheme> _themes = new();

@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Windows.Security.Credentials;
@@ -32,10 +34,18 @@ public sealed class CredentialStorageService : ICredentialStorageService
     private const uint CRED_TYPE_GENERIC = 1;
     private const uint CRED_PERSIST_LOCAL_MACHINE = 2;
 
+    private static readonly byte[] DpapiEntropy = "WinYandex_OAuth_Entropy_v1"u8.ToArray();
+
     private sealed class SessionPayload
     {
+        [JsonPropertyName("encryptedToken")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? EncryptedToken { get; set; }
+
+        // Legacy plaintext token field (only read during migration, never written)
         [JsonPropertyName("token")]
-        public string? Token { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? LegacyPlainToken { get; set; }
 
         [JsonPropertyName("userId")]
         public string? UserId { get; set; }
@@ -122,7 +132,7 @@ public sealed class CredentialStorageService : ICredentialStorageService
             }
             catch { }
 
-            // 6. Try Environment variables / .env
+            // 6. Try Environment variables (initial development / headless setup)
             string envToken = EnvironmentConfig.Get("YANDEX_TOKEN");
             if (string.IsNullOrWhiteSpace(envToken))
             {
@@ -144,7 +154,7 @@ public sealed class CredentialStorageService : ICredentialStorageService
         SaveToFile(_localSessionPath, _cachedToken, _cachedUserId);
         SaveToFile(_roamingSessionPath, _cachedToken, _cachedUserId);
         SaveToWin32Cred(_cachedToken, _cachedUserId);
-        TryUpdateEnvFile(_cachedToken);
+        PurgeTokenFromEnvFiles();
     }
 
     private bool TryLoadFromFile(string path)
@@ -155,11 +165,36 @@ public sealed class CredentialStorageService : ICredentialStorageService
             {
                 string json = File.ReadAllText(path);
                 var payload = JsonSerializer.Deserialize<SessionPayload>(json);
-                if (payload != null && !string.IsNullOrWhiteSpace(payload.Token))
+                if (payload != null)
                 {
-                    _cachedToken = payload.Token;
-                    _cachedUserId = payload.UserId;
-                    return true;
+                    string? token = null;
+                    bool needsMigration = false;
+
+                    // 1. Try decrypting DPAPI protected token
+                    if (!string.IsNullOrWhiteSpace(payload.EncryptedToken))
+                    {
+                        token = DecryptToken(payload.EncryptedToken);
+                    }
+
+                    // 2. Fallback to legacy plaintext token for migration
+                    if (string.IsNullOrWhiteSpace(token) && !string.IsNullOrWhiteSpace(payload.LegacyPlainToken))
+                    {
+                        token = payload.LegacyPlainToken;
+                        needsMigration = true;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        _cachedToken = token;
+                        _cachedUserId = payload.UserId;
+
+                        // Immediately rewrite with DPAPI encryption so plaintext is erased from disk
+                        if (needsMigration)
+                        {
+                            SaveToFile(path, _cachedToken, _cachedUserId);
+                        }
+                        return true;
+                    }
                 }
             }
         }
@@ -175,11 +210,19 @@ public sealed class CredentialStorageService : ICredentialStorageService
         if (string.IsNullOrWhiteSpace(token)) return;
         try
         {
+            string? encryptedToken = EncryptToken(token);
+            if (string.IsNullOrWhiteSpace(encryptedToken))
+            {
+                System.Diagnostics.Debug.WriteLine($"[CredentialStorage] DPAPI encryption failed for ({path}); aborting file write.");
+                return;
+            }
+
             string dir = Path.GetDirectoryName(path)!;
             Directory.CreateDirectory(dir);
             var payload = new SessionPayload
             {
-                Token = token,
+                EncryptedToken = encryptedToken,
+                LegacyPlainToken = null, // NEVER write plaintext
                 UserId = userId,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -189,6 +232,38 @@ public sealed class CredentialStorageService : ICredentialStorageService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[CredentialStorage] Write error ({path}): {ex.Message}");
+        }
+    }
+
+    private static string? EncryptToken(string? plainText)
+    {
+        if (string.IsNullOrWhiteSpace(plainText)) return null;
+        try
+        {
+            byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+            byte[] cipherBytes = ProtectedData.Protect(plainBytes, DpapiEntropy, DataProtectionScope.CurrentUser);
+            return Convert.ToBase64String(cipherBytes);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CredentialStorage] DPAPI Protect error: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string? DecryptToken(string? cipherText)
+    {
+        if (string.IsNullOrWhiteSpace(cipherText)) return null;
+        try
+        {
+            byte[] cipherBytes = Convert.FromBase64String(cipherText);
+            byte[] plainBytes = ProtectedData.Unprotect(cipherBytes, DpapiEntropy, DataProtectionScope.CurrentUser);
+            return Encoding.UTF8.GetString(plainBytes);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CredentialStorage] DPAPI Unprotect error: {ex.Message}");
+            return null;
         }
     }
 
@@ -218,12 +293,12 @@ public sealed class CredentialStorageService : ICredentialStorageService
                 _cachedUserId = userId.Trim();
             }
 
-            // Persist across all layers: UserProfile, Local, Roaming, Win32 Credential Manager, and .env
+            // Persist encrypted across all layers: UserProfile, Local, Roaming, and Win32 Credential Manager
             SaveToFile(_userProfileSessionPath, _cachedToken, _cachedUserId);
             SaveToFile(_localSessionPath, _cachedToken, _cachedUserId);
             SaveToFile(_roamingSessionPath, _cachedToken, _cachedUserId);
             SaveToWin32Cred(_cachedToken, _cachedUserId);
-            TryUpdateEnvFile(_cachedToken);
+            PurgeTokenFromEnvFiles();
 
             // Also persist to PasswordVault as secondary storage
             try
@@ -290,6 +365,8 @@ public sealed class CredentialStorageService : ICredentialStorageService
                 _vault.Remove(userCred);
             }
             catch { }
+
+            PurgeTokenFromEnvFiles();
         }
     }
 
@@ -346,7 +423,7 @@ public sealed class CredentialStorageService : ICredentialStorageService
         }
     }
 
-    #region Win32 Credential Manager & .env Helpers
+    #region Win32 Credential Manager & .env Cleanup Helpers
 
     private static void SaveToWin32Cred(string token, string? userId)
     {
@@ -412,7 +489,7 @@ public sealed class CredentialStorageService : ICredentialStorageService
         catch { }
     }
 
-    private static void TryUpdateEnvFile(string token)
+    private static void PurgeTokenFromEnvFiles()
     {
         try
         {
@@ -436,23 +513,22 @@ public sealed class CredentialStorageService : ICredentialStorageService
                 string envPath = Path.Combine(dir, ".env");
                 if (File.Exists(envPath))
                 {
-                    var lines = File.ReadAllLines(envPath).ToList();
-                    bool updated = false;
-                    for (int i = 0; i < lines.Count; i++)
+                    var lines = File.ReadAllLines(envPath);
+                    bool modified = false;
+                    var cleanLines = new List<string>();
+                    foreach (var line in lines)
                     {
-                        if (lines[i].TrimStart().StartsWith("YANDEX_TOKEN=", StringComparison.OrdinalIgnoreCase))
+                        if (line.TrimStart().StartsWith("YANDEX_TOKEN=", StringComparison.OrdinalIgnoreCase))
                         {
-                            lines[i] = $"YANDEX_TOKEN={token}";
-                            updated = true;
-                            break;
+                            modified = true;
+                            continue;
                         }
+                        cleanLines.Add(line);
                     }
-                    if (!updated)
+                    if (modified)
                     {
-                        lines.Add($"YANDEX_TOKEN={token}");
+                        File.WriteAllLines(envPath, cleanLines);
                     }
-                    File.WriteAllLines(envPath, lines);
-                    break;
                 }
             }
         }

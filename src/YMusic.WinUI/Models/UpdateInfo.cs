@@ -17,6 +17,8 @@ public sealed class UpdateInfo
     public long FileSizeBytes { get; set; }
     public DateTime? PublishedAt { get; set; }
     public string HtmlUrl { get; set; } = "https://github.com/pixiemays/WinYandex/releases/latest";
+    public string? ExpectedSha256 { get; set; }
+    public string? ChecksumAssetUrl { get; set; }
 
     public string GetReleaseNotes(bool isRussian)
     {

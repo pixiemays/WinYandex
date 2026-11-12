@@ -104,25 +104,44 @@ public sealed partial class LyricLineControl : UserControl
         if (e.PropertyName == nameof(LyricLine.IsActive) ||
             e.PropertyName == nameof(LyricLine.IsPast))
         {
-            DispatcherQueue.TryEnqueue(() =>
+            if (DispatcherQueue.HasThreadAccess)
             {
                 UpdateVisualState(animate: true);
-            });
+            }
+            else
+            {
+                DispatcherQueue.TryEnqueue(() => UpdateVisualState(animate: true));
+            }
         }
         else if (e.PropertyName == nameof(LyricLine.Text))
         {
-            DispatcherQueue.TryEnqueue(() =>
+            if (DispatcherQueue.HasThreadAccess)
             {
                 LineTextBlock.Text = _line?.Text ?? string.Empty;
-            });
+            }
+            else
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    LineTextBlock.Text = _line?.Text ?? string.Empty;
+                });
+            }
         }
         else if (e.PropertyName == nameof(LyricLine.FormattedTimestamp))
         {
-            DispatcherQueue.TryEnqueue(() =>
+            if (DispatcherQueue.HasThreadAccess)
             {
                 TimestampTextBlock.Text = _line?.FormattedTimestamp ?? string.Empty;
                 TimestampTextBlock.Visibility = _line?.HasTimestamp == true ? Visibility.Visible : Visibility.Collapsed;
-            });
+            }
+            else
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    TimestampTextBlock.Text = _line?.FormattedTimestamp ?? string.Empty;
+                    TimestampTextBlock.Visibility = _line?.HasTimestamp == true ? Visibility.Visible : Visibility.Collapsed;
+                });
+            }
         }
     }
 

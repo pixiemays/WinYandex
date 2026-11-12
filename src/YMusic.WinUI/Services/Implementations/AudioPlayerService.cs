@@ -249,6 +249,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
         {
             AudioCategory = MediaPlayerAudioCategory.Media
         };
+        _mediaPlayer.CommandManager.IsEnabled = false;
 
         _mediaPlayer.PlaybackSession.PlaybackStateChanged += OnPlaybackStateChanged;
         _mediaPlayer.PlaybackSession.NaturalDurationChanged += OnNaturalDurationChanged;
@@ -1690,6 +1691,13 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
     private void OnPlaybackStateChanged(MediaPlaybackSession session, object args)
     {
+        // When AudioGraph is active, it manages its own state and SMTC status directly.
+        // MediaPlayer session is only monitored when AudioGraph is not available.
+        if (_audioGraph != null && _currentInputNode != null)
+        {
+            return;
+        }
+
         var state = session.PlaybackState;
         _isPlaying = state == MediaPlaybackState.Playing;
 
@@ -1741,6 +1749,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
                 Play();
                 break;
             case SystemMediaTransportControlsButton.Pause:
+            case SystemMediaTransportControlsButton.Stop:
                 Pause();
                 break;
             case SystemMediaTransportControlsButton.Next:

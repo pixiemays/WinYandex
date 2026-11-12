@@ -179,6 +179,10 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         LyricsListView.VerticalOffsetChanged -= LyricsListView_VerticalOffsetChanged;
         _programmaticScrollResetTimer?.Stop();
         _smoothCenterTimer?.Stop();
+        _crossfadeFallbackTimer?.Stop();
+        _crossfadeFallbackTimer = null;
+        _crossfadeStoryboard?.Stop();
+        _crossfadeStoryboard = null;
     }
 
     public void UpdateTitleBarInsets()
@@ -325,7 +329,11 @@ public sealed partial class NowPlayingDrawerControl : UserControl
         if (!string.IsNullOrEmpty(hdUrl) && (CoverImageCurrent.Source == null || !string.Equals(_currentDisplayedCoverUrl, hdUrl, StringComparison.OrdinalIgnoreCase)))
         {
             _currentDisplayedCoverUrl = hdUrl;
-            var bmp = new BitmapImage(new Uri(hdUrl));
+            var bmp = new BitmapImage(new Uri(hdUrl))
+            {
+                DecodePixelWidth = 500,
+                DecodePixelType = DecodePixelType.Logical
+            };
             CoverImageCurrent.Source = bmp;
             AmbientGlowCurrent.Source = bmp;
         }
@@ -399,15 +407,29 @@ public sealed partial class NowPlayingDrawerControl : UserControl
 
     private Storyboard? _crossfadeStoryboard;
     private string? _currentDisplayedCoverUrl;
+    private int _coverTransitionId;
+    private DispatcherQueueTimer? _crossfadeFallbackTimer;
 
     public void AnimateTrackChange()
     {
         string? newUrl = ViewModel.HdCoverUrl;
 
+        // Reset lyrics scroll to top instantly on track switch so container layout doesn't jump
+        if (LyricsListView != null)
+        {
+            _smoothCenterTimer?.Stop();
+            _isProgrammaticScrolling = true;
+            LyricsListView.InnerScrollViewer?.ChangeView(null, 0, null, true);
+            _programmaticScrollResetTimer?.Stop();
+            _isProgrammaticScrolling = false;
+        }
+
         // If drawer is closed or not visible, do not decode heavy bitmaps
         if (!ViewModel.IsNowPlayingDrawerOpen || Visibility != Visibility.Visible)
         {
             _currentDisplayedCoverUrl = null;
+            _crossfadeFallbackTimer?.Stop();
+            _crossfadeFallbackTimer = null;
             _crossfadeStoryboard?.Stop();
             _crossfadeStoryboard = null;
             CoverImageNext.Opacity = 0.0;
@@ -419,14 +441,14 @@ public sealed partial class NowPlayingDrawerControl : UserControl
             return;
         }
 
+        // Gentle text refresh: opacity from 0.65 -> 1.0 (no vertical bouncing!)
+        AnimateTextSoftRefresh();
+
         // If URL hasn't changed, don't re-animate
         if (string.Equals(_currentDisplayedCoverUrl, newUrl, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
-
-        // Gentle text refresh: opacity from 0.65 -> 1.0 (no vertical bouncing!)
-        AnimateTextSoftRefresh();
 
         if (string.IsNullOrWhiteSpace(newUrl))
         {
@@ -441,15 +463,34 @@ public sealed partial class NowPlayingDrawerControl : UserControl
 
     private void StartTwoLayerCrossfade(string newUrl)
     {
+        _crossfadeFallbackTimer?.Stop();
+        _crossfadeFallbackTimer = null;
         _crossfadeStoryboard?.Stop();
         _crossfadeStoryboard = null;
+
+        int transitionId = unchecked(++_coverTransitionId);
+
+        // If previous crossfade was in progress, promote its bitmap to current immediately
+        if (CoverImageNext.Source != null)
+        {
+            CoverImageCurrent.Source = CoverImageNext.Source;
+            AmbientGlowCurrent.Source = AmbientGlowNext.Source;
+            CoverImageNext.Opacity = 0.0;
+            CoverImageNext.Source = null;
+            AmbientGlowNext.Opacity = 0.0;
+            AmbientGlowNext.Source = null;
+        }
 
         if (!Uri.TryCreate(newUrl, UriKind.Absolute, out var uri))
         {
             return;
         }
 
-        var newBitmap = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri);
+        var newBitmap = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri)
+        {
+            DecodePixelWidth = 500,
+            DecodePixelType = Microsoft.UI.Xaml.Media.Imaging.DecodePixelType.Logical
+        };
         CoverImageNext.Opacity = 0.0;
         CoverImageNext.Source = newBitmap;
 
@@ -460,8 +501,11 @@ public sealed partial class NowPlayingDrawerControl : UserControl
 
         void TriggerFade()
         {
-            if (hasFaded) return;
+            if (hasFaded || transitionId != _coverTransitionId) return;
             hasFaded = true;
+
+            _crossfadeFallbackTimer?.Stop();
+            _crossfadeFallbackTimer = null;
 
             var sb = new Storyboard();
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
@@ -471,7 +515,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
             {
                 From = 0.0,
                 To = 1.0,
-                Duration = TimeSpan.FromMilliseconds(420),
+                Duration = TimeSpan.FromMilliseconds(380),
                 EasingFunction = ease
             };
             Storyboard.SetTarget(coverAnim, CoverImageNext);
@@ -483,7 +527,7 @@ public sealed partial class NowPlayingDrawerControl : UserControl
             {
                 From = 0.0,
                 To = 0.40,
-                Duration = TimeSpan.FromMilliseconds(480),
+                Duration = TimeSpan.FromMilliseconds(420),
                 EasingFunction = ease
             };
             Storyboard.SetTarget(glowAnim, AmbientGlowNext);
@@ -492,7 +536,9 @@ public sealed partial class NowPlayingDrawerControl : UserControl
 
             sb.Completed += (s, e) =>
             {
+                if (transitionId != _coverTransitionId) return;
                 _crossfadeStoryboard = null;
+
                 // Swap: CoverImageCurrent now displays the new bitmap, and Next is hidden
                 CoverImageCurrent.Source = newBitmap;
                 CoverImageNext.Opacity = 0.0;
@@ -511,18 +557,35 @@ public sealed partial class NowPlayingDrawerControl : UserControl
 
         newBitmap.ImageOpened += (s, e) =>
         {
+            if (transitionId != _coverTransitionId) return;
             DispatcherQueue.TryEnqueue(TriggerFade);
         };
 
-        // Fallback: If image fails to load or ImageOpened doesn't fire, trigger fade after 120ms
-        var fallbackTimer = DispatcherQueue.CreateTimer();
-        fallbackTimer.Interval = TimeSpan.FromMilliseconds(120);
-        fallbackTimer.Tick += (s, e) =>
+        newBitmap.ImageFailed += (s, e) =>
         {
-            fallbackTimer.Stop();
-            TriggerFade();
+            if (transitionId != _coverTransitionId) return;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                _crossfadeFallbackTimer?.Stop();
+                _crossfadeFallbackTimer = null;
+                CoverImageNext.Source = null;
+                AmbientGlowNext.Source = null;
+            });
         };
-        fallbackTimer.Start();
+
+        // Fallback: If image takes longer than 800ms to fire ImageOpened, fade in anyway
+        _crossfadeFallbackTimer = DispatcherQueue.CreateTimer();
+        _crossfadeFallbackTimer.Interval = TimeSpan.FromMilliseconds(800);
+        _crossfadeFallbackTimer.Tick += (s, e) =>
+        {
+            _crossfadeFallbackTimer?.Stop();
+            _crossfadeFallbackTimer = null;
+            if (transitionId == _coverTransitionId)
+            {
+                TriggerFade();
+            }
+        };
+        _crossfadeFallbackTimer.Start();
     }
 
     private void AnimateTextSoftRefresh()

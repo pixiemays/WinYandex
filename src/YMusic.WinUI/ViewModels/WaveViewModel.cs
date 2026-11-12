@@ -17,6 +17,8 @@ public sealed partial class WaveViewModel : BaseViewModel
     private string? _currentBatchId;
     private bool _isWaveActive;
     private bool _isReplenishing;
+    private string? _lastTrackId;
+    private DateTime _lastTrackStartTime = DateTime.UtcNow;
 
     public ObservableCollection<WavePreset> Presets { get; } = new();
     public ObservableCollection<Track> UpcomingTracks { get; } = new();
@@ -865,6 +867,25 @@ public sealed partial class WaveViewModel : BaseViewModel
             return;
         }
 
+        // Send trackFinished for the previous track if it was listened to for at least 15 seconds
+        if (!string.IsNullOrEmpty(_lastTrackId) && _lastTrackId != track.Id)
+        {
+            double playedSec = (DateTime.UtcNow - _lastTrackStartTime).TotalSeconds;
+            if (playedSec >= 15.0)
+            {
+                _ = _musicService.SendRotorFeedbackAsync(
+                    "trackFinished",
+                    SelectedPreset.StationType,
+                    SelectedPreset.StationTag,
+                    _lastTrackId,
+                    _currentBatchId,
+                    totalPlayedSeconds: playedSec);
+            }
+        }
+
+        _lastTrackId = track.Id;
+        _lastTrackStartTime = DateTime.UtcNow;
+
         // Send trackStarted feedback
         _ = _musicService.SendRotorFeedbackAsync(
             "trackStarted",
@@ -903,20 +924,30 @@ public sealed partial class WaveViewModel : BaseViewModel
 
                     if (result?.Sequence != null && result.Sequence.Count > 0)
                     {
+                        if (!string.IsNullOrEmpty(result.BatchId))
+                        {
+                            _currentBatchId = result.BatchId;
+                        }
+
+                        // Deduplicate against tracks already in the active queue to prevent track repetition
+                        var existingIds = new HashSet<string>(_audioPlayer.Queue.Select(t => t.Id));
                         var newTracks = result.Sequence
-                            .Where(i => i.Track != null)
+                            .Where(i => i.Track != null && !existingIds.Contains(i.Track.Id))
                             .Select(i => i.Track!)
                             .ToList();
 
-                        _audioPlayer.AppendToQueue(newTracks);
-
-                        RunOnUi(() =>
+                        if (newTracks.Count > 0)
                         {
-                            foreach (var nt in newTracks)
+                            _audioPlayer.AppendToQueue(newTracks);
+
+                            RunOnUi(() =>
                             {
-                                UpcomingTracks.Add(nt);
-                            }
-                        });
+                                foreach (var nt in newTracks)
+                                {
+                                    UpcomingTracks.Add(nt);
+                                }
+                            });
+                        }
                     }
                 }
                 catch

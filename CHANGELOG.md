@@ -1,6 +1,27 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to the WinYandex project are documented in this file.
+
+---
+
+## [0.9.91] — 2026-11-12
+
+### Now Playing
+* **Smoother Track Transitions**: optimized artwork caching and GPU memory usage during long listening sessions, eliminating stutter.
+* **Instant Lyrics Loading**: synchronized lyrics now load seamlessly without freezing the interface.
+* **Polished Animations**: lyrics view resets cleanly to the top on track changes without layout jumps or animation conflicts.
+
+### Media Controls & Hotkeys
+* **Media Keys & Fn+F7 Fix**: pressing the play/pause hotkey after pausing now reliably resumes playback.
+* **Consistent Response**: improved responsiveness of multimedia keys across system media controls and background states.
+
+### My Wave
+* **Better Track Variety**: resolved an issue causing frequent song repetitions when auto-replenishing the queue.
+* **Accurate Recommendations**: completed plays are now properly reported to refine personal recommendations.
+* **Wave Filters & Tuning**: integrated native stream tuning options (Mood, Activity, Character).
+
+### Themes
+* **Theme Submission**: one-click submission of custom themes directly to the community showcase.
 
 ---
 

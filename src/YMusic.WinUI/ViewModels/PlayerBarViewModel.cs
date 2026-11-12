@@ -210,7 +210,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
     public string FckReportCensorshipText => Loc?.CurrentLanguage == "en" ? "Report censorship" : "Сообщить о цензуре";
     public string FckBadgeTooltip => Loc?.CurrentLanguage == "en" ? "Track replaced by FckCensor (Uncensored)" : "Трек подменен FckCensor (Uncensored)";
 
-    public System.Collections.ObjectModel.ObservableCollection<LyricLine> Lyrics { get; } = new();
+    public BulkObservableCollection<LyricLine> Lyrics { get; } = new();
 
     [ObservableProperty]
     private LyricLine? _activeLyricLine;
@@ -707,14 +707,13 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                 if (token.IsCancellationRequested) return;
                 LyricsOffsetSeconds = offset;
 
-                Lyrics.Clear();
                 if (lines.Count > 0)
                 {
                     foreach (var line in lines)
                     {
                         line.OffsetSeconds = offset;
-                        Lyrics.Add(line);
                     }
+                    Lyrics.ReplaceAll(lines);
                     HasLyrics = true;
                     HasSyncedLyrics = lines.Any(l => l.HasTimestamp && l.Timestamp >= TimeSpan.Zero);
                     LyricsStatusText = string.Empty;
@@ -722,6 +721,7 @@ public sealed partial class PlayerBarViewModel : BaseViewModel
                 }
                 else
                 {
+                    Lyrics.Clear();
                     HasLyrics = false;
                     HasSyncedLyrics = false;
                     LyricsStatusText = "No lyrics available for this track";

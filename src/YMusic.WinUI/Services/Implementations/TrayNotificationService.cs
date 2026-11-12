@@ -980,6 +980,29 @@ public sealed class TrayNotificationService : ITrayNotificationService
                 return IntPtr.Zero;
             }
         }
+        else if (uMsg == WM_APPCOMMAND)
+        {
+            int cmd = (int)((lParam.ToInt64() >> 16) & 0xFFF);
+            switch (cmd)
+            {
+                case APPCOMMAND_MEDIA_PLAY_PAUSE:
+                    _audioPlayer.TogglePlayPause();
+                    return (IntPtr)1;
+                case APPCOMMAND_MEDIA_PLAY:
+                    _audioPlayer.Play();
+                    return (IntPtr)1;
+                case APPCOMMAND_MEDIA_PAUSE:
+                case APPCOMMAND_MEDIA_STOP:
+                    _audioPlayer.Pause();
+                    return (IntPtr)1;
+                case APPCOMMAND_MEDIA_NEXTTRACK:
+                    _ = _audioPlayer.NextAsync();
+                    return (IntPtr)1;
+                case APPCOMMAND_MEDIA_PREVIOUSTRACK:
+                    _ = _audioPlayer.PreviousAsync();
+                    return (IntPtr)1;
+            }
+        }
         else if (uMsg == WM_COMMAND)
         {
             uint hiword = (uint)((wParam.ToInt64() >> 16) & 0xFFFF);
@@ -1211,6 +1234,13 @@ public sealed class TrayNotificationService : ITrayNotificationService
     private const uint WM_TRAYICON = WM_USER + 2048;
 
     private const uint WM_COMMAND = 0x0111;
+    private const uint WM_APPCOMMAND = 0x0319;
+    private const int APPCOMMAND_MEDIA_NEXTTRACK = 11;
+    private const int APPCOMMAND_MEDIA_PREVIOUSTRACK = 12;
+    private const int APPCOMMAND_MEDIA_STOP = 13;
+    private const int APPCOMMAND_MEDIA_PLAY_PAUSE = 14;
+    private const int APPCOMMAND_MEDIA_PLAY = 46;
+    private const int APPCOMMAND_MEDIA_PAUSE = 47;
     private const uint THBN_CLICKED = 0x1800;
 
     private const uint WM_LBUTTONUP = 0x0202;

@@ -4,6 +4,16 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.92] — 2026-11-12
+
+### "My Wave" — Authentic Stations & Filters Fix
+* **True Instrumental Mode**: "Without words" filter now connects directly to Yandex's native instrumental station with strict filtering of tracks containing lyrics.
+* **Working Stream Tuning**: mood filters (Energetic, Calm, Cheerful, Melancholic), character filters (Favorites, Discover, Popular), and activity (Work & Focus) now reliably switch streams on the recommendation server.
+* **Language & Genre Stations**: authentic support for Russian and International language streams, plus instant tuning for Rock, Electronic, Hip-Hop, and Indie.
+* **Wave Page Grid Polish**: redesigned station cards layout with dynamic responsive rendering and error-free preset launch.
+
+---
+
 ## [0.9.91] — 2026-11-12
 
 ### Now Playing

@@ -49,21 +49,23 @@ public sealed partial class WavePage : Page
 
     private void PresetButton_Click(object sender, RoutedEventArgs e)
     {
+        if (sender is FrameworkElement fe && fe.DataContext is WavePreset pData)
+        {
+            _ = ViewModel.StartWaveCommand.ExecuteAsync(pData);
+            return;
+        }
+
         if (sender is Button btn && btn.Tag is string tag)
         {
             var preset = ViewModel.Presets.FirstOrDefault(p =>
                 string.Equals(p.Id, tag, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase));
+                string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase) ||
+                (string.Equals(tag, "workbackground", StringComparison.OrdinalIgnoreCase) && string.Equals(p.Id, "work", StringComparison.OrdinalIgnoreCase)));
             if (preset != null)
             {
                 _ = ViewModel.StartWaveCommand.ExecuteAsync(preset);
                 return;
             }
-        }
-
-        if (sender is FrameworkElement fe && fe.DataContext is WavePreset pData)
-        {
-            _ = ViewModel.StartWaveCommand.ExecuteAsync(pData);
         }
     }
 

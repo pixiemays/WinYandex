@@ -166,7 +166,13 @@
                                                 <MenuFlyoutItem Text="Иностранное" Click="WaveFilterOption_Click" Tag="not-russian" />
                                             </MenuFlyoutSubItem>
                                             <MenuFlyoutSubItem Text="{x:Bind ViewModel.WaveFilterActivityTitle, Mode=OneWay}">
-                                                <MenuFlyoutItem Text="Работа и фокус" Click="WaveFilterOption_Click" Tag="workbackground" />
+                                                <MenuFlyoutItem Text="Работа и фокус" Click="WaveFilterOption_Click" Tag="work" />
+                                            </MenuFlyoutSubItem>
+                                            <MenuFlyoutSubItem Text="{x:Bind ViewModel.WaveFilterGenreTitle, Mode=OneWay}">
+                                                <MenuFlyoutItem Text="Рок" Click="WaveFilterOption_Click" Tag="rock" />
+                                                <MenuFlyoutItem Text="Электроника" Click="WaveFilterOption_Click" Tag="electronic" />
+                                                <MenuFlyoutItem Text="Хип-хоп и рэп" Click="WaveFilterOption_Click" Tag="hiphop" />
+                                                <MenuFlyoutItem Text="Инди" Click="WaveFilterOption_Click" Tag="indie" />
                                             </MenuFlyoutSubItem>
                                         </MenuFlyout>
                                     </Button.Flyout>

@@ -332,7 +332,8 @@ public sealed partial class ExplorePage : Page
         {
             var preset = ViewModel.Wave.Presets.FirstOrDefault(p =>
                 string.Equals(p.Id, tag, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase));
+                string.Equals(p.StationTag, tag, StringComparison.OrdinalIgnoreCase) ||
+                (string.Equals(tag, "workbackground", StringComparison.OrdinalIgnoreCase) && string.Equals(p.Id, "work", StringComparison.OrdinalIgnoreCase)));
             if (preset != null)
             {
                 _ = ViewModel.Wave.StartWaveCommand.ExecuteAsync(preset);

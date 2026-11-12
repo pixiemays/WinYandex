@@ -93,6 +93,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
     public string WaveFilterMoodTitle => Loc?.CurrentLanguage == "en" ? "Mood" : "Настроение";
     public string WaveFilterLanguageTitle => Loc?.CurrentLanguage == "en" ? "Language" : "Язык";
     public string WaveFilterActivityTitle => Loc?.CurrentLanguage == "en" ? "Activity" : "Занятие";
+    public string WaveFilterGenreTitle => Loc?.CurrentLanguage == "en" ? "Genre" : "Жанр";
 
     public string WaveSubtitleDisplay
     {
@@ -121,6 +122,7 @@ public sealed partial class ExploreViewModel : BaseViewModel
         OnPropertyChanged(nameof(WaveFilterMoodTitle));
         OnPropertyChanged(nameof(WaveFilterLanguageTitle));
         OnPropertyChanged(nameof(WaveFilterActivityTitle));
+        OnPropertyChanged(nameof(WaveFilterGenreTitle));
         OnPropertyChanged(nameof(WaveSubtitleDisplay));
         OnPropertyChanged(nameof(BackToExploreText));
         OnPropertyChanged(nameof(PlayAllText));

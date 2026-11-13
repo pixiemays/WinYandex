@@ -122,6 +122,13 @@ powershell -ExecutionPolicy Bypass -File scripts/package_release.ps1
 
 ---
 
+## Благодарности / Credits
+
+Особая благодарность контрибьюторам, помогающим развивать WinYandex и повышать его безопасность:
+* [@psyattack](https://github.com/psyattack) — аудит безопасности, шифрование OAuth-токенов через Windows DPAPI и проверка контрольных сумм SHA-256 при обновлении ([#1](https://github.com/pixiemays/WinYandex/pull/1)).
+
+---
+
 ## Лицензия
 
 Распространяется под свободной копилефт-лицензией [GNU General Public License v3.0](LICENSE). Все модификации и производные работы обязаны оставаться открытыми под той же лицензией. Проект защищён от закрытия исходного кода и проприетарной перепродажи.

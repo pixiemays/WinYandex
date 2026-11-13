@@ -4,6 +4,17 @@ All notable changes to the WinYandex project are documented in this file.
 
 ---
 
+## [0.9.93] — 2026-11-13
+
+### Security Hardening & Update Verification
+* **Windows DPAPI OAuth Token Encryption**: user session tokens are now encrypted using Windows Data Protection API (ProtectedData) bound to the current OS user, preventing cleartext token theft (thanks to [@psyattack](https://github.com/psyattack) in [#1](https://github.com/pixiemays/WinYandex/pull/1)).
+* **Seamless Session Migration**: existing plaintext session files are automatically converted to DPAPI-encrypted payloads on first launch with zero re-login required.
+* **Prevented Plaintext Leaks in .env**: eliminated writing active tokens into workspace environment files and added cleanup logic during authentication and logout.
+* **Update Integrity & Authenticode Check**: the built-in updater now verifies SHA-256 checksums and validates Authenticode digital signatures via WinVerifyTrust before executing downloaded installer payloads.
+* **Release SHA256SUMS.txt Generation**: GitHub Actions release pipeline now automatically generates and publishes SHA-256 checksums alongside every release build.
+
+---
+
 ## [0.9.92] — 2026-11-12
 
 ### "My Wave" — Authentic Stations & Filters Fix

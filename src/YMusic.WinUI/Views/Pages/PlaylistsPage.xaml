@@ -821,13 +821,21 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0"
-                                                   Text="{x:Bind FullTitle}"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="14"
-                                                   Foreground="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackTitleBrushConverter}}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   MaxLines="1" />
+                                        <HyperlinkButton Grid.Column="0"
+                                                         Click="TrackTitle_Click"
+                                                         Tag="{x:Bind}"
+                                                         Padding="0"
+                                                         Margin="0"
+                                                         HorizontalAlignment="Left"
+                                                         VerticalAlignment="Center"
+                                                         helpers:CursorHelper.UseHandCursor="True">
+                                            <TextBlock Text="{x:Bind FullTitle}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="14"
+                                                       Foreground="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackTitleBrushConverter}}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxLines="1" />
+                                        </HyperlinkButton>
                                         <Border Grid.Column="1"
                                                 Margin="6,0,0,0"
                                                 Visibility="{x:Bind IsReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"

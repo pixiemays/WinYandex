@@ -273,6 +273,15 @@ public sealed partial class YandexMusicService : IYandexMusicService
         return ids;
     }
 
+    public async Task<IReadOnlyList<Track>> GetLikedTracksAsync(CancellationToken cancellationToken = default)
+    {
+        string? userId = await GetCurrentUserIdAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(userId)) return Array.Empty<Track>();
+        var ids = await GetLikedTrackIdsAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (ids == null || ids.Count == 0) return Array.Empty<Track>();
+        return await GetTracksAsync(ids, cancellationToken).ConfigureAwait(false);
+    }
+
     public bool IsTrackLiked(string trackId)
     {
         if (string.IsNullOrWhiteSpace(trackId)) return false;

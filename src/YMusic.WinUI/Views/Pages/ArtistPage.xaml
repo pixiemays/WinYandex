@@ -142,6 +142,176 @@
                     </Grid>
                 </Border>
 
+                <!-- 2.5 IN YOUR COLLECTION SECTION -->
+                <StackPanel Spacing="14"
+                            Visibility="{x:Bind ViewModel.HasCollectionTracks, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xEB52;" FontSize="18" Foreground="{ThemeResource SystemAccentColor}" />
+                            <TextBlock Text="{x:Bind ViewModel.CollectionTracksTitle, Mode=OneWay}"
+                                       FontSize="20"
+                                       FontWeight="Bold" />
+                            <TextBlock Text="{x:Bind ViewModel.CollectionTracksCountText, Mode=OneWay}"
+                                       FontSize="14"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Button Command="{x:Bind ViewModel.PlayCollectionTracksCommand}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Style="{ThemeResource DefaultButtonStyle}"
+                                Height="34"
+                                Padding="14,0"
+                                CornerRadius="17"
+                                helpers:CursorHelper.UseHandCursor="True">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE768;" FontSize="12" />
+                                <TextBlock Text="{x:Bind ViewModel.PlayCollectionTracksText, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.CollectionTracks, Mode=OneWay}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:Track">
+                                <Button Click="TrackRow_Click"
+                                        Tag="{x:Bind}"
+                                        Style="{StaticResource TrackRowButtonStyle}"
+                                        Padding="12,8"
+                                        Margin="0,2"
+                                        CornerRadius="8"
+                                        Background="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackHighlightBrushConverter}}"
+                                        Opacity="{x:Bind TrackOpacity, Mode=OneWay}"
+                                        helpers:TrackMenuHelper.Track="{x:Bind}">
+                                    <Grid Height="44" ColumnSpacing="14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="44" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0"
+                                                Width="44"
+                                                Height="44"
+                                                CornerRadius="6"
+                                                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                BorderThickness="1">
+                                            <Grid>
+                                                <Image Source="{x:Bind CoverUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
+                                                       Stretch="UniformToFill" />
+                                                <Border Background="#66000000"
+                                                        CornerRadius="6"
+                                                        Visibility="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                    <controls:MiniEqualizerControl IsPlaying="{x:Bind IsPlaying, Mode=OneWay}"
+                                                                                   HorizontalAlignment="Center"
+                                                                                   VerticalAlignment="Center" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <Grid VerticalAlignment="Center">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" MaxWidth="360" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{x:Bind FullTitle, Mode=OneWay}"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{x:Bind IsCurrent, Mode=OneWay, Converter={StaticResource BoolToTrackTitleBrushConverter}}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MaxLines="1" />
+                                                <Border Grid.Column="1"
+                                                        Margin="6,0,0,0"
+                                                        Visibility="{x:Bind IsReplaced, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                        Padding="4,1"
+                                                        CornerRadius="3"
+                                                        Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                                        VerticalAlignment="Center"
+                                                        ToolTipService.ToolTip="{x:Bind FckBadgeTooltip}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                        <FontIcon Glyph="&#xE70F;" FontSize="8" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                                        <TextBlock Text="FCK" FontSize="9" FontWeight="Bold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Grid.Column="2"
+                                                        Margin="6,0,0,0"
+                                                        Visibility="{x:Bind IsAiTrack, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                        Padding="4,1"
+                                                        CornerRadius="3"
+                                                        Background="#26EF4444"
+                                                        BorderBrush="#80EF4444"
+                                                        BorderThickness="1"
+                                                        VerticalAlignment="Center"
+                                                        ToolTipService.ToolTip="{x:Bind AiTooltip, Mode=OneWay}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                        <FontIcon Glyph="&#xE99A;" FontSize="8" Foreground="#FFEF4444" />
+                                                        <TextBlock Text="{x:Bind AiBadgeLabel, Mode=OneWay}" FontSize="8" FontWeight="Bold" Foreground="#FFEF4444" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                            <HyperlinkButton Click="TrackArtist_Click"
+                                                             Tag="{x:Bind}"
+                                                             Padding="0"
+                                                             Margin="0,2,0,0"
+                                                             HorizontalAlignment="Left"
+                                                             VerticalAlignment="Center"
+                                                             ToolTipService.ToolTip="{x:Bind ArtistNames}">
+                                                <TextBlock Text="{x:Bind ArtistNames, Mode=OneWay}"
+                                                           FontSize="12"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MaxLines="1"
+                                                           IsHitTestVisible="False" />
+                                            </HyperlinkButton>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="2"
+                                                Click="TrackLikeButton_Click"
+                                                Tag="{x:Bind}"
+                                                Width="36"
+                                                Height="36"
+                                                Padding="0"
+                                                CornerRadius="18"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                helpers:CursorHelper.UseHandCursor="True">
+                                            <FontIcon Glyph="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeGlyphConverter}}"
+                                                      FontSize="14"
+                                                      Foreground="{x:Bind IsLiked, Mode=OneWay, Converter={StaticResource BoolToLikeBrushConverter}}" />
+                                        </Button>
+
+                                        <TextBlock Grid.Column="3"
+                                                   Text="{x:Bind FormattedDuration, Mode=OneWay}"
+                                                   FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right" />
+
+                                        <Button Grid.Column="4"
+                                                Flyout="{StaticResource TrackOptionsFlyout}"
+                                                Width="36"
+                                                Height="36"
+                                                Padding="0"
+                                                CornerRadius="18"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                helpers:CursorHelper.UseHandCursor="True">
+                                            <FontIcon Glyph="&#xE712;" FontSize="14" />
+                                        </Button>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
                 <!-- 3. POPULAR TRACKS SECTION -->
                 <StackPanel Spacing="14"
                             Visibility="{x:Bind ViewModel.HasPopularTracks, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">

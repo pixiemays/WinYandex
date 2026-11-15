@@ -333,19 +333,45 @@ public sealed partial class ShellWindow : Window
         }
 
         string? tag = (args.InvokedItemContainer as NavigationViewItem)?.Tag?.ToString();
-        if (string.IsNullOrEmpty(tag) && args.InvokedItem != null)
+
+        if (string.IsNullOrEmpty(tag))
         {
-            string itemStr = args.InvokedItem.ToString() ?? string.Empty;
-            tag = itemStr switch
+            if (args.IsSettingsInvoked ||
+                ReferenceEquals(args.InvokedItemContainer, NavItemAccount) ||
+                ReferenceEquals(args.InvokedItem, NavItemAccount))
             {
-                "Explore" or "Главное" => "Explore",
-                "Search" or "Поиск" => "Search",
-                "My Wave" or "Моя волна" => "Wave",
-                "Liked Tracks" => "Likes",
-                "Playlists" or "Playlists & Albums" => "Playlists",
-                "Account / Sign In" => "Account",
-                _ => null
-            };
+                tag = "Account";
+            }
+            else if (ReferenceEquals(args.InvokedItemContainer, NavItemExplore) || ReferenceEquals(args.InvokedItem, NavItemExplore))
+            {
+                tag = "Explore";
+            }
+            else if (ReferenceEquals(args.InvokedItemContainer, NavItemSearch) || ReferenceEquals(args.InvokedItem, NavItemSearch))
+            {
+                tag = "Search";
+            }
+            else if (ReferenceEquals(args.InvokedItemContainer, NavItemLikes) || ReferenceEquals(args.InvokedItem, NavItemLikes))
+            {
+                tag = "Likes";
+            }
+            else if (ReferenceEquals(args.InvokedItemContainer, NavItemPlaylists) || ReferenceEquals(args.InvokedItem, NavItemPlaylists))
+            {
+                tag = "Playlists";
+            }
+            else if (args.InvokedItem != null)
+            {
+                string itemStr = args.InvokedItem.ToString() ?? string.Empty;
+                tag = itemStr switch
+                {
+                    "Explore" or "Главное" or "Home" => "Explore",
+                    "Search" or "Поиск" => "Search",
+                    "My Wave" or "Моя волна" or "Wave" => "Wave",
+                    "Liked Tracks" or "Любимые треки" or "Likes" => "Likes",
+                    "Playlists" or "Playlists & Albums" or "Плейлисты и альбомы" or "Плейлисты" => "Playlists",
+                    "Account" or "Account / Sign In" or "Профиль" or "Profile" or "Войти в аккаунт" or "Sign In" => "Account",
+                    _ => null
+                };
+            }
         }
 
         if (string.IsNullOrEmpty(tag))
@@ -452,9 +478,23 @@ public sealed partial class ShellWindow : Window
             return;
         }
 
+        if (args.IsSettingsSelected)
+        {
+            NavigateToTag("Account");
+            return;
+        }
+
         if (args.SelectedItem is NavigationViewItem item)
         {
             string? tag = item.Tag?.ToString();
+            if (string.IsNullOrEmpty(tag))
+            {
+                if (ReferenceEquals(item, NavItemAccount)) tag = "Account";
+                else if (ReferenceEquals(item, NavItemExplore)) tag = "Explore";
+                else if (ReferenceEquals(item, NavItemSearch)) tag = "Search";
+                else if (ReferenceEquals(item, NavItemLikes)) tag = "Likes";
+                else if (ReferenceEquals(item, NavItemPlaylists)) tag = "Playlists";
+            }
             NavigateToTag(tag);
         }
     }
@@ -563,9 +603,18 @@ public sealed partial class ShellWindow : Window
 
                     ContentFrame.Navigate(targetPage, isUpdatesTarget ? "Updates" : null, new EntranceNavigationTransitionInfo());
                 }
-                else if (isUpdatesTarget && ContentFrame.Content is ProfilePage profilePage)
+                else if (isUpdatesTarget && ContentFrame.Content is ProfilePage profilePageUpdates)
                 {
-                    profilePage.ScrollToUpdates();
+                    profilePageUpdates.ScrollToUpdates();
+                }
+                else if ((tag == "Account" || tag == "Profile") && ContentFrame.Content is ProfilePage profilePage)
+                {
+                    var profileVm = App.GetService<ProfileViewModel>();
+                    if (profileVm != null && profileVm.SelectedCategoryIndex != 1)
+                    {
+                        profileVm.SelectedCategoryIndex = 1;
+                    }
+                    profilePage.ScrollToTop();
                 }
                 else if (tag == "Playlists" && ContentFrame.Content is PlaylistsPage playlistsPage)
                 {

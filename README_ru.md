@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="assets/logo.png" alt="WinYandex" width="120" height="120" />
 </p>
 
@@ -126,7 +126,7 @@ powershell -ExecutionPolicy Bypass -File scripts/package_release.ps1
 
 Особая благодарность контрибьюторам, помогающим развивать WinYandex и повышать его безопасность:
 * [@psyattack](https://github.com/psyattack) — аудит безопасности, шифрование OAuth-токенов через Windows DPAPI и проверка контрольных сумм SHA-256 при обновлении ([#1](https://github.com/pixiemays/WinYandex/pull/1)).
-* [@Horizontal42](https://github.com/Horizontal42) — централизация обработки мультимедиа-клавиш и защита воспроизведения AudioGraph ([#2](https://github.com/pixiemays/WinYandex/pull/2)).
+* [@Horizontal42](https://github.com/Horizontal42) — централизация обработки медиаклавиш, секция «В вашей коллекции» у артистов, переход в альбом по клику на название трека и навигация сайдбара ([#2](https://github.com/pixiemays/WinYandex/pull/2)).
 
 ---
 

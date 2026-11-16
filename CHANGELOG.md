@@ -3,6 +3,20 @@
 All notable changes to the WinYandex project are documented in this file.
 
 ---
+## [0.9.94] — 2026-11-16
+
+### Hardware Media Keys & Playback
+* **Consolidated Media Key Routing**: moved all multimedia keys (`Play`, `Pause`, `Next`, `Previous`) to `MediaPlayer.CommandManager`, eliminating race conditions and double-skips between SMTC and background hooks (thanks to [@Horizontal42](https://github.com/Horizontal42)).
+* **Rewind on Previous**: pressing `Previous` after 3 seconds rewinds the current track to `00:00`; pressing within the first 3 seconds or twice navigates to the previous track.
+* **AudioGraph Guard & Debounce**: protected track auto-advance from empty carrier tracks and added debounce on rapid media key presses.
+
+### UI & Navigation Polish
+* **"In Your Collection" Section on Artist Pages**: artist page now features a dedicated section showing all liked tracks from this artist in your library, with one-click queue playback, track counter, and real-time like/unlike updates (thanks to [@Horizontal42](https://github.com/Horizontal42)).
+* **Quick Album Navigation on Track Title Click**: clicking the track title in Liked Tracks, Explore, and Playlists opens the album page directly. When already inside an album, clicking the title starts track playback.
+* **Sidebar Navigation & Cursor Fixes**: fixed item resolution for localized navigation items in sidebar, added pointer hand cursor for navigation items, and clicking the profile icon while on profile page resets view and scrolls to top.
+
+---
+
 
 ## [0.9.93] — 2026-11-13
 

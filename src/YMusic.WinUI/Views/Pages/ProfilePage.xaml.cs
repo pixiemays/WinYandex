@@ -65,6 +65,11 @@ public sealed partial class ProfilePage : Page
         });
     }
 
+    public void ScrollToTop()
+    {
+        PageScrollViewer?.ChangeView(null, 0, null, false);
+    }
+
     private void CategoryPill_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         if (sender is Button b && b.Tag is string s && int.TryParse(s, out int idx))

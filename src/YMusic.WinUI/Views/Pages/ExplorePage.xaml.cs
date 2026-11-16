@@ -421,9 +421,14 @@ public sealed partial class ExplorePage : Page
         }
     }
 
+    private void TrackTitle_Click(object sender, RoutedEventArgs e)
+    {
+        TrackAlbum_Click(sender, e);
+    }
+
     private async void TrackAlbum_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is HyperlinkButton button && button.Tag is Track track)
+        if (sender is FrameworkElement button && button.Tag is Track track)
         {
             var album = track.Albums?.FirstOrDefault();
             if (album != null && album.Id > 0)

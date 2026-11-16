@@ -260,6 +260,10 @@
             <Style TargetType="ToggleButton">
                 <Setter Property="helpers:CursorHelper.UseHandCursor" Value="True" />
             </Style>
+
+            <Style TargetType="NavigationViewItem">
+                <Setter Property="helpers:CursorHelper.UseHandCursor" Value="True" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

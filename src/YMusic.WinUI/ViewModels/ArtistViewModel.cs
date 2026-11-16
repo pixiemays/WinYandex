@@ -21,6 +21,7 @@ public sealed partial class ArtistViewModel : BaseViewModel
 
     public ObservableCollection<Track> PopularTracks { get; } = new();
     public ObservableCollection<Track> CollectionTracks { get; } = new();
+    public ObservableCollection<Track> DisplayCollectionTracks { get; } = new();
     public ObservableCollection<Album> AllAlbums { get; } = new();
     public ObservableCollection<Album> AlsoAlbums { get; } = new();
     public ObservableCollection<Album> DisplayAlbums { get; } = new();
@@ -81,6 +82,30 @@ public sealed partial class ArtistViewModel : BaseViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CollectionTracksCountText))]
     private bool _hasCollectionTracks;
+
+    [ObservableProperty]
+    private bool _isCollectionExpanded;
+
+    public bool CanExpandCollection => CollectionTracks.Count > 3;
+    public string CollectionExpandGlyph => IsCollectionExpanded ? "\uE70E" : "\uE70D";
+    public string CollectionExpandText
+    {
+        get
+        {
+            var isEn = Loc?.CurrentLanguage == "en";
+            if (IsCollectionExpanded)
+            {
+                return isEn ? "Show less" : "Свернуть";
+            }
+
+            int remaining = Math.Max(0, CollectionTracks.Count - 3);
+            if (isEn)
+            {
+                return remaining == 1 ? "1 more track" : $"{remaining} more tracks";
+            }
+            return $"Ещё {remaining} {GetRussianTrackPlural(remaining)}";
+        }
+    }
 
     public string CollectionTracksTitle => Loc?.CurrentLanguage == "en" ? "In Your Collection" : "В вашей коллекции";
     public string PlayCollectionTracksText => Loc?.CurrentLanguage == "en" ? "Play" : "Слушать";
@@ -179,6 +204,7 @@ public sealed partial class ArtistViewModel : BaseViewModel
         OnPropertyChanged(nameof(CollectionTracksTitle));
         OnPropertyChanged(nameof(PlayCollectionTracksText));
         OnPropertyChanged(nameof(CollectionTracksCountText));
+        OnPropertyChanged(nameof(CollectionExpandText));
         OnPropertyChanged(nameof(LikeArtistTooltip));
         OnPropertyChanged(nameof(PopularTracksTitle));
         OnPropertyChanged(nameof(DiscographyTitle));
@@ -211,6 +237,7 @@ public sealed partial class ArtistViewModel : BaseViewModel
 
         _playbackCoordinator.Register(PopularTracks);
         _playbackCoordinator.Register(CollectionTracks);
+        _playbackCoordinator.Register(DisplayCollectionTracks);
 
         _musicService.ArtistLikeChanged += (s, args) =>
         {
@@ -234,7 +261,12 @@ public sealed partial class ArtistViewModel : BaseViewModel
                     if (!args.IsLiked)
                     {
                         CollectionTracks.Remove(col);
+                        if (CollectionTracks.Count <= 3)
+                        {
+                            IsCollectionExpanded = false;
+                        }
                         HasCollectionTracks = CollectionTracks.Count > 0;
+                        UpdateDisplayCollectionTracks();
                         OnPropertyChanged(nameof(CollectionTracksCountText));
                     }
                 }
@@ -242,6 +274,7 @@ public sealed partial class ArtistViewModel : BaseViewModel
                 {
                     CollectionTracks.Add(pop);
                     HasCollectionTracks = true;
+                    UpdateDisplayCollectionTracks();
                     OnPropertyChanged(nameof(CollectionTracksCountText));
                 }
             });
@@ -264,6 +297,8 @@ public sealed partial class ArtistViewModel : BaseViewModel
             HasDescription = !string.IsNullOrWhiteSpace(DescriptionText);
             PopularTracks.Clear();
             CollectionTracks.Clear();
+            DisplayCollectionTracks.Clear();
+            IsCollectionExpanded = false;
             AllAlbums.Clear();
             AlsoAlbums.Clear();
             DisplayAlbums.Clear();
@@ -291,6 +326,8 @@ public sealed partial class ArtistViewModel : BaseViewModel
             IsLiked = _musicService.IsArtistLiked(artistId);
             PopularTracks.Clear();
             CollectionTracks.Clear();
+            DisplayCollectionTracks.Clear();
+            IsCollectionExpanded = false;
             AllAlbums.Clear();
             AlsoAlbums.Clear();
             DisplayAlbums.Clear();
@@ -367,6 +404,8 @@ public sealed partial class ArtistViewModel : BaseViewModel
             {
                 PopularTracks.Clear();
                 CollectionTracks.Clear();
+                DisplayCollectionTracks.Clear();
+                IsCollectionExpanded = false;
                 AllAlbums.Clear();
                 AlsoAlbums.Clear();
                 DisplayAlbums.Clear();
@@ -376,6 +415,7 @@ public sealed partial class ArtistViewModel : BaseViewModel
                     CollectionTracks.Add(ct);
                 }
                 HasCollectionTracks = CollectionTracks.Count > 0;
+                UpdateDisplayCollectionTracks();
                 OnPropertyChanged(nameof(CollectionTracksCountText));
 
                 if (briefInfo?.Artist != null)
@@ -579,6 +619,27 @@ public sealed partial class ArtistViewModel : BaseViewModel
         return false;
     }
 
+    private void UpdateDisplayCollectionTracks()
+    {
+        DisplayCollectionTracks.Clear();
+        var items = IsCollectionExpanded ? CollectionTracks : CollectionTracks.Take(3);
+        foreach (var track in items)
+        {
+            DisplayCollectionTracks.Add(track);
+        }
+        _playbackCoordinator.Sync(DisplayCollectionTracks);
+        OnPropertyChanged(nameof(CanExpandCollection));
+        OnPropertyChanged(nameof(CollectionExpandText));
+        OnPropertyChanged(nameof(CollectionExpandGlyph));
+    }
+
+    [RelayCommand]
+    public void ToggleCollectionExpand()
+    {
+        IsCollectionExpanded = !IsCollectionExpanded;
+        UpdateDisplayCollectionTracks();
+    }
+
     [RelayCommand]
     public async Task PlayCollectionTracksAsync()
     {
@@ -640,13 +701,17 @@ public sealed partial class ArtistViewModel : BaseViewModel
             return;
         }
 
-        IList<Track> targetQueue;
+        List<Track> targetQueue;
         int index;
 
         if (CollectionTracks.Any(t => Track.IsSameTrackId(t.Id, track.Id)))
         {
             targetQueue = CollectionTracks.ToList();
             index = CollectionTracks.IndexOf(track);
+            if (index < 0)
+            {
+                index = targetQueue.FindIndex(t => Track.IsSameTrackId(t.Id, track.Id));
+            }
         }
         else
         {

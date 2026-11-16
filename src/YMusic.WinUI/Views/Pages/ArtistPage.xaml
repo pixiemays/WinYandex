@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Page
     x:Class="YMusic.WinUI.Views.Pages.ArtistPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -172,7 +172,7 @@
                         </Button>
                     </Grid>
 
-                    <ItemsControl ItemsSource="{x:Bind ViewModel.CollectionTracks, Mode=OneWay}">
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.DisplayCollectionTracks, Mode=OneWay}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:Track">
                                 <Button Click="TrackRow_Click"
@@ -298,6 +298,26 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <!-- Expand / Show More Bar -->
+                    <Button Command="{x:Bind ViewModel.ToggleCollectionExpandCommand}"
+                            Visibility="{x:Bind ViewModel.CanExpandCollection, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                            HorizontalAlignment="Stretch"
+                            Height="38"
+                            Margin="0,4,0,0"
+                            CornerRadius="8"
+                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            helpers:CursorHelper.UseHandCursor="True">
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                            <FontIcon Glyph="{x:Bind ViewModel.CollectionExpandGlyph, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{x:Bind ViewModel.CollectionExpandText, Mode=OneWay}"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <!-- 3. POPULAR TRACKS SECTION -->

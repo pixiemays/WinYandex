@@ -24,17 +24,11 @@
             
             <StackPanel Spacing="16">
                 <!-- Brand Icon -->
-                <Border Width="64"
-                        Height="64"
-                        CornerRadius="32"
-                        HorizontalAlignment="Center"
-                        Background="{ThemeResource AccentFillColorDefaultBrush}">
-                    <FontIcon Glyph="&#xEC4F;"
-                              FontSize="28"
-                              Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center" />
-                </Border>
+                <Image Width="64"
+                       Height="64"
+                       HorizontalAlignment="Center"
+                       Source="ms-appx:///Assets/Square150x150Logo.png"
+                       AutomationProperties.Name="WinYandex" />
                 
                 <TextBlock Text="Вход в Яндекс Музыку"
                            FontSize="24"

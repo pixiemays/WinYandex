@@ -50,6 +50,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
     private bool _isShuffle;
     private bool _isDisposed;
     private double _volume = 80.0;
+    private double _currentTrackNormalizationGain = 1.0;
     private bool _isMuted;
     private TimeSpan _restoredPosition = TimeSpan.Zero;
     private DateTime _lastPeriodicSaveTime = DateTime.UtcNow;
@@ -102,7 +103,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
             double clamped = Math.Clamp(value, 0.0, 100.0);
             if (Math.Abs(_volume - clamped) < 0.01) return;
             _volume = clamped;
-            _mediaPlayer.Volume = _volume / 100.0;
+            _mediaPlayer.Volume = Math.Clamp((_volume / 100.0) * _currentTrackNormalizationGain, 0.0, 1.0);
             if (_deviceOutput != null)
             {
                 _deviceOutput.OutgoingGain = _isMuted ? 0.0 : (_volume / 100.0);
@@ -224,6 +225,10 @@ public sealed class AudioPlayerService : IAudioPlayerService
             else if (prop == nameof(ISettingsService.PreferredQuality))
             {
                 await ReloadCurrentTrackQualityAsync().ConfigureAwait(false);
+            }
+            else if (prop == nameof(ISettingsService.NormalizeVolume))
+            {
+                UpdateCurrentTrackNormalizationGain();
             }
         };
 
@@ -462,10 +467,6 @@ public sealed class AudioPlayerService : IAudioPlayerService
                     SetupEqualizerFrequencies();
                     ApplyEqualizerGains();
 
-                    _deviceOutput.EffectDefinitions.Add(_eq1);
-                    _deviceOutput.EffectDefinitions.Add(_eq2);
-                    _deviceOutput.EffectDefinitions.Add(_eq3);
-
                     _deviceOutput.OutgoingGain = _isMuted ? 0.0 : (_volume / 100.0);
                 }
             }
@@ -506,19 +507,51 @@ public sealed class AudioPlayerService : IAudioPlayerService
         _eq3.Bands[0].Bandwidth = 1.0;
         _eq3.Bands[1].FrequencyCenter = 16000;
         _eq3.Bands[1].Bandwidth = 1.0;
+        _eq3.Bands[2].FrequencyCenter = 16000;
+        _eq3.Bands[2].Bandwidth = 1.0;
+        _eq3.Bands[2].Gain = 1.0;
+        _eq3.Bands[3].FrequencyCenter = 16000;
+        _eq3.Bands[3].Bandwidth = 1.0;
+        _eq3.Bands[3].Gain = 1.0;
     }
 
     private void ApplyEqualizerGains()
     {
-        if (_eq1 == null || _eq2 == null || _eq3 == null) return;
+        if (_eq1 == null || _eq2 == null || _eq3 == null || _deviceOutput == null) return;
 
         try
         {
             if (!_equalizerService.IsEnabled)
             {
-                for (int i = 0; i < 4; i++) { _eq1.Bands[i].Gain = 1.0; _eq2.Bands[i].Gain = 1.0; }
-                for (int i = 0; i < 2; i++) { _eq3.Bands[i].Gain = 1.0; }
+                // Remove equalizer effects completely from the output node when disabled
+                // to bypass all 12 IIR filters and preserve bit-perfect phase linearity & transients.
+                if (_deviceOutput.EffectDefinitions.Contains(_eq1))
+                {
+                    _deviceOutput.EffectDefinitions.Remove(_eq1);
+                }
+                if (_deviceOutput.EffectDefinitions.Contains(_eq2))
+                {
+                    _deviceOutput.EffectDefinitions.Remove(_eq2);
+                }
+                if (_deviceOutput.EffectDefinitions.Contains(_eq3))
+                {
+                    _deviceOutput.EffectDefinitions.Remove(_eq3);
+                }
                 return;
+            }
+
+            // Ensure effects are attached when enabled
+            if (!_deviceOutput.EffectDefinitions.Contains(_eq1))
+            {
+                _deviceOutput.EffectDefinitions.Add(_eq1);
+            }
+            if (!_deviceOutput.EffectDefinitions.Contains(_eq2))
+            {
+                _deviceOutput.EffectDefinitions.Add(_eq2);
+            }
+            if (!_deviceOutput.EffectDefinitions.Contains(_eq3))
+            {
+                _deviceOutput.EffectDefinitions.Add(_eq3);
             }
 
             var bands = _equalizerService.Bands;
@@ -536,6 +569,8 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
                 _eq3.Bands[0].Gain = ToLinearGain(bands[8].Gain);
                 _eq3.Bands[1].Gain = ToLinearGain(bands[9].Gain);
+                _eq3.Bands[2].Gain = 1.0;
+                _eq3.Bands[3].Gain = 1.0;
             }
         }
         catch (Exception ex)
@@ -1073,6 +1108,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
                         }
 
                         _currentInputNode = inputResult.Node;
+                        _currentInputNode.OutgoingGain = _currentTrackNormalizationGain;
                         _currentInputNode.AddOutgoingConnection(_deviceOutput);
                         _currentInputNode.MediaSourceCompleted += OnInputNodeMediaCompleted;
                         _currentInputNode.Seek(currentPos);
@@ -1401,6 +1437,12 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
             int totalSteps = Math.Max(10, crossfadeSeconds * 20); // 20 updates per second (50ms)
             int stepDelayMs = (crossfadeSeconds * 1000) / totalSteps;
+            double oldTrackGain = _currentTrackNormalizationGain;
+            double nextTrackGain = CalculateNormalizationGain(nextTrack);
+            if (nextTrack != null && nextTrack.R128 == null)
+            {
+                _ = FetchTrackR128Async(nextTrack, _playRequestId);
+            }
 
             for (int step = 1; step <= totalSteps; step++)
             {
@@ -1414,11 +1456,11 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
                 if (_fadingOutNode != null)
                 {
-                    _fadingOutNode.OutgoingGain = gainOut;
+                    _fadingOutNode.OutgoingGain = gainOut * oldTrackGain;
                 }
                 if (_currentInputNode != null)
                 {
-                    _currentInputNode.OutgoingGain = gainIn;
+                    _currentInputNode.OutgoingGain = gainIn * nextTrackGain;
                 }
             }
 
@@ -1434,9 +1476,10 @@ public sealed class AudioPlayerService : IAudioPlayerService
                 _fadingOutNode = null;
             }
 
+            _currentTrackNormalizationGain = nextTrackGain;
             if (_currentInputNode != null)
             {
-                _currentInputNode.OutgoingGain = 1.0;
+                _currentInputNode.OutgoingGain = _currentTrackNormalizationGain;
                 _currentInputNode.MediaSourceCompleted += OnInputNodeMediaCompleted;
             }
 
@@ -1585,6 +1628,12 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
         _consecutivePlaybackFailures = 0;
 
+        _currentTrackNormalizationGain = CalculateNormalizationGain(track);
+        if (track != null && track.R128 == null)
+        {
+            _ = FetchTrackR128Async(track, requestId);
+        }
+
         var source = MediaSource.CreateFromUri(new Uri(streamUrl));
         source.OpenOperationCompleted += (s, args) =>
         {
@@ -1621,6 +1670,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
                     }
 
                     _currentInputNode = inputResult.Node;
+                    _currentInputNode.OutgoingGain = _currentTrackNormalizationGain;
                     _currentInputNode.AddOutgoingConnection(_deviceOutput);
                     _currentInputNode.MediaSourceCompleted += OnInputNodeMediaCompleted;
 
@@ -1667,6 +1717,7 @@ public sealed class AudioPlayerService : IAudioPlayerService
 
         if (requestId != _playRequestId) return;
 
+        _mediaPlayer.Volume = Math.Clamp((_volume / 100.0) * _currentTrackNormalizationGain, 0.0, 1.0);
         _mediaPlayer.Source = source;
         if (startPosition.HasValue && startPosition.Value > TimeSpan.Zero)
         {
@@ -1884,6 +1935,65 @@ public sealed class AudioPlayerService : IAudioPlayerService
             }
         }
         catch { }
+    }
+
+    private double CalculateNormalizationGain(Track? track)
+    {
+        if (!_settingsService.NormalizeVolume || track?.R128?.I == null)
+        {
+            return 1.0;
+        }
+
+        const double targetLufs = -14.0;
+        double diff = targetLufs - track.R128.I.Value;
+        double linearGain = Math.Pow(10.0, diff / 20.0);
+
+        if (track.R128.Tp.HasValue)
+        {
+            double peakLinear = Math.Pow(10.0, track.R128.Tp.Value / 20.0);
+            if (linearGain * peakLinear > 1.0)
+            {
+                linearGain = 1.0 / peakLinear;
+            }
+        }
+
+        return Math.Clamp(linearGain, 0.1, 2.5);
+    }
+
+    private void UpdateCurrentTrackNormalizationGain()
+    {
+        _currentTrackNormalizationGain = CalculateNormalizationGain(_currentTrack);
+
+        if (_currentInputNode != null && !_isCrossfading)
+        {
+            try
+            {
+                _currentInputNode.OutgoingGain = _currentTrackNormalizationGain;
+            }
+            catch { }
+        }
+
+        _mediaPlayer.Volume = Math.Clamp((_volume / 100.0) * _currentTrackNormalizationGain, 0.0, 1.0);
+    }
+
+    private async Task FetchTrackR128Async(Track track, int requestId)
+    {
+        try
+        {
+            var tracks = await _yandexMusicService.GetTracksAsync(new[] { track.Id }).ConfigureAwait(false);
+            if (tracks != null && tracks.Count > 0 && tracks[0].R128 != null)
+            {
+                track.R128 = tracks[0].R128;
+                if (requestId == _playRequestId)
+                {
+                    UpdateCurrentTrackNormalizationGain();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[FetchTrackR128Async] Failed: {ex.Message}");
+        }
     }
 
     public void Dispose()

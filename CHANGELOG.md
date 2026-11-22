@@ -3,6 +3,25 @@
 All notable changes to the WinYandex project are documented in this file.
 
 ---
+## [0.9.95] — 2026-11-23
+
+### Audio
+* **Volume Normalization**: added normalization using R128 metadata, targeting −14 LUFS and taking True Peak into account. The profile setting is enabled by default.
+* **Equalizer Bypass**: disabling the equalizer now removes its effects from the AudioGraph chain entirely.
+
+### UI & Controls
+* **New Record Icon**: updated the application, title bar, taskbar, tray, installer, and sign-in icons. Enlarged the symbol, added ICO sizes from 16 to 256 pixels, and matched window icon sizes to the monitor DPI.
+* **Search Request Handling**: editing the query cancels the old request; selecting a suggestion no longer triggers a duplicate search, and pagination cannot append tracks from an older query. The loading indicator no longer shifts the buttons.
+* **Keyboard Seeking**: while the seek slider has focus, arrow keys seek by 5 seconds, PageUp/PageDown by 10 seconds, and Home/End jump to the start or end of the track.
+* **Return from Album to Playlist**: fixed the contextual Back button, sidebar selection, and detail view visibility.
+* **Unavailable Track Reasons**: rights restrictions and other errors now have badges and tooltips distinct from upcoming releases.
+
+### Startup & Fixes
+* **Startup After a Crash**: added handling for stale single-instance registrations and a diagnostic startup log.
+* **FckCensor Reports**: corrected the track type in report payloads.
+
+---
+
 ## [0.9.94] — 2026-11-16
 
 ### Hardware Media Keys & Playback

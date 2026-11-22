@@ -50,6 +50,20 @@ public sealed class SettingsService : ISettingsService
         }
     }
 
+    public bool NormalizeVolume
+    {
+        get => _settings.NormalizeVolume;
+        set
+        {
+            if (_settings.NormalizeVolume != value)
+            {
+                _settings.NormalizeVolume = value;
+                Save();
+                NotifyChanged(nameof(NormalizeVolume));
+            }
+        }
+    }
+
     public bool GaplessPreloadEnabled
     {
         get => _settings.GaplessPreloadEnabled;

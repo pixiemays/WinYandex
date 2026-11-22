@@ -43,7 +43,8 @@ public sealed class NavigationService : INavigationService
 
         // If this album is already open and visible on PlaylistsPage, do nothing
         if (playlistsVm.IsDetailOpen && playlistsVm.SelectedAlbum?.Id == album.Id &&
-            _shellWindow.IsPlaylistsPageActive)
+            _shellWindow.IsPlaylistsPageActive &&
+            _shellWindow.CurrentPlaylistsPage?.IsDetailViewVisible == true)
         {
             if (isFromPinned)
             {
@@ -58,8 +59,6 @@ public sealed class NavigationService : INavigationService
         {
             try
             {
-                playlistsVm.SelectedCategoryIndex = 1; // Albums tab
-
                 async System.Threading.Tasks.Task LoadAsync()
                 {
                     try
@@ -90,14 +89,9 @@ public sealed class NavigationService : INavigationService
                     if (!string.IsNullOrEmpty(currentTag) && currentTag != "Playlists")
                     {
                         playlistsVm.PreviousPageTag = currentTag;
-                        _shellWindow.ClearNavSelection();
-                        _shellWindow.EnsurePlaylistsPageVisible();
                     }
-                    else
-                    {
-                        playlistsVm.PreviousPageTag = null;
-                        _shellWindow.SelectPlaylistsTab();
-                    }
+                    _shellWindow.ClearNavSelection();
+                    _shellWindow.EnsurePlaylistsPageVisible();
                 }
             }
             catch (Exception ex)
@@ -139,7 +133,9 @@ public sealed class NavigationService : INavigationService
         if (playlistsVm.IsDetailOpen &&
             playlistsVm.SelectedPlaylist?.Uid == playlist.Uid &&
             playlistsVm.SelectedPlaylist?.Kind == playlist.Kind &&
-            _shellWindow.IsPlaylistsPageActive)
+            playlistsVm.SelectedAlbum == null &&
+            _shellWindow.IsPlaylistsPageActive &&
+            _shellWindow.CurrentPlaylistsPage?.IsDetailViewVisible == true)
         {
             if (isFromPinned)
             {
@@ -154,8 +150,6 @@ public sealed class NavigationService : INavigationService
         {
             try
             {
-                playlistsVm.SelectedCategoryIndex = 0; // Playlists tab
-
                 async System.Threading.Tasks.Task LoadAsync()
                 {
                     try
@@ -186,14 +180,9 @@ public sealed class NavigationService : INavigationService
                     if (!string.IsNullOrEmpty(currentTag) && currentTag != "Playlists")
                     {
                         playlistsVm.PreviousPageTag = currentTag;
-                        _shellWindow.ClearNavSelection();
-                        _shellWindow.EnsurePlaylistsPageVisible();
                     }
-                    else
-                    {
-                        playlistsVm.PreviousPageTag = null;
-                        _shellWindow.SelectPlaylistsTab();
-                    }
+                    _shellWindow.ClearNavSelection();
+                    _shellWindow.EnsurePlaylistsPageVisible();
                 }
             }
             catch (Exception ex)

@@ -45,6 +45,8 @@ public sealed class TrayNotificationService : ITrayNotificationService
     private AppWindow? _appWindow;
     private IntPtr _hWnd = IntPtr.Zero;
     private IntPtr _hIcon = IntPtr.Zero;
+    private IntPtr _hBigIcon = IntPtr.Zero;
+    private IntPtr _hSmallIcon = IntPtr.Zero;
     private bool _isIconAdded;
     private bool _disposed;
     private bool _hasShownMinimizeHint;
@@ -120,16 +122,26 @@ public sealed class TrayNotificationService : ITrayNotificationService
             string iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(iconPath))
             {
-                IntPtr hBig = LoadImageW(IntPtr.Zero, iconPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-                IntPtr hSmall = LoadImageW(IntPtr.Zero, iconPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
-                if (hBig != IntPtr.Zero) SendMessageW(_hWnd, WM_SETICON, (IntPtr)ICON_BIG, hBig);
-                if (hSmall != IntPtr.Zero) SendMessageW(_hWnd, WM_SETICON, (IntPtr)ICON_SMALL, hSmall);
+                uint dpi = GetDpiForWindow(_hWnd);
+                if (dpi == 0) dpi = 96;
+                ReplaceWindowIcon(iconPath, ICON_BIG, GetSystemMetricsForDpi(SM_CXICON, dpi), ref _hBigIcon);
+                ReplaceWindowIcon(iconPath, ICON_SMALL, GetSystemMetricsForDpi(SM_CXSMICON, dpi), ref _hSmallIcon);
             }
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[TrayService] SetWindowIcons failed: {ex.Message}");
         }
+    }
+
+    private void ReplaceWindowIcon(string path, int kind, int size, ref IntPtr ownedIcon)
+    {
+        IntPtr icon = LoadImageW(IntPtr.Zero, path, IMAGE_ICON, size, size, LR_LOADFROMFILE);
+        if (icon == IntPtr.Zero) return;
+
+        SendMessageW(_hWnd, WM_SETICON, (IntPtr)kind, icon);
+        if (ownedIcon != IntPtr.Zero) DestroyIcon(ownedIcon);
+        ownedIcon = icon;
     }
 
     private void InitDarkMode()
@@ -564,7 +576,8 @@ public sealed class TrayNotificationService : ITrayNotificationService
             string iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(iconPath))
             {
-                _hIcon = LoadImageW(IntPtr.Zero, iconPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+                int size = GetSystemMetrics(SM_CXSMICON);
+                _hIcon = LoadImageW(IntPtr.Zero, iconPath, IMAGE_ICON, size, size, LR_LOADFROMFILE);
             }
 
             if (_hIcon == IntPtr.Zero)
@@ -981,6 +994,14 @@ public sealed class TrayNotificationService : ITrayNotificationService
             }
         }
 
+        else if (uMsg == WM_DPICHANGED)
+        {
+            // Refresh after WinUI applies the new monitor DPI; keep its normal handling.
+            _shellWindow?.DispatcherQueue?.TryEnqueue(() =>
+            {
+                if (!_disposed) SetWindowIcons();
+            });
+        }
         else if (uMsg == WM_COMMAND)
         {
             uint hiword = (uint)((wParam.ToInt64() >> 16) & 0xFFFF);
@@ -1039,6 +1060,19 @@ public sealed class TrayNotificationService : ITrayNotificationService
         {
             DestroyIcon(_hIcon);
             _hIcon = IntPtr.Zero;
+        }
+
+        if (_hBigIcon != IntPtr.Zero)
+        {
+            SendMessageW(_hWnd, WM_SETICON, (IntPtr)ICON_BIG, IntPtr.Zero);
+            DestroyIcon(_hBigIcon);
+            _hBigIcon = IntPtr.Zero;
+        }
+        if (_hSmallIcon != IntPtr.Zero)
+        {
+            SendMessageW(_hWnd, WM_SETICON, (IntPtr)ICON_SMALL, IntPtr.Zero);
+            DestroyIcon(_hSmallIcon);
+            _hSmallIcon = IntPtr.Zero;
         }
 
         foreach (var icon in _iconCache.Values)
@@ -1241,7 +1275,15 @@ public sealed class TrayNotificationService : ITrayNotificationService
     private const uint IMAGE_ICON = 1;
     private const uint LR_LOADFROMFILE = 0x00000010;
 
+    private const int SM_CXICON = 11;
     private const int SM_CXSMICON = 49;
+    private const uint WM_DPICHANGED = 0x02E0;
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetricsForDpi(int nIndex, uint dpi);
 
     [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern bool Shell_NotifyIconW(uint dwMessage, ref NOTIFYICONDATAW lpData);

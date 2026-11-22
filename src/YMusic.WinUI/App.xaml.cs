@@ -26,15 +26,37 @@ public partial class App : Application
         return Services.GetRequiredService<T>();
     }
 
+    private static void LogStartup(string msg)
+    {
+        try
+        {
+            string logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic", "startup.log");
+            System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}\n");
+        }
+        catch { }
+    }
+
     public App()
     {
-        InitializeComponent();
-        MainDispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
-        Services = ConfigureServices();
+        LogStartup("App ctor start.");
+        try
+        {
+            InitializeComponent();
+            LogStartup("App InitializeComponent finished.");
+            MainDispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            Services = ConfigureServices();
+            LogStartup("App ConfigureServices finished.");
+        }
+        catch (Exception ex)
+        {
+            LogStartup($"App ctor EXCEPTION: {ex}");
+            throw;
+        }
 
         UnhandledException += (sender, e) =>
         {
             string msg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [CRITICAL UnhandledException]: {e.Message}\n{e.Exception}\nStackTrace:\n{e.Exception?.StackTrace}\n";
+            LogStartup(msg);
             System.Diagnostics.Debug.WriteLine(msg);
             try
             {
@@ -123,6 +145,7 @@ public partial class App : Application
 
         AppDomain.CurrentDomain.ProcessExit += (s, e) =>
         {
+            LogStartup("AppDomain.ProcessExit fired!");
             try
             {
                 provider.GetService<IDiscordRpcService>()?.Dispose();
@@ -137,22 +160,37 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        var customThemeService = GetService<ICustomThemeService>();
-        customThemeService?.Initialize();
+        LogStartup("OnLaunched entered.");
+        try
+        {
+            var customThemeService = GetService<ICustomThemeService>();
+            customThemeService?.Initialize();
+            LogStartup("customThemeService initialized.");
 
-        var themeService = GetService<IThemeService>();
-        themeService?.PreInitializeResources();
+            var themeService = GetService<IThemeService>();
+            themeService?.PreInitializeResources();
+            LogStartup("themeService PreInitializeResources finished.");
 
-        MainWindow = new ShellWindow();
-        _window = MainWindow;
-        MainDispatcherQueue = _window.DispatcherQueue;
-        themeService?.Initialize();
-        _window.Activate();
-        GetService<ITrayNotificationService>()?.InitializeThumbnailButtons();
-        GetService<IDiscordRpcService>()?.Initialize();
-        GetService<IObsOverlayService>()?.Initialize();
-        GetService<IGameOverlayService>()?.Initialize();
-        UpdateService.CleanOldUpdates();
+            MainWindow = new ShellWindow();
+            LogStartup("MainWindow ShellWindow instantiated.");
+            _window = MainWindow;
+            MainDispatcherQueue = _window.DispatcherQueue;
+            themeService?.Initialize();
+            LogStartup("themeService initialized.");
+            _window.Activate();
+            LogStartup("MainWindow activated!");
+            GetService<ITrayNotificationService>()?.InitializeThumbnailButtons();
+            GetService<IDiscordRpcService>()?.Initialize();
+            GetService<IObsOverlayService>()?.Initialize();
+            GetService<IGameOverlayService>()?.Initialize();
+            UpdateService.CleanOldUpdates();
+            LogStartup("Background services initialized.");
+        }
+        catch (Exception ex)
+        {
+            LogStartup($"OnLaunched EXCEPTION: {ex}");
+            throw;
+        }
 
         try
         {

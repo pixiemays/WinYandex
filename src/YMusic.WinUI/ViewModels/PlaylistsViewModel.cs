@@ -245,11 +245,19 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(BackButtonText))]
     private string? _previousPageTag;
 
+    private Playlist? _previousPlaylist;
+
+    public bool HasPreviousPlaylist => _previousPlaylist != null;
+
     public string BackButtonText
     {
         get
         {
             bool isEn = Loc?.CurrentLanguage == "en";
+            if (_previousPlaylist != null)
+            {
+                return isEn ? $"Back to {_previousPlaylist.Title}" : $"Назад к {_previousPlaylist.Title}";
+            }
             return PreviousPageTag switch
             {
                 "Search" => isEn ? "Back to Search" : "Назад к поиску",
@@ -1070,6 +1078,10 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
             return;
         }
 
+        _previousPlaylist = null;
+        OnPropertyChanged(nameof(HasPreviousPlaylist));
+        OnPropertyChanged(nameof(BackButtonText));
+
         playlist.IsPinned = _pinnedItemsService.IsPlaylistPinned(playlist.Uid, playlist.Kind);
         playlist.IsLiked = _musicService.IsPlaylistLiked(playlist.Uid, playlist.Kind);
         SelectedPlaylist = playlist;
@@ -1104,6 +1116,13 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
         if (IsDetailOpen && SelectedAlbum != null && SelectedAlbum.Id == album.Id)
         {
             return;
+        }
+
+        if (IsDetailOpen && SelectedPlaylist != null)
+        {
+            _previousPlaylist = SelectedPlaylist;
+            OnPropertyChanged(nameof(HasPreviousPlaylist));
+            OnPropertyChanged(nameof(BackButtonText));
         }
 
         album.IsPinned = _pinnedItemsService.IsAlbumPinned(album.Id);
@@ -1336,10 +1355,21 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
     [RelayCommand]
     public void CloseDetail()
     {
+        if (_previousPlaylist != null)
+        {
+            var prevPlaylist = _previousPlaylist;
+            _previousPlaylist = null;
+        OnPropertyChanged(nameof(HasPreviousPlaylist));
+        OnPropertyChanged(nameof(BackButtonText));
+            _ = OpenPlaylistAsync(prevPlaylist);
+            return;
+        }
+
         string? returnTag = PreviousPageTag;
 
         IsDetailOpen = false;
         PreviousPageTag = null;
+        OnPropertyChanged(nameof(HasPreviousPlaylist));
         IsBackButtonVisible = true;
         SelectedPlaylist = null;
         SelectedAlbum = null;
@@ -1451,10 +1481,7 @@ public sealed partial class PlaylistsViewModel : BaseViewModel
 
         if (!track.Available)
         {
-            var isEn = Loc?.CurrentLanguage == "en";
-            App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
-                ? "This track will be available on the album's release day"
-                : "Этот трек станет доступен в день выхода альбома");
+            App.GetService<PlayerBarViewModel>()?.ShowToast(track.UnavailableTooltip);
             return;
         }
 

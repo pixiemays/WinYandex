@@ -7,6 +7,7 @@ namespace YMusic.WinUI.Services.Interfaces;
 public interface ISettingsService
 {
     AudioQualityPreference PreferredQuality { get; set; }
+    bool NormalizeVolume { get; set; }
     bool GaplessPreloadEnabled { get; set; }
     bool DiscordRpcEnabled { get; set; }
     bool MinimizeToTrayOnClose { get; set; }

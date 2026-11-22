@@ -93,6 +93,21 @@ public sealed partial class PlaylistsPage : Page
                         return;
                     }
 
+                    // If detail view is not visible, show it immediately!
+                    if (DetailViewRoot.Visibility != Visibility.Visible || DetailViewRoot.Opacity < 0.9)
+                    {
+                        _currentTransition?.Stop();
+                        _isAnimating = false;
+                        BrowseViewRoot.Visibility = Visibility.Collapsed;
+                        BrowseViewRoot.Opacity = 0.0;
+                        DetailViewRoot.Visibility = Visibility.Visible;
+                        DetailViewRoot.Opacity = 1.0;
+                        _currentDisplayedDetailKey = newKey;
+                        ResetScrollAndHeader();
+                        PlaylistHeroGrid.Opacity = 1.0;
+                        return;
+                    }
+
                     // If the page itself just entered via Frame transition (within 500ms),
                     // or detail view was opened recently from browse (within 500ms), do not play double animation!
                     if ((DateTime.UtcNow - _lastPageNavigatedTime) < TimeSpan.FromMilliseconds(500) ||
@@ -106,7 +121,7 @@ public sealed partial class PlaylistsPage : Page
                     _currentDisplayedDetailKey = newKey;
                     ResetScrollAndHeader();
 
-                    if (DetailViewRoot.Visibility == Visibility.Visible && DetailViewRoot.Opacity >= 0.95 && !_isAnimating)
+                    if (!_isAnimating)
                     {
                         AnimateHeaderFadeIn();
                     }
@@ -327,8 +342,17 @@ public sealed partial class PlaylistsPage : Page
         sb.Begin();
     }
 
+    public bool IsDetailViewVisible => DetailViewRoot.Visibility == Visibility.Visible && DetailViewRoot.Opacity >= 0.5;
+
     private void DetailBackButton_Click(object sender, RoutedEventArgs e)
     {
+        if (ViewModel.HasPreviousPlaylist)
+        {
+            // Returning from an album to a playlist: stay in detail view!
+            ViewModel.CloseDetailCommand.Execute(null);
+            return;
+        }
+
         if (!string.IsNullOrEmpty(ViewModel.PreviousPageTag))
         {
             _currentTransition?.Stop();
@@ -472,10 +496,7 @@ public sealed partial class PlaylistsPage : Page
         {
             if (!track.Available)
             {
-                var isEn = App.Loc?.CurrentLanguage == "en";
-                App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
-                    ? "This track will be available on the album's release day"
-                    : "Этот трек станет доступен в день выхода альбома");
+                App.GetService<PlayerBarViewModel>()?.ShowToast(track.UnavailableTooltip);
                 return;
             }
             await ViewModel.PlayTrackCommand.ExecuteAsync(track);

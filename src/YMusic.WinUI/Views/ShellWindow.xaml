@@ -43,7 +43,7 @@
         <TitleBar x:Name="AppTitleBar"
                   Title="WinYandex">
             <TitleBar.IconSource>
-                <ImageIconSource ImageSource="Assets/AppIcon.ico" />
+                <ImageIconSource ImageSource="ms-appx:///Assets/Square44x44Logo.png" />
             </TitleBar.IconSource>
         </TitleBar>
 

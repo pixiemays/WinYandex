@@ -10,6 +10,9 @@ public sealed class AppSettings
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public AudioQualityPreference PreferredQuality { get; set; } = AudioQualityPreference.AacPreferred;
 
+    [JsonPropertyName("normalizeVolume")]
+    public bool NormalizeVolume { get; set; } = true;
+
     [JsonPropertyName("gaplessPreloadEnabled")]
     public bool GaplessPreloadEnabled { get; set; } = true;
 

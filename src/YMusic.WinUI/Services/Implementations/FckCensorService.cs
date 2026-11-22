@@ -46,6 +46,9 @@ public sealed class FckCensorService : IFckCensorService
         [JsonPropertyName("track_id")]
         public long TrackId { get; set; }
 
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "track";
+
         [JsonPropertyName("replaced")]
         public bool Replaced { get; set; }
     }

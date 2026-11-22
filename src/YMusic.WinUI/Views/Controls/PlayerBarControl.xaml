@@ -416,6 +416,7 @@
                            VerticalAlignment="Center" />
 
                 <Slider x:Name="SeekSlider"
+                        PreviewKeyDown="SeekSlider_PreviewKeyDown"
                         Grid.Column="1"
                         Margin="8,0"
                         Minimum="0"

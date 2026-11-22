@@ -73,8 +73,7 @@
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,4,0">
                                 <ProgressRing IsActive="{x:Bind ViewModel.IsSearching, Mode=OneWay}"
                                               Width="20"
-                                              Height="20"
-                                              Visibility="{x:Bind ViewModel.IsSearching, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                              Height="20" />
                                 <Button Command="{x:Bind ViewModel.ClearQueryCommand}"
                                         Visibility="{x:Bind ViewModel.HasQuery, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                                         Width="32"

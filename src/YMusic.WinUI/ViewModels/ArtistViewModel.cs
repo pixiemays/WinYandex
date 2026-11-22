@@ -681,10 +681,7 @@ public sealed partial class ArtistViewModel : BaseViewModel
 
         if (!track.Available)
         {
-            var isEn = Loc?.CurrentLanguage == "en";
-            App.GetService<PlayerBarViewModel>()?.ShowToast(isEn
-                ? "This track will be available on the album's release day"
-                : "Этот трек станет доступен в день выхода альбома");
+            App.GetService<PlayerBarViewModel>()?.ShowToast(track.UnavailableTooltip);
             return;
         }
 

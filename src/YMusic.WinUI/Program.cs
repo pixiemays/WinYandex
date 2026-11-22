@@ -28,27 +28,44 @@ public static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YMusic", "startup.log");
+        void Log(string msg) { try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] [PID:{Process.GetCurrentProcess().Id}] {msg}\n"); } catch { } }
+
+        Log("Main entered.");
+
         try
         {
             SetCurrentProcessExplicitAppUserModelID("WinYandex");
         }
-        catch { }
+        catch (Exception ex) { Log($"SetAppID failed: {ex.Message}"); }
 
         WinRT.ComWrappersSupport.InitializeComWrappers();
 
         bool isRedirect = DecideRedirection();
+        Log($"DecideRedirection returned: {isRedirect}");
         if (isRedirect)
         {
+            Log("Exiting due to isRedirect == true.");
             return;
         }
 
-        Application.Start((p) =>
+        Log("Calling Application.Start...");
+        try
         {
-            var context = new DispatcherQueueSynchronizationContext(
-                DispatcherQueue.GetForCurrentThread());
-            SynchronizationContext.SetSynchronizationContext(context);
-            _ = new App();
-        });
+            Application.Start((p) =>
+            {
+                Log("Application.Start callback invoked.");
+                var context = new DispatcherQueueSynchronizationContext(
+                    DispatcherQueue.GetForCurrentThread());
+                SynchronizationContext.SetSynchronizationContext(context);
+                _ = new App();
+            });
+            Log("Application.Start returned.");
+        }
+        catch (Exception ex)
+        {
+            Log($"Application.Start exception: {ex}");
+        }
     }
 
     private static bool DecideRedirection()
@@ -78,6 +95,24 @@ public static class Program
             existingProcesses = Process.GetProcessesByName(currentProcess.ProcessName)
                 .Where(p => p.Id != currentProcess.Id)
                 .ToList();
+
+            // If no other process of this app is running, any existing AppInstance registration is stale.
+            // Reset and become the main instance immediately without attempting a false redirect.
+            if (existingProcesses.Count == 0)
+            {
+                try
+                {
+                    AppInstance.GetCurrent().UnregisterKey();
+                }
+                catch { }
+
+                var reg = AppInstance.FindOrRegisterForKey(InstanceKey);
+                if (reg.IsCurrent)
+                {
+                    reg.Activated += OnAppActivated;
+                }
+                return false;
+            }
 
             AppActivationArguments args = AppInstance.GetCurrent().GetActivatedEventArgs();
             AppInstance mainInstance = AppInstance.FindOrRegisterForKey(InstanceKey);

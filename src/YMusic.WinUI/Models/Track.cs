@@ -36,12 +36,72 @@ public sealed partial class Track : ObservableObject
     public bool IsDimmed => IsDisliked || !Available;
 
     [JsonIgnore]
-    public string UnavailableBadgeText => App.Loc?.CurrentLanguage == "en" ? "UNRELEASED" : "НЕ ВЫШЕЛ";
+    public bool IsActuallyUnreleased =>
+        string.IsNullOrWhiteSpace(Error) &&
+        (Albums != null && Albums.Count > 0 && Albums.Any(a => a.IsPreSave));
 
     [JsonIgnore]
-    public string UnavailableTooltip => App.Loc?.CurrentLanguage == "en"
-        ? "This track will be available on the album's release day"
-        : "Этот трек станет доступен в день выхода альбома";
+    public string UnavailableBadgeText
+    {
+        get
+        {
+            if (IsActuallyUnreleased)
+            {
+                return App.Loc?.CurrentLanguage == "en" ? "UNRELEASED" : "НЕ ВЫШЕЛ";
+            }
+            return App.Loc?.CurrentLanguage == "en" ? "UNAVAILABLE" : "НЕДОСТУПЕН";
+        }
+    }
+
+    [JsonIgnore]
+    public string UnavailableTooltip
+    {
+        get
+        {
+            if (string.Equals(Error, "no-rights", StringComparison.OrdinalIgnoreCase))
+            {
+                return App.Loc?.CurrentLanguage == "en"
+                    ? "Track is unavailable due to rights restrictions"
+                    : "Трек недоступен из-за ограничений правообладателя";
+            }
+            if (!string.IsNullOrWhiteSpace(Error))
+            {
+                return App.Loc?.CurrentLanguage == "en"
+                    ? $"Track is unavailable ({Error})"
+                    : $"Трек недоступен ({Error})";
+            }
+            if (IsActuallyUnreleased)
+            {
+                return App.Loc?.CurrentLanguage == "en"
+                    ? "This track will be available on the album's release day"
+                    : "Этот трек станет доступен в день выхода альбома";
+            }
+            return App.Loc?.CurrentLanguage == "en"
+                ? "This track is unavailable in your region or library"
+                : "Этот трек недоступен для воспроизведения";
+        }
+    }
+
+    [JsonIgnore]
+    public string UnavailableGlyph
+    {
+        get
+        {
+            if (string.Equals(Error, "no-rights", StringComparison.OrdinalIgnoreCase))
+            {
+                return "\uE897"; // Lock
+            }
+            if (!string.IsNullOrWhiteSpace(Error))
+            {
+                return "\uE7BA"; // Warning
+            }
+            if (IsActuallyUnreleased)
+            {
+                return "\uE787"; // Calendar
+            }
+            return "\uE897"; // Lock
+        }
+    }
 
     [ObservableProperty]
     [property: JsonIgnore]
@@ -280,5 +340,17 @@ public sealed partial class Track : ObservableObject
         string clean2 = id2.Split(':')[0];
         return string.Equals(clean1, clean2, StringComparison.OrdinalIgnoreCase);
     }
+
+    [JsonPropertyName("r128")]
+    public R128Info? R128 { get; set; }
+}
+
+public sealed class R128Info
+{
+    [JsonPropertyName("i")]
+    public double? I { get; set; }
+
+    [JsonPropertyName("tp")]
+    public double? Tp { get; set; }
 }
 

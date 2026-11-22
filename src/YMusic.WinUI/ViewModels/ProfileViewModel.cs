@@ -128,6 +128,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     private int _selectedQualityIndex;
 
     [ObservableProperty]
+    private bool _isNormalizeVolumeEnabled;
+
+    [ObservableProperty]
     private bool _isGaplessPreloadEnabled;
 
     [ObservableProperty]
@@ -385,6 +388,9 @@ public sealed partial class ProfileViewModel : BaseViewModel
     public string AudioSectionTitle => IsRussian ? "Аудио и воспроизведение" : "Audio & Playback";
     public string StreamQualityTitle => IsRussian ? "Предпочитаемое качество" : "Default Streaming Quality";
     public string StreamQualityDesc => IsRussian ? "Кодек и битрейт для потокового воспроизведения треков" : "Preferred audio codec and bitrate for streaming tracks";
+
+    public string NormalizeVolumeTitle => IsRussian ? "Нормализация громкости (EBU R128)" : "Volume Normalization (EBU R128)";
+    public string NormalizeVolumeDesc => IsRussian ? "Выравнивает громкость всех треков до целевого уровня -14 LUFS с защитой от клиппинга (True Peak)" : "Aligns track loudness to standard -14 LUFS target with True Peak anti-clipping protection";
 
     public string GaplessTitle => IsRussian ? "Бесшовное воспроизведение и предзагрузка" : "Gapless Playback & Background Preloading";
     public string GaplessDesc => IsRussian ? "Предзагрузка следующего трека и текста на 80% для устранения пауз и буферизации" : "Preloads the next track stream and lyrics at 80% progress to eliminate buffering pauses";
@@ -765,6 +771,7 @@ public sealed partial class ProfileViewModel : BaseViewModel
                 _ => 2
             };
 
+            IsNormalizeVolumeEnabled = _settingsService.NormalizeVolume;
             IsGaplessPreloadEnabled = _settingsService.GaplessPreloadEnabled;
             IsDiscordRpcEnabled = _settingsService.DiscordRpcEnabled;
             IsObsOverlayEnabled = _settingsService.ObsOverlayEnabled;
@@ -886,6 +893,10 @@ public sealed partial class ProfileViewModel : BaseViewModel
                     _ => 2
                 };
                 if (SelectedQualityIndex != newIndex) SelectedQualityIndex = newIndex;
+            }
+            else if (propName == nameof(ISettingsService.NormalizeVolume))
+            {
+                IsNormalizeVolumeEnabled = _settingsService.NormalizeVolume;
             }
             else if (propName == nameof(ISettingsService.GaplessPreloadEnabled))
             {
@@ -1098,10 +1109,19 @@ public sealed partial class ProfileViewModel : BaseViewModel
             _ => AudioQualityPreference.HighestBitrate
         };
         _settingsService.PreferredQuality = pref;
-        string qualityName = value == 0
-            ? (IsRussian ? "AAC (Рекомендуется)" : "AAC Preferred")
-            : (value == 1 ? "MP3 320k" : (IsRussian ? "Наивысший битрейт" : "Highest Bitrate"));
+        string qualityName = value switch
+        {
+            0 => (IsRussian ? "AAC (Рекомендуется)" : "AAC Preferred"),
+            1 => "MP3 320k",
+            _ => (IsRussian ? "Наивысший битрейт" : "Highest Bitrate")
+        };
         ShowNotification(IsRussian ? $"Качество аудио обновлено: {qualityName}" : $"Audio quality updated to: {qualityName}");
+    }
+
+    partial void OnIsNormalizeVolumeEnabledChanged(bool value)
+    {
+        if (_isInitializingSettings) return;
+        _settingsService.NormalizeVolume = value;
     }
 
     partial void OnIsGaplessPreloadEnabledChanged(bool value)
@@ -2016,6 +2036,8 @@ public sealed partial class ProfileViewModel : BaseViewModel
         OnPropertyChanged(nameof(AudioSectionTitle));
         OnPropertyChanged(nameof(StreamQualityTitle));
         OnPropertyChanged(nameof(StreamQualityDesc));
+        OnPropertyChanged(nameof(NormalizeVolumeTitle));
+        OnPropertyChanged(nameof(NormalizeVolumeDesc));
         OnPropertyChanged(nameof(GaplessTitle));
         OnPropertyChanged(nameof(GaplessDesc));
         OnPropertyChanged(nameof(EqualizerTitle));

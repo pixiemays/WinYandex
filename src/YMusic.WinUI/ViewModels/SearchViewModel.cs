@@ -27,6 +27,8 @@ public sealed partial class SearchViewModel : BaseViewModel
 
     private int _tracksCurrentPage;
     private bool _hasMoreTracks;
+    private string? _resultsQuery;
+    private int _loadMoreRequestId;
 
     public ObservableCollection<Track> Tracks { get; } = new();
     public ObservableCollection<Track> TopTracks { get; } = new();
@@ -213,6 +215,11 @@ public sealed partial class SearchViewModel : BaseViewModel
     partial void OnQueryChanged(string value)
     {
         _commitHistoryTimer?.Stop();
+        _searchCts?.Cancel();
+        _loadMoreRequestId++;
+        IsLoadingMoreTracks = false;
+        IsSearching = false;
+        HasSearched = false;
         if (string.IsNullOrWhiteSpace(value))
         {
             _debounceTimer?.Stop();
@@ -232,6 +239,8 @@ public sealed partial class SearchViewModel : BaseViewModel
         _debounceTimer?.Stop();
         _commitHistoryTimer?.Stop();
         Query = newQuery;
+        // Assigning Query starts the live-search timer; this search runs immediately.
+        _debounceTimer?.Stop();
         if (!string.IsNullOrWhiteSpace(newQuery))
         {
             _ = PerformSearchAsync(newQuery.Trim(), isLiveDebounce: false);
@@ -378,6 +387,7 @@ public sealed partial class SearchViewModel : BaseViewModel
                 if (token.IsCancellationRequested) return;
 
                 ResetResults();
+                _resultsQuery = text;
                 HasSearched = true;
 
                 if (result != null || matchingUpcomingAlbums.Count > 0)
@@ -546,7 +556,10 @@ public sealed partial class SearchViewModel : BaseViewModel
         {
             if (!token.IsCancellationRequested)
             {
-                RunOnUi(() => IsSearching = false);
+                RunOnUi(() =>
+                {
+                    if (!token.IsCancellationRequested) IsSearching = false;
+                });
             }
         }
     }
@@ -554,16 +567,22 @@ public sealed partial class SearchViewModel : BaseViewModel
     [RelayCommand]
     public async Task LoadMoreTracksAsync()
     {
-        if (IsLoadingMoreTracks || !_hasMoreTracks || string.IsNullOrWhiteSpace(Query)) return;
+        if (IsLoadingMoreTracks || IsSearching || !_hasMoreTracks ||
+            string.IsNullOrWhiteSpace(Query) || _resultsQuery != Query.Trim() ||
+            _searchCts == null || _searchCts.IsCancellationRequested) return;
 
+        var token = _searchCts.Token;
+        var requestId = ++_loadMoreRequestId;
+        var query = _resultsQuery;
         IsLoadingMoreTracks = true;
         try
         {
             int nextPage = _tracksCurrentPage + 1;
-            var result = await _musicService.SearchAsync(Query.Trim(), "track", nextPage).ConfigureAwait(false);
-            if (result?.Tracks?.Results != null && result.Tracks.Results.Count > 0)
+            var result = await _musicService.SearchAsync(query, "track", nextPage, token).ConfigureAwait(false);
+            RunOnUi(() =>
             {
-                RunOnUi(() =>
+                if (token.IsCancellationRequested || requestId != _loadMoreRequestId) return;
+                if (result?.Tracks?.Results != null && result.Tracks.Results.Count > 0)
                 {
                     foreach (var track in result.Tracks.Results)
                     {
@@ -571,12 +590,16 @@ public sealed partial class SearchViewModel : BaseViewModel
                     }
                     _tracksCurrentPage = nextPage;
                     _hasMoreTracks = Tracks.Count < TracksTotal;
-                });
-            }
-            else
-            {
-                _hasMoreTracks = false;
-            }
+                }
+                else
+                {
+                    _hasMoreTracks = false;
+                }
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // The query changed while the next page was loading.
         }
         catch (Exception ex)
         {
@@ -584,7 +607,10 @@ public sealed partial class SearchViewModel : BaseViewModel
         }
         finally
         {
-            RunOnUi(() => IsLoadingMoreTracks = false);
+            RunOnUi(() =>
+            {
+                if (requestId == _loadMoreRequestId) IsLoadingMoreTracks = false;
+            });
         }
     }
 
@@ -671,6 +697,7 @@ public sealed partial class SearchViewModel : BaseViewModel
 
     private void ResetResults()
     {
+        _resultsQuery = null;
         Tracks.Clear();
         TopTracks.Clear();
         Artists.Clear();
@@ -717,7 +744,8 @@ public sealed partial class SearchViewModel : BaseViewModel
 
             RunOnUi(() =>
             {
-                if (BestResult?.Type != "artist" || BestResult.Artist?.Id != artistId) return;
+                if (cancellationToken.IsCancellationRequested ||
+                    BestResult?.Type != "artist" || BestResult.Artist?.Id != artistId) return;
 
                 var seenCovers = new HashSet<string>(_allBestResultPreviewCovers.Select(p => p.CoverUrl ?? string.Empty), StringComparer.OrdinalIgnoreCase);
                 bool addedNew = false;

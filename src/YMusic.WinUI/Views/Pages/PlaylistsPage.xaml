@@ -875,7 +875,7 @@
                                                 VerticalAlignment="Center"
                                                 ToolTipService.ToolTip="{x:Bind UnavailableTooltip, Mode=OneWay}">
                                             <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                                <FontIcon Glyph="&#xE787;" FontSize="8" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                                <FontIcon Glyph="{x:Bind UnavailableGlyph, Mode=OneWay}" FontSize="8" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                                 <TextBlock Text="{x:Bind UnavailableBadgeText, Mode=OneWay}" FontSize="8" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                             </StackPanel>
                                         </Border>

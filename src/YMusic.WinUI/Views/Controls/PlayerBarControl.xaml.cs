@@ -86,6 +86,48 @@ public sealed partial class PlayerBarControl : UserControl
         VolumePercentageBadge.Visibility = Visibility.Visible;
     }
 
+    private void SeekSlider_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        // Leave modified shortcuts (such as Ctrl+Right for the next track) to the shell.
+        if (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control)
+                .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down) ||
+            Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Menu)
+                .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)) return;
+
+        if (SeekSlider.Maximum <= 0) return;
+
+        double target;
+        switch (e.Key)
+        {
+            case Windows.System.VirtualKey.Left:
+            case Windows.System.VirtualKey.Down:
+                target = SeekSlider.Value - 5;
+                break;
+            case Windows.System.VirtualKey.Right:
+            case Windows.System.VirtualKey.Up:
+                target = SeekSlider.Value + 5;
+                break;
+            case Windows.System.VirtualKey.PageDown:
+                target = SeekSlider.Value - 10;
+                break;
+            case Windows.System.VirtualKey.PageUp:
+                target = SeekSlider.Value + 10;
+                break;
+            case Windows.System.VirtualKey.Home:
+                target = 0;
+                break;
+            case Windows.System.VirtualKey.End:
+                target = SeekSlider.Maximum;
+                break;
+            default:
+                return;
+        }
+
+        ViewModel.StartSeeking();
+        ViewModel.FinishSeeking(Math.Clamp(target, 0, SeekSlider.Maximum));
+        e.Handled = true;
+    }
+
     private void SeekSlider_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         ViewModel.StartSeeking();

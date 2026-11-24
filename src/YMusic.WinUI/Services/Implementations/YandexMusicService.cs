@@ -1842,6 +1842,41 @@ public sealed partial class YandexMusicService : IYandexMusicService
             return (cached.Url, cached.Quality);
         }
 
+        string query = StreamFileInfo.CreateQuery(trackId, PreferredQuality, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        foreach (string endpoint in new[] { "resources/v2/file-info", "get-file-info" })
+        {
+            using var response = await SendRequestAsync(HttpMethod.Get, $"{endpoint}?{query}", null,
+                cancellationToken, StreamFileInfo.Client).ConfigureAwait(false);
+            if (response?.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return (null, null);
+            }
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                continue;
+            }
+
+            var fileJson = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            if (fileJson.Contains("not-available-for-other-regions", StringComparison.OrdinalIgnoreCase))
+            {
+                RegionRestrictionDetected?.Invoke(this, EventArgs.Empty);
+                return (null, null);
+            }
+            try
+            {
+                var stream = StreamFileInfo.Parse(fileJson);
+                if (stream.Url != null && stream.Quality != null)
+                {
+                    _streamInfoCache[trackId] = (stream.Url, stream.Quality, DateTime.UtcNow.AddMinutes(45));
+                    return stream;
+                }
+            }
+            catch (JsonException)
+            {
+                Debug.WriteLine($"[Stream] Invalid file info response from {endpoint}.");
+            }
+        }
+
         using var downloadInfoResponse = await SendRequestAsync(HttpMethod.Get, $"tracks/{trackId}/download-info", null, cancellationToken).ConfigureAwait(false);
         if (downloadInfoResponse == null || !downloadInfoResponse.IsSuccessStatusCode)
         {
@@ -2571,11 +2606,16 @@ public sealed partial class YandexMusicService : IYandexMusicService
         HttpMethod method,
         string endpoint,
         HttpContent? content,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? clientHeader = null)
     {
         HttpRequestMessage CreateRequest()
         {
             var req = new HttpRequestMessage(method, endpoint);
+            if (clientHeader != null)
+            {
+                req.Headers.Add("X-Yandex-Music-Client", clientHeader);
+            }
             if (content != null)
             {
                 req.Content = content;

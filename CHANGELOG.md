@@ -3,6 +3,13 @@
 All notable changes to the WinYandex project are documented in this file.
 
 ---
+## [0.9.96] — 2026-11-24
+
+### Playback
+* **New Stream URL API**: added signed requests to `resources/v2/file-info` and support for the `fileInfo` response field. Previous endpoints remain available as fallbacks.
+* **Audio Quality**: stream requests respect the selected AAC, MP3, or highest-bitrate preference and use the raw transport for direct playback.
+
+---
 ## [0.9.95] — 2026-11-23
 
 ### Audio

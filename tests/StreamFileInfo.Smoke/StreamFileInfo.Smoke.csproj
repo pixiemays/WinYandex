@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/YMusic.WinUI/Services/StreamFileInfo.cs" Link="StreamFileInfo.cs" />
+    <Compile Include="../../src/YMusic.WinUI/Models/AudioQuality.cs" Link="AudioQuality.cs" />
+  </ItemGroup>
+</Project>
